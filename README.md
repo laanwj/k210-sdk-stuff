@@ -15,6 +15,11 @@ You will get 2 files, `build/<ProjectName>` and `build/<ProjectName>.bin`. The f
 is an ELF executable, the latter a raw binary that can be flashed or written to
 0x80000000 in SRAM and directly executed.
 
+Documentation
+==============
+
+- [K210 memory map](doc/memory_map.md) - A rough memory map for the Kendryte K210 (as used on the Sipeed Maix boards). For some reason this is missing from the [data sheet](https://s3.cn-north-1.amazonaws.com.cn/dl.kendryte.com/documents/kendryte_datasheet_20181011163248_en.pdf).
+
 Projects
 =========
 
