@@ -24,8 +24,12 @@ glyph_mapping
 Variation of the `DVP` sample that processes the camera input through a simple
 DOS 8×8 font glyph-mapping algorithm and shows it on the display.
 
+[README](src/glyph_mapping/README.md)
+
 dump_otp
 --------
 
 Dumps the contents of the OTP (One-Time Programmable memory) of the K210 CPU to
 serial output in Intel HEX format.
+
+[README](src/dump_otp/README.md)
