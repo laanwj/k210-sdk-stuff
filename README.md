@@ -45,3 +45,10 @@ Dumps the contents of the OTP (One-Time Programmable memory) of the K210 CPU to
 serial output in Intel HEX format.
 
 [README](src/dump_otp/README.md)
+
+Other projects
+==============
+
+Some other interesting K210-based projects and demos:
+
+- [accelerometer](https://github.com/GitJer/Some-Sipeed-MAIX-GO-k210-stuff/tree/master/src/accelerometer) - Example of using the MSA300 accelerometer on the MAIX Go board, by GitJer
