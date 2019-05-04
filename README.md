@@ -21,6 +21,7 @@ Documentation
 Additional register documentation that is not in the datasheet can be found here:
 
 - [K210 memory map](doc/memory_map.md) - A rough memory map for the Kendryte K210 (as used on the Sipeed Maix boards)
+- [OTP memory map](doc/otp_layout.md) - Some random notes about the layout of the Kendryte K210 OTP memory
 - [LicheeDan / MaixGo on-board peripherals](doc/onboard.md) - List of on-board peripherals and chips for the various boards with a K210
 
 External:
