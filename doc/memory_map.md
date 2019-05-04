@@ -152,7 +152,6 @@ APU
 | 0x12c | `bf_int_mask_reg`      |                                                               |
 | 0x130 | `saturation_counter`   |                                                               |
 | 0x134 | `saturation_limits`    |                                                               |
-| ----- | ---------------------- | ------------------------------------------------------------- |
 
 CLINT
 -----
@@ -402,7 +401,6 @@ Registers are 64-bit.
 | 0x30  | `fifo_data_out`   |                                                               |
 | 0x38  | `fifo_ctrl`       |                                                               |
 | 0x40  | `eight_bit_mode`  | Enable 8-bit instead of 16-bit precision                      |
-| ----- | ----------------- | ------------------------------------------------------------- |
 
 OTP
 ---
@@ -419,8 +417,8 @@ The fuse bits determine some choices during the ROM boot process, such as from w
 whether to decrypt flash before boot, and so on.
 
 There is also a 128 kbit one-time programmable memory that can be read (and
-written) through this interface, and it can be prompted to provide a AES key to
-the AES peripheral without exposing it to softare.
+written) through this interface, and it can be prompted to provide a AES128 key to
+the AES peripheral without exposing it to software.
 
 PLIC
 ----
@@ -595,7 +593,6 @@ TIMERx
 | 0xa8  | `raw_intr_stat`   | TIMER Raw Interrupt Status Register                           |
 | 0xac  | `comp_version`    | TIMER Component Version Register                              |
 | 0xb0  | `load_count2[4]`  | TIMER\_N Load Count2 Register                                 |
-| ----- | ----------------- | ------------------------------------------------------------- |
 
 UARTx
 -----
