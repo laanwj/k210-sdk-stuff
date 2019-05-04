@@ -53,3 +53,7 @@ Other projects
 Some other interesting K210-based projects and demos:
 
 - [accelerometer](https://github.com/GitJer/Some-Sipeed-MAIX-GO-k210-stuff/tree/master/src/accelerometer) - Example of using the MSA300 accelerometer on the MAIX Go board, by GitJer
+
+- [quake1](https://github.com/elect-gombe/quake-k210) - Quake 1 on K210
+
+- [doom1](https://github.com/elect-gombe/k210-doom) - Doom 1 on K210
