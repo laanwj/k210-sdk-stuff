@@ -18,7 +18,10 @@ is an ELF executable, the latter a raw binary that can be flashed or written to
 Documentation
 ==============
 
-- [K210 memory map](doc/memory_map.md) - A rough memory map for the Kendryte K210 (as used on the Sipeed Maix boards). For some reason this is missing from the [data sheet](https://s3.cn-north-1.amazonaws.com.cn/dl.kendryte.com/documents/kendryte_datasheet_20181011163248_en.pdf).
+Additional register documentation that is not in the datasheet can be found here:
+
+- [K210 memory map](doc/memory_map.md) - A rough memory map for the Kendryte K210 (as used on the Sipeed Maix boards)
+- [k210.svd](https://github.com/riscv-rust/k210-pac/blob/master/k210.svd) - Peripheral description for rust K210 BSP (k210-pac project)
 
 Projects
 =========
