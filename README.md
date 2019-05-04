@@ -21,6 +21,10 @@ Documentation
 Additional register documentation that is not in the datasheet can be found here:
 
 - [K210 memory map](doc/memory_map.md) - A rough memory map for the Kendryte K210 (as used on the Sipeed Maix boards)
+- [LicheeDan / MaixGo on-board peripherals](doc/onboard.md) - List of on-board peripherals and chips for the various boards with a K210
+
+External:
+
 - [k210.svd](https://github.com/riscv-rust/k210-pac/blob/master/k210.svd) - Peripheral description for rust K210 BSP (k210-pac project)
 
 Projects
