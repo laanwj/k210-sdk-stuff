@@ -47,6 +47,11 @@ serial output in Intel HEX format.
 
 [README](src/dump_otp/README.md)
 
+ROM re'ing
+===========
+
+Annotated radare2 config files for the Boot ROM and OTP can be found under [r2](r2/README.md).
+
 Other projects
 ==============
 
@@ -54,6 +59,6 @@ Some other interesting K210-based projects and demos:
 
 - [accelerometer](https://github.com/GitJer/Some-Sipeed-MAIX-GO-k210-stuff/tree/master/src/accelerometer) - Example of using the MSA300 accelerometer on the MAIX Go board, by GitJer
 
-- [quake1](https://github.com/elect-gombe/quake-k210) - Quake 1 on K210
+- [quake1](https://github.com/elect-gombe/quake-k210) - Quake 1 on K210. Requires [wiring up a PS2 controller](https://robotzero.one/quake-kendryte-k210-risc-v/).
 
 - [doom1](https://github.com/elect-gombe/k210-doom) - Doom 1 on K210
