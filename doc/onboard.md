@@ -15,7 +15,7 @@ Also called "Dan" or "LicheeDan".
 - RY1303 - 3 Channel 5.5V 2A 1.5MHz DC/DC Step down PMU
 - ESP8285 - WiFi module (serial)
 - PT8211 - DAC audio (I2S)
-- CH340C - ?USB to serial chip CH340? (I don't think this is used?)
+- CH340C - USB to serial chip CH340. used to flash firmware over USB connector and console access
 - MSM261S4030H0 - Microphone (I2S)
 
 Maix Go
