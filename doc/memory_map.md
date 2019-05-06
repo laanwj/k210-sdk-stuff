@@ -537,7 +537,8 @@ SPIx
 | 0x114 | `xip_cnt_time_out` | SPI XIP time out register for continuous transfers           |
 | 0x118 | `endian`          | SPI Endian                                                    |
 
-This block is replicated for all 4 SPI peripherals.
+This block is replicated for all 4 SPI peripherals except for SPI2, which is SPI
+slave-only and has a slightly different interface.
 
 SYSCTL
 ------

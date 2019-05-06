@@ -15,7 +15,7 @@ Also called "Dan" or "LicheeDan".
 - RY1303 - 3 Channel 5.5V 2A 1.5MHz DC/DC Step down PMU
 - ESP8285 - WiFi module (serial)
 - PT8211 - DAC audio (I2S)
-- CH340C - USB to serial chip CH340. used to flash firmware over USB connector and console access
+- CH340C - USB to serial chip CH340. used to flash firmware over USB connector and console access on boards except for the Maix Go
 - MSM261S4030H0 - Microphone (I2S)
 
 Maix Go
@@ -23,14 +23,13 @@ Maix Go
 
 (source: schematic)
 
-On-board:
+### On-board
 
 - MSA300 - Accelerometer (I2C)
-- STM32F103C8 - JTAG & UART, debug M1 without extra Jlink (USB to host, serial to K210)
+- STM32F103C8 - JTAG & UART, debug M1 without extra Jlink, this bypasses the CH340C on the module (USB to host, serial to K210)
 - OV2640 - Color CMOS UXGA (2.0 MegaPixel) CAMERA C HI (DVP)
 
-External
---------
+### External
 
 (source: schematic)
 
