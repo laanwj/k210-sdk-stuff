@@ -213,17 +213,17 @@ DVP
 
 | Ofs   | Name              | Description                         |
 | ----- | ----------------- | ----------------------------------- |
-| 0x00  | `dvp_cfg`         |                                     |
-| 0x04  | `r_addr`          |                                     |
-| 0x08  | `g_addr`          |                                     |
-| 0x0c  | `b_addr`          |                                     |
-| 0x10  | `cmos_cfg`        |                                     |
-| 0x14  | `sccb_cfg`        |                                     |
-| 0x18  | `sccb_ctl`        |                                     |
-| 0x1c  | `axi`             |                                     |
-| 0x20  | `sts`             |                                     |
+| 0x00  | `dvp_cfg`         | Config Register                     |
+| 0x04  | `r_addr`          | Output address for red component    |
+| 0x08  | `g_addr`          | Output address for green component  |
+| 0x0c  | `b_addr`          | Output address for blue component   |
+| 0x10  | `cmos_cfg`        | CMOS Config Register                |
+| 0x14  | `sccb_cfg`        | SCCB Config Register                |
+| 0x18  | `sccb_ctl`        | SCCB Control Register               |
+| 0x1c  | `axi`             | AXI Register                        |
+| 0x20  | `sts`             | STS Register                        |
 | 0x24  | `reverse`         |                                     |
-| 0x28  | `rgb_addr`        |                                     |
+| 0x28  | `rgb_addr`        | Output address for R5G6B5 data      |
 
 FFT
 ---
