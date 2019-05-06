@@ -614,43 +614,45 @@ UARTx
 | 0x14  | `LSR`             | Line Status Register                                          |
 | 0x18  | `MSR`             | Modem Status Register                                         |
 | 0x1c  | `SCR`             | Scratch                                                       |
-| 0x20  | `LPDLL`           |                                                               |
-| 0x24  | `LPDLH`           |                                                               |
+| 0x20  | `LPDLL`           | Low Power Divisor Latch (Low) Register                        |
+| 0x24  | `LPDLH`           | Low Power Divisor Latch (High) Register                       |
 | 0x28  | `reserved1[2]`    |                                                               |
-| 0x30  | `SRBR[16]`        |                                                               |
-| 0x30  | `STHR[16]`        |                                                               |
-| 0x70  | `FAR`             |                                                               |
-| 0x74  | `TFR`             |                                                               |
-| 0x78  | `RFW`             |                                                               |
-| 0x7c  | `USR`             |                                                               |
-| 0x80  | `TFL`             |                                                               |
-| 0x84  | `RFL`             |                                                               |
-| 0x88  | `SRR`             |                                                               |
-| 0x8c  | `SRTS`            |                                                               |
-| 0x90  | `SBCR`            |                                                               |
-| 0x94  | `SDMAM`           |                                                               |
-| 0x98  | `SFE`             |                                                               |
-| 0x9c  | `SRT`             |                                                               |
-| 0xa0  | `STET`            |                                                               |
-| 0xa4  | `HTX`             |                                                               |
-| 0xa8  | `DMASA`           |                                                               |
-| 0xac  | `TCR`             |                                                               |
-| 0xb0  | `DE_EN`           |                                                               |
-| 0xb4  | `RE_EN`           |                                                               |
-| 0xb8  | `DET`             |                                                               |
-| 0xbc  | `TAT`             |                                                               |
-| 0xc0  | `DLF`             |                                                               |
-| 0xc4  | `RAR`             |                                                               |
-| 0xc8  | `TAR`             |                                                               |
-| 0xcc  | `LCR_EXT`         |                                                               |
+| 0x30  | `SRBR[16]`        | Shadow Receive Buffer Register                                |
+| 0x30  | `STHR[16]`        | Shadow Transmit Holding Register                              |
+| 0x70  | `FAR`             | FIFO Access Register                                          |
+| 0x74  | `TFR`             | Transmit FIFO Read Register                                   |
+| 0x78  | `RFW`             | Receive FIFO Write Register                                   |
+| 0x7c  | `USR`             | UART Status Register                                          |
+| 0x80  | `TFL`             | Transmit FIFO Level                                           |
+| 0x84  | `RFL`             | Receive FIFO Level                                            |
+| 0x88  | `SRR`             | Software Reset Register                                       |
+| 0x8c  | `SRTS`            | Shadow Request to Send Register                               |
+| 0x90  | `SBCR`            | Shadow Break Control Register                                 |
+| 0x94  | `SDMAM`           | Shadow DMA Mode                                               |
+| 0x98  | `SFE`             | Shadow FIFO Enable                                            |
+| 0x9c  | `SRT`             | Shadow RCVR Trigger Register                                  |
+| 0xa0  | `STET`            | Shadow TX Empty Trigger Register                              |
+| 0xa4  | `HTX`             | Halt TX Regster                                               |
+| 0xa8  | `DMASA`           | DMA Software Acknowledge Register                             |
+| 0xac  | `TCR`             | Transfer Control Register                                     |
+| 0xb0  | `DE_EN`           | DE Enable Register                                            |
+| 0xb4  | `RE_EN`           | RE Enable Register                                            |
+| 0xb8  | `DET`             | DE Assertion Time Register                                    |
+| 0xbc  | `TAT`             | Turn-Around Time Register                                     |
+| 0xc0  | `DLF`             | Divisor Latch (Fractional) Register                           |
+| 0xc4  | `RAR`             | Receive-Mode Address Register                                 |
+| 0xc8  | `TAR`             | Transmit-Mode Address Register                                |
+| 0xcc  | `LCR_EXT`         | Line Control Register (Extended)                              |
 | 0xd0  | `reserved2[9]`    |                                                               |
-| 0xf4  | `CPR`             |                                                               |
-| 0xf8  | `UCV`             |                                                               |
-| 0xfc  | `CTR`             |                                                               |
+| 0xf4  | `CPR`             | Component Parameter Register                                  |
+| 0xf8  | `UCV`             | UART Component Version                                        |
+| 0xfc  | `CTR`             | Component Type Register                                       |
 
 This block is replicated for all 3 UART peripherals. The latter registers (0x20
 and higher) are not used in the SDK, but defined in the structure. Their use is
 unknown, although the names match some other UART controllers.
+The best match to the register names and offsets appears to be the UART described in
+[HUGEIC Communication Interface Peripheral User’s Guide](http://www.huge-ic.com/Communication%20Interface%20Peripheral%20User%27s%20Guide%20V0.1.pdf).
 
 UARTHS
 ------
