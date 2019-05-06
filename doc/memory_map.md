@@ -126,7 +126,7 @@ AES
 | 0x64  | `gb_aes_en`       | aes module enable                                             |
 | 0x68  | `data_out_flag`   | data can output flag 1: data ready 0: data not ready          |
 | 0x6c  | `tag_in_flag`     | allow tag input when use gcm                                  |
-| 0x70  | `tag_clear`       | clear tag_chk                                                 |
+| 0x70  | `tag_clear`       | clear `tag_chk`                                               |
 | 0x74  | `gcm_out_tag[4]`  | gcm tag output                                                |
 | 0x84  | `aes_key_ext[4]`  | customer key for aes-192 aes-256.5th~8th byte key             |
 
@@ -137,21 +137,21 @@ APU
 
 | Ofs   | Name                   | Description                                                   |
 | ----- | ---------------------- | ------------------------------------------------------------- |
-| 0x000 | `bf_ch_cfg_reg`        |                                                               |
-| 0x004 | `bf_ctl_reg`           |                                                               |
-| 0x008 | `bf_dir_bidx[16][2]`   |                                                               |
-| 0x088 | `bf_pre_fir0_coef[9]`  |                                                               |
-| 0x0ac | `bf_post_fir0_coef[9]` |                                                               |
-| 0x0d0 | `bf_pre_fir1_coef[9]`  |                                                               |
-| 0x0f4 | `bf_post_fir1_coef[9]` |                                                               |
-| 0x118 | `bf_dwsz_cfg_reg`      |                                                               |
-| 0x11c | `bf_fft_cfg_reg`       |                                                               |
-| 0x120 | `sobuf_dma_rdata`      | Read register for DMA to sample out buffers                   |
-| 0x124 | `vobuf_dma_rdata`      | Read register for DMA to voice out buffers                    |
-| 0x128 | `bf_int_stat_reg`      |                                                               |
-| 0x12c | `bf_int_mask_reg`      |                                                               |
-| 0x130 | `saturation_counter`   |                                                               |
-| 0x134 | `saturation_limits`    |                                                               |
+| 0x000 | `bf_ch_cfg_reg`        | Channel Config Register                                       |
+| 0x004 | `bf_ctl_reg`           | Control Register                                              |
+| 0x008 | `bf_dir_bidx[16][2]`   | Direction Sample Buffer Read Index Configure Register         |
+| 0x088 | `bf_pre_fir0_coef[9]`  | FIR0 pre-filter coefficients                                  |
+| 0x0ac | `bf_post_fir0_coef[9]` | FIR0 post-filter coefficients                                 |
+| 0x0d0 | `bf_pre_fir1_coef[9]`  | FIR1 pre-filter coeffecients                                  |
+| 0x0f4 | `bf_post_fir1_coef[9]` | FIR1 post-filter coefficients                                 |
+| 0x118 | `bf_dwsz_cfg_reg`      | Downsize Config Register                                      |
+| 0x11c | `bf_fft_cfg_reg`       | FFT Config Register                                           |
+| 0x120 | `sobuf_dma_rdata`      | Read register for DMA to sample-out buffers                   |
+| 0x124 | `vobuf_dma_rdata`      | Read register for DMA to voice-out buffers                    |
+| 0x128 | `bf_int_stat_reg`      | Interrupt Status Register                                     |
+| 0x12c | `bf_int_mask_reg`      | Interrupt Mask Register                                       |
+| 0x130 | `saturation_counter`   | Saturation Counter                                            |
+| 0x134 | `saturation_limits`    | Saturation Limits                                             |
 
 CLINT
 -----
@@ -232,14 +232,14 @@ FFT
 
 | Ofs   | Name              | Description                         |
 | ----- | ----------------- | ----------------------------------- |
-| 0x00  | `fft_input_fifo`  | input data fifo                     |
-| 0x08  | `fft_ctrl`        | fft ctrl reg                        |
-| 0x10  | `fifo_ctrl`       | fifo ctrl                           |
-| 0x18  | `intr_mask`       | interrupt mask                      |
-| 0x20  | `intr_clear`      | interrupt clear                     |
-| 0x28  | `fft_status`      | fft status reg                      |
-| 0x30  | `fft_status_raw`  | fft status raw                      |
-| 0x38  | `fft_output_fifo` | fft output fifo                     |
+| 0x00  | `fft_input_fifo`  | Input data FIFO                     |
+| 0x08  | `fft_ctrl`        | FFT ctrl reg                        |
+| 0x10  | `fifo_ctrl`       | FIFO ctrl                           |
+| 0x18  | `intr_mask`       | Interrupt mask                      |
+| 0x20  | `intr_clear`      | Interrupt clear                     |
+| 0x28  | `fft_status`      | FFT status reg                      |
+| 0x30  | `fft_status_raw`  | FFT status raw                      |
+| 0x38  | `fft_output_fifo` | FFT output FIFO                     |
 
 FPIOA
 -----
