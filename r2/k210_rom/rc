@@ -298,40 +298,41 @@ f uarths_puts 0 0x88008c5c
 fs functions
 f serial_init 0 0x88008cc0 
 fs *
-f fcn.88008dd8_flash 0 0x88008dd8 
+f spi_receive_data_1 0 0x88008dd8 
 fs *
-f fcn.88008f10_flash 0 0x88008f10 
+f spi_send_data 0 0x88008f10 
 fs *
-f fcn.8800902c_flash 0 0x8800902c 
+f spi_receive_data_2 0 0x8800902c 
 fs *
-f fcn.88009160_flash 0 0x88009160 
+f w25qxx_write_enable 0 0x88009160 
 fs *
-f fcn.880091f8_flash 0 0x880091f8 
+f w25qxx_write_status_reg 0 0x880091f8 
 fs *
-f fcn.88009264_flash 0 0x88009264 
+f w25qxx_read_status_reg1 0 0x88009264 
 fs *
-f fcn.88009300_flash 0 0x88009300 
+f w25qxx_read_status_reg2 0 0x88009300 
 fs *
-f fcn.8800939c_flash 0 0x8800939c 
+f w25qxx_enable_quad_mode 0 0x8800939c 
 fs *
-f fcn.88009410_flash 0 0x88009410 
+f flash_read_mode0 0 0x88009410 
 fs *
-f fcn.8800955c_flash 0 0x8800955c 
+f flash_read_mode_1_2 0 0x8800955c 
 fs *
 f flash_spi3_config 0 0x88009770 
 fs *
-f fcn.88009918_flash 0 0x88009918 
+f spi_flash_read_manufacturer_id 0 0x88009918 
 fs *
 f flash_read 0 0x880099b4 
 fs *
 f flash_spi0_config 0 0x88009a34 
 fs *
-f fcn.88009b94_flash 0 0x88009b94 
+f spi_flash_set_read_mode 0 0x88009b94 
 fs *
 f fcn.88009bc8_slip 0 0x88009bc8 
 fs functions
 f slip_handle_pkt 0 0x88009da4 
-f fcn.8800a160 0 0x8800a160 
+fs *
+f fcn.8800a160_slip 0 0x8800a160 
 fs *
 f isp_run 0 0x8800a300 
 fs *
@@ -343,7 +344,8 @@ f slip_sendch 0 0x8800aa54
 f slip_start 0 0x8800aad4 
 f slip_sendinner 0 0x8800ab00 
 f slip_sendpkt 0 0x8800ab6c 
-f fcn.8800abb4 0 0x8800abb4 
+fs *
+f slip_unescape 0 0x8800abb4 
 fs *
 f uarths_set_baudrate 0 0x8800acdc 
 fs *
@@ -842,7 +844,7 @@ f end_of_code 1 0x8800b4a6
 "e scr.flush = false"
 "e scr.fps = false"
 "e scr.gadgets = false"
-"e scr.highlight = -24"
+"e scr.highlight = "
 "e scr.highlight.grep = false"
 "e scr.histsave = true"
 "e scr.html = false"
@@ -1219,6 +1221,7 @@ CCu base64:U1lTQ1RM @ 0x88007708
 CCu base64:cGxsX2xvY2s= @ 0x8800770c
 CCu base64:MHg1MDQ0MDAwMCAgICAgICAgICAgICAgU1lTQ1RMIChVbmRlciBBUEIyIDMyIGJpdCk= @ 0x880088fc
 CCu base64:Y2FsbGVkIGZyb20gUk9YTQ== @ 0x88008a9c
+CCu base64:U1lTQ1RM @ 0x88008aac
 CCu base64:dHJhbnNtaXQgY2hhciBhMA== @ 0x88008b68
 CCu base64:bG9vcDogd2FpdCB1bnRpbCBwb3NzaWJsZSB0byBzZW5kIHRocm91Z2ggVUFSVEhT @ 0x88008b80
 CCu base64:VUFSVEhT @ 0x88008b84
@@ -1252,30 +1255,144 @@ CCu base64:VUFSVEhTLmllPC1hNQ== @ 0x88008dac
 CCu base64:VUFSVEhT @ 0x88008db0
 CCu base64:YTU8LVVBUlRIUy5pZQ== @ 0x88008db4
 CCu base64:VUFSVEhTLmllPC1hNQ== @ 0x88008dbc
-CCu base64:U1BJIGZsYXNoIGhhbmRsaW5n @ 0x88008dd8
-CCu base64:MHg4MDVmYzAxMA== @ 0x88008e04
+CCu base64:U1BJIGZsYXNoIGhhbmRsaW5nOiBhMCwgYTEsIGEyLCBhMw== @ 0x88008dd8
+CCu base64:MHg4MDVmYzAxMCBTUEkgYmFzZSBhZGRyZXNzIChjb25maWd1cmFibGUp @ 0x88008e04
+CCu base64:U1BJeC5jdHJscjE= @ 0x88008e18
 CCu base64:MHg4MDVmYzAxMA== @ 0x88008e20
 CCu base64:MHg4MDVmYzAxMA== @ 0x88008e48
+CCu base64:U1BJeC5kclswXQ== @ 0x88008e54
 CCu base64:MHg4MDVmYzAxMA== @ 0x88008e6c
+CCu base64:U1BJeC5zZXI= @ 0x88008e78
 CCu base64:MHg4MDVmYzAxMA== @ 0x88008e84
+CCu base64:U1BJeC5yeGZscg== @ 0x88008e8c
 CCu base64:MHg4MDVmYzAxMA== @ 0x88008ea8
+CCu base64:U1BJeC5kclswXQ== @ 0x88008eb0
 CCu base64:MHg4MDVmYzAxMA== @ 0x88008ee4
+CCu base64:U1BJeC5zZXI= @ 0x88008eec
 CCu base64:MHg4MDVmYzAxMA== @ 0x88008ef4
-CCu base64:U1BJIGZsYXNoIGhhbmRsaW5n @ 0x88008f10
-CCu base64:U1BJIGZsYXNoIGhhbmRsaW5n @ 0x8800902c
-CCu base64:U1BJIGZsYXNoIGhhbmRsaW5n @ 0x88009160
-CCu base64:U1BJIGZsYXNoIGhhbmRsaW5n @ 0x880091f8
-CCu base64:U1BJIGZsYXNoIGhhbmRsaW5n @ 0x88009264
-CCu base64:U1BJIGZsYXNoIGhhbmRsaW5n @ 0x88009300
-CCu base64:U1BJIGZsYXNoIGhhbmRsaW5n @ 0x8800939c
+CCu base64:U1BJeC5zc2llbnI= @ 0x88008efc
+CCu base64:U1BJIGZsYXNoIGhhbmRsaW5nOiBhMCwgYTEsIGEyLCBhMw== @ 0x88008f10
+CCu base64:MHg4MDVmYzAxMA== @ 0x88008f3c
+CCu base64:U1BJeC5zc2llbnI= @ 0x88008f48
+CCu base64:MHg4MDVmYzAxMA== @ 0x88008f64
+CCu base64:U1BJeC5kclswXQ== @ 0x88008f70
+CCu base64:MHg4MDVmYzAxMA== @ 0x88008f9c
+CCu base64:U1BJeC5kclswXQ== @ 0x88008fa8
+CCu base64:MHg4MDVmYzAxMA== @ 0x88008fd8
+CCu base64:U1BJeC5zcg== @ 0x88008fe0
+CCu base64:MHg4MDVmYzAxMA== @ 0x88009000
+CCu base64:U1BJeC5zZXI= @ 0x88009004
+CCu base64:MHg4MDVmYzAxMA== @ 0x88009010
+CCu base64:U1BJLnNzaWVucg== @ 0x88009018
+CCu base64:U1BJIGZsYXNoIGhhbmRsaW5nOiBhMCwgYTEsIGEyLCBhMw== @ 0x8800902c
+CCu base64:MHg4MDVmYzAxMA== @ 0x88009058
+CCu base64:U1BJeC5jdHJscjE= @ 0x8800906c
+CCu base64:MHg4MDVmYzAxMA== @ 0x88009074
+CCu base64:U1BJeC5zc2llbnI= @ 0x88009080
+CCu base64:MHg4MDVmYzAxMA== @ 0x88009098
+CCu base64:U1BJeC5kclswXQ== @ 0x880090a4
+CCu base64:MHg4MDVmYzAxMA== @ 0x880090bc
+CCu base64:U1BJeC5zZXI= @ 0x880090c8
+CCu base64:MHg4MDVmYzAxMA== @ 0x880090d4
+CCu base64:U1BJeC5yeGZscg== @ 0x880090dc
+CCu base64:FjB4ODA1ZmMwMTA= @ 0x880090f8
+CCu base64:U1BJeC5kclswXQ== @ 0x88009100
+CCu base64:MHg4MDVmYzAxMA== @ 0x88009134
+CCu base64:MHg4MDVmYzAxMA== @ 0x88009144
+CCu base64:U1BJIGZsYXNoIGhhbmRsaW5nICA= @ 0x88009160
+CCu base64:MHg4MDVmYzAxOA== @ 0x8800917c
+CCu base64:MHg4MDVmYzAxOQ== @ 0x88009198
+CCu base64:MHg4MDVmYzAxMA== @ 0x880091bc
+CCu base64:U1BJeC5jdHJscjA= @ 0x880091c8
+CCu base64:U1BJIGZsYXNoIGhhbmRsaW5nOiBhMCwgYTE7IGJ1aWxkIHRocmVlLWJ5dGUgY29tbWFuZCBhbmQgc2VuZCBpdA== @ 0x880091f8
+CCu base64:cmVzdWx0IHJldHVybmVkIGluIFt1OEBhMF0= @ 0x88009264
+CCu base64:b3Bjb2RlIDUgUkVBRF9SRUcx @ 0x88009278
+CCu base64:MHg4MDVmYzAxOCBkZnNfb2Zmc2V0 @ 0x88009284
+CCu base64:MHg4MDVmYzAxOSB0bW9kX29mZnNldA== @ 0x880092a0
+CCu base64:MHg4MDVmYzAxMA== @ 0x880092c4
+CCu base64:U1BJeC5jdHJscjAgIGRmcyA3ICg4IGJpdCkgdG1vZCAzIChTUElfVE1PRF9FRVJPTSk= @ 0x880092d0
+CCu base64:cmVzdWx0IHJldHVybmVkIGluIFt1OEBhMF0= @ 0x88009300
+CCu base64:b3Bjb2RlIDB4MzUgUkVBRF9SRUcy @ 0x88009314
+CCu base64:MHg4MDVmYzAxOCBkZnNfb2Zmc2V0 @ 0x88009320
+CCu base64:MHg4MDVmYzAxOSB0bW9kX29mZnNldA== @ 0x8800933c
+CCu base64:MHg4MDVmYzAxMA== @ 0x88009360
+CCu base64:U1BJeC5jdHJscjAgZGZzIDcgKDggYml0KSB0bW9kIDMgKFNQSV9UTU9EX0VFUk9NKQ== @ 0x8800936c
+CCu base64:U1BJIGZsYXNoIGhhbmRsaW5nICA= @ 0x8800939c
+CCu base64:UkVHMl9RVUFMX01BU0s= @ 0x880093c0
 CCu base64:U1BJIGZsYXNoIGhhbmRsaW5n @ 0x88009410
-CCu base64:U1BJIGZsYXNoIGhhbmRsaW5n @ 0x8800955c
+CCu base64:MHg4MDVmYzAxOA== @ 0x8800943c
+CCu base64:MHg4MDVmYzAxOQ== @ 0x88009458
+CCu base64:MHg4MDVmYzAxMA== @ 0x8800947c
+CCu base64:U1BJeC5jdHJscjA= @ 0x88009488
+CCu base64:U1BJIGZsYXNoIGhhbmRsaW5nICBhZm4gZmxhc2hfcmVhZF9tb2RlXzFfMg== @ 0x8800955c
 CCu base64:MHg4MDVmYzAxYg== @ 0x88009588
+CCu base64:MHg4MDVmYzAxOA== @ 0x880095a0
+CCu base64:MHg4MDVmYzAxOQ== @ 0x880095bc
+CCu base64:MHg4MDVmYzAxYQ== @ 0x880095e0
+CCu base64:MHg4MDVmYzAxMA== @ 0x88009604
+CCu base64:U1BJeC5jdHJscjA= @ 0x88009610
+CCu base64:MHg4MDVmYzAxMA== @ 0x88009618
+CCu base64:MHg4MDVmYzAxOA== @ 0x8800963c
+CCu base64:MHg4MDVmYzAxOQ== @ 0x88009658
+CCu base64:MHg4MDVmYzAxYQ== @ 0x8800967c
+CCu base64:MHg4MDVmYzAxMA== @ 0x880096a0
+CCu base64:U1BJeC5jdHJscjA= @ 0x880096ac
+CCu base64:MHg4MDVmYzAxMA== @ 0x880096b4
+CCu base64:U1BJeC5zcGlfY3RybHIw @ 0x880096c0
+CCu base64:U1lTQ1RM @ 0x88009790
+CCu base64:PC1TWVNDVEwuY2xrX2VuX3Blcmk= @ 0x88009794
+CCu base64:U1lTQ1RM @ 0x8800979c
+CCu base64:Yml0IHNwaTNfY2xrX2Vu @ 0x880097a4
+CCu base64:LT4gU1lTQ1RMLmNsa19lbl9wZXJp @ 0x880097ac
+CCu base64:PC0gU1lTQ1RMLmNsa190aDE= @ 0x880097b8
+CCu base64:Y2xlYXIgdXBwZXIgOCBiaXQgKHNwaTNfY2xrX3RocmVzaG9sZCk= @ 0x880097d0
+CCu base64:LT4gU1lTQ1RMLmNsa190aDE= @ 0x880097d8
 CCu base64:MHg1NDAwMDAwMCAgICAgICAgICAgICAgU1BJMyAoVW5kZXIgQVBCMyAzMiBiaXQp @ 0x880097dc
-CCu base64:U1BJIGZsYXNoIGhhbmRsaW5n @ 0x88009918
+CCu base64:MHg4MDVmYzAxMCA= @ 0x880097e4
+CCu base64:c3RvcmUgU1BJIGJhc2UgYWRkcmVzcw== @ 0x880097e8
+CCu base64:MHg4MDVmYzAxMA== @ 0x880097f4
+CCu base64:U1BJeC5zc2llbnI= @ 0x880097f8
+CCu base64:MHg4MDVmYzAxMA== @ 0x88009804
+CCu base64:U1BJeC5zZXI= @ 0x88009808
+CCu base64:U1BJeC5iYXVkcg== @ 0x8800981c
+CCu base64:MHg4MDVmYzAxMA== @ 0x88009828
+CCu base64:U1BJeC5pbXI= @ 0x8800982c
+CCu base64:MHg4MDVmYzAxOCBkZnNfb2Zmc2V0 @ 0x88009838
+CCu base64:MHg4MDVmYzAxOSB0bW9kX29mZnNldA== @ 0x88009848
+CCu base64:MHg4MDVmYzAxYSBmcmZfb2Zmc2V0 @ 0x88009858
+CCu base64:MHg4MDVmYzAxYiA/ @ 0x88009864
+CCu base64:MHg4MDVmYzAxOA== @ 0x8800986c
+CCu base64:MHg4MDVmYzAxOQ== @ 0x88009888
+CCu base64:MHg4MDVmYzAxMA== @ 0x880098ac
+CCu base64:U1BJeC5jdHJscjAgIGRmcyA3ICg4IGJpdCkgdG1vZCAxICg9U1BJX1RNT0RfVFJBTlMp @ 0x880098b8
+CCu base64:SkVERUMgaWQgMzIgaXMgU1RNaWNyb2VsZWN0cm9uaWM= @ 0x880098e8
+CCu base64:aW4gd2hpY2ggY2FzZSwgc2tpcCBnb2luZyB0byBxdWFkIG1vZGU= @ 0x880098ec
+CCu base64:U1BJIGZsYXNoIGhhbmRsaW5nOiBhMCA= @ 0x88009918
+CCu base64:b3Bjb2RlIDB4OUYgUmVhZCBJZGVudGlmaWNhdGlvbiAoUkRJRCk= @ 0x8800992c
+CCu base64:MHg4MDVmYzAxOA== @ 0x88009938
+CCu base64:MHg4MDVmYzAxOQ== @ 0x88009954
+CCu base64:MHg4MDVmYzAxMA== @ 0x88009978
+CCu base64:U1BJeC5jdHJscjAgZGZzIDcgKDggYml0KSB0bW9kIDEgKD1TUElfVE1PRF9UUkFOUyk= @ 0x88009984
 CCu base64:Z2VuZXJpYyBTUEkgZmxhc2ggcmVhZDogb2Zmc2V0IGEwLCBzaXplIGEyIHRvIGRlc3RpbmF0aW9uIGFkZHJlc3MgYTEg @ 0x880099b4
+CCu base64:MHg4MDVmYzAxYiBtb2RlPw== @ 0x880099e0
+CCu base64:cmVhZCBtb2RlIDEvMg== @ 0x880099ec
+CCu base64:cmVhZCBtb2RlIDA= @ 0x88009a08
 CCu base64:MHg1MjAwMDAwMCAgICAgICAgICAgICAgU1BJMCAoVW5kZXIgQVBCMyAzMiBiaXQp @ 0x88009a54
-CCu base64:c2V0IHU4QDB4ODA1ZmMwMWIgdG8gYTA= @ 0x88009b94
+CCu base64:c3RvcmUgU1BJIGJhc2UgYWRkcmVzcyAweDgwNWZjMDEw @ 0x88009a5c
+CCu base64:MHg4MDVmYzAxMA== @ 0x88009a68
+CCu base64:MHg4MDVmYzAxMA== @ 0x88009a78
+CCu base64:MHg4MDVmYzAxMA== @ 0x88009a88
+CCu base64:MHg4MDVmYzAxMA== @ 0x88009a9c
+CCu base64:MHg4MDVmYzAxOCBkZnNfb2Zmc2V0 @ 0x88009aac
+CCu base64:MHg4MDVmYzAxOSB0bW9kX29mZnNldA== @ 0x88009abc
+CCu base64:MHg4MDVmYzAxYSBmcmZfb2Zmc2V0 @ 0x88009acc
+CCu base64:MHg4MDVmYzAxYiA/ @ 0x88009adc
+CCu base64:MHg4MDVmYzAxOA== @ 0x88009ae8
+CCu base64:MHg4MDVmYzAxOQ== @ 0x88009b04
+CCu base64:MHg4MDVmYzAxMA== @ 0x88009b28
+CCu base64:U1BJeC5jdHJscjAg @ 0x88009b34
+CCu base64:SkVERUMgSUQgMzIgaXMgU1RNaWNyb2VsZWN0cm9uaQ== @ 0x88009b64
+CCu base64:c2V0IHU4QDB4ODA1ZmMwMWIgdG8gYTAgKGlzIHBhc3NlZCAwLCAxIG9yIDIp @ 0x88009b94
 CCu base64:MHg4MDVmYzAxYg== @ 0x88009bac
 CCu base64:c2V0IGJhdWRyYXRlIHRvIGEw @ 0x88009d10
 CCu base64:U1lTQ1RMX0NMT0NLX0NQVQ== @ 0x88009d28
@@ -1295,7 +1412,10 @@ CCu base64:MHhlMCBJU1BfUkVUX09L @ 0x8800a134
 CCu base64:aW52YWxpZCBvcGNvZGVzIGVuZCB1cCBoZXJl @ 0x8800a140
 CCu base64:MHhlMyBJU1BfUkVUX0lOVkFMSURfQ09NTUFORA== @ 0x8800a144
 CCu base64:cnVuIElTUCBtb2Rl @ 0x8800a300
+CCu base64:aWYgRnVzZXMgQSBiaXQgMSAoPTIpIGlzIHNldCwgYWxsb3cgcnVubmluZyBJU1AgZXZlbiBpZiBkaXNhbGxvd2VkIGJ5IEZ1c2VzIEI= @ 0x8800a338
+CCu base64:aWYgZnVzZXMgQiBiaXQgNyBpcyBzZXQsIGRpc2FsbG93IGVudGVyaW5nIElTUA== @ 0x8800a354
 CCu base64:cmVjZWl2ZSBjaGFyYWN0ZXIgZnJvbSBVQVJUIGluIGEw @ 0x8800a3dc
+CCu base64:aWYgZnVzZXMgQSBiaXQgMSBzZXQsIGp1bXAgZGlyZWN0bHkgdG8gbm9uLXR1cmJvIGJvb3Q= @ 0x8800a63c
 CCu base64:cmVhZCBST00gInBhdGNoIiBmcm9tIE9UUA== @ 0x8800a65c
 CCu base64:Y2hlY2sgZm9yIGhlYWRlcjogMHg0ZDU4NGY1MiBST1hN @ 0x8800a66c
 CCu base64:c2l6ZQ== @ 0x8800a678
@@ -1305,12 +1425,36 @@ CCu base64:anVtcCB0byBST1hNIGNvZGUgYXQgMHg4MDVmODAwMA== @ 0x8800a6a8
 CCu base64:Yml0IDYzIGRldGVybWluZXMga2luZHMgb2YgYm9vdCAoaXMgdGhpcyB0aGUgVFVSQk8gTU9ERSBtZW50aW9uZWQgaW4gdGhlIGRhdGFzaGVldD8p @ 0x8800a6ac
 CCu base64:anVtcCBpZiBiaXQgNjMgbm90IHNldCAocmV0dXJuIHZhbHVlIGlzIDE0IGlmIHNldCk= @ 0x8800a6c4
 CCu base64:anVtcCBiYWNrIGZyb20gMHg4MDVmODB4eCBhcnJpdmVzIGhlcmUgaWYgYml0IDMxIG9mIGZ1c2VzLUIgbm90IHNldA== @ 0x8800a6cc
+CCu base64:Yml0IDcgZGlzYWxsb3dzIGVudGVyaW5nIElTUA== @ 0x8800a6ec
+CCu base64:MHg4ODAwYjhjMA== @ 0x8800a70c
+CCu base64:MHgzODAwMTAwMCAoR1BJT0hTKQ== @ 0x8800a710
+CCu base64:MHg4ODAwYjhjMA== @ 0x8800a724
+CCu base64:MHgzODAwMTAwMCAoR1BJT0hTKQ== @ 0x8800a728
+CCu base64:R1BJT0hTIGlucHV0IHZhbCwgYml0IDA= @ 0x8800a72c
+CCu base64:ZW50ZXIgSVNQIGlmIEdQSU9IUyBpbnB1dCB2YWwgYml0IDAgaXMgbm90IHNldA== @ 0x8800a740
 CCu base64:ZW5jcnlwdGlvbiBmbGFn @ 0x8800a74c
 CCu base64:c2l6ZQ== @ 0x8800a760
 CCu base64:bWF4IHNpemUgY2FuIGJlIH42IE1C @ 0x8800a77c
-CCu base64:ZnVzZSBCIGJpdCA4IHNraXBzIGVuY3J5cHRpb24gaWYgc2V0 @ 0x8800a950
+CCu base64:bG9hZCBleHBlY3RlZCBTSEEyNTYgaGFzaCBmcm9tIGZsYXNo @ 0x8800a7b0
+CCu base64:ZnVzZSBCIGJpdCA5IGRldGVybWluZXMgd2hldGhlciB0byBjaGVjayBTSEEyNTYgYWdhaW5zdCBPVFA= @ 0x8800a7d4
+CCu base64:c2tpcCBTSEEyNTYgY2hlY2sgYWdhaW5zdCBPVFA= @ 0x8800a808
+CCu base64:T1RQIG9mZnNldCAweDNkYjA= @ 0x8800a81c
+CCu base64:Y29tcGFyZSBhZ2FpbnN0IFNIQTI1NiBoYXNoIGluIE9UUCAoYnl0ZSBwZXIgYnl0ZSk= @ 0x8800a82c
+CCu base64:anVtcCB0byBJU1Agb24gY2hlY2sgZmFpbHVyZQ== @ 0x8800a850
+CCu base64:aGFzaCBmaXJzdCBieXRlIG9mIGZsYXNoIChhZXNfY2lwaGVyX2ZsYWcp @ 0x8800a8a8
+CCu base64:aGFzaCBmaXJtd2FyZSBzaXplICg0IGJ5dGVzKQ== @ 0x8800a8c0
+CCu base64:MHg4MDAwMDAwMCBzdGFydCBvZiBTUkFN @ 0x8800a8d4
+CCu base64:aGFzaCBmaXJtd2FyZQ== @ 0x8800a8dc
+CCu base64:b3V0cHV0 @ 0x8800a8e0
+CCu base64:Y2hlY2sgMzIgYnl0ZSBTSEEyNTYgaGFzaA== @ 0x8800a8fc
+CCu base64:cmVmZXJlbmNlOiAtMTIwKHMwKQ== @ 0x8800a908
+CCu base64:Y2hlY2sgdy8gb3V0cHV0IGF0IC04OChzMCk= @ 0x8800a918
+CCu base64:anVtcCB0byBJU1Agb24gY2hlY2sgZmFpbHVyZQ== @ 0x8800a920
+CCu base64:ZnVzZSBCIGJpdCA4IHNraXBzIGRlY3J5cHRpb24gaWYgc2V0 @ 0x8800a950
 CCu base64:c2tpcCBkZWNyeXB0aW9uIGlmIGJpdCA4IHNldCA= @ 0x8800a968
-CCu base64:c2tpcCBkZWNyeXB0aW9uPw== @ 0x8800a97c
+CCu base64:LTUxKHMwKSBob2xkcyB0aGUgZmlyc3QgYnl0ZSBvZiBmbGFzaA== @ 0x8800a96c
+CCu base64:Yml0IDA= @ 0x8800a974
+CCu base64:c2tpcCBkZWNyeXB0aW9uIGlmIGJpdCAwIGlzIHVuc2V0 @ 0x8800a97c
 CCu base64:dXNlIGtleSBmcm9tIE9UUD8= @ 0x8800a980
 CCu base64:Y2xlYXIgaW5wdXRfa2V5ICgxNiBieXRlcyk= @ 0x8800a984
 CCu base64:Y2xlYXIgSVYgKDE2IGJ5dGVzKQ== @ 0x8800a98c
@@ -1327,6 +1471,11 @@ CCu base64:MHhkYg== @ 0x8800aaa0
 CCu base64:MHhkZA== @ 0x8800aaa8
 CCu base64:c2VuZCBzbGlwIHN0YXJ0L2VuZCBtYXJrZXI= @ 0x8800aad4
 CCu base64:c3RhcnQgb2YgU0xJUCBwYWNrZXQ= @ 0x8800aae4
+CCu base64:aGFuZGxlIHNsaXAgc3BlY2lhbCBjaGFyYWN0ZXJzICgweGMwIDB4ZGIgMHhkYyAweGRkKQ== @ 0x8800abb4
+CCu base64:MHhjMA== @ 0x8800abd4
+CCu base64:MHhkYg== @ 0x8800ac4c
+CCu base64:MHhkYw== @ 0x8800ac80
+CCu base64:MHhkZA== @ 0x8800aca4
 CCu base64:U1lTQ1RMX0NMT0NLX0NQVQ== @ 0x8800acf4
 CCu base64:ZGl2aWRlIGNsb2NrIHJhdGUgYnkgcGFyYW1ldGVy @ 0x8800ad0c
 CCu base64:dHJ1bmNhdGUgdG8gMTYgYml0cw== @ 0x8800ad14
@@ -1336,6 +1485,8 @@ CCu base64:U1BJMyBpcyBoYXJkLXdpcmVkIHRvIDEyOE1iaXQgZmxhc2ggb24gRGFuIG1vZHVsZTsgc
 CCu base64:U1BJMyBjbG9jaw== @ 0x8800ad84
 CCu base64:U1lTQ1RMX0NMT0NLX1NFTEVDVF9TUEkz @ 0x8800ad88
 CCu base64:U1lTQ1RMX1RIUkVTSE9MRF9TUEkz @ 0x8800ad94
+CCu base64:cmVhZCBmaXJzdCBieXRlIG9mIGZsYXNoIA== @ 0x8800add8
+CCu base64:Yml0IDEgZGV0ZXJtaW5lcyBmbGFzaCByZWFkIG1vZGUgMSAoaWYgc2V0KSBvciAyIChpZiBub3Qgc2V0KQ== @ 0x8800adec
 CCu base64:c2V0IHVwIEZQSU9BIG1hcHBpbmcgZm9yIFNQSTAgKGV4dGVybmFsIGZsYXNoKSwgcmV0dXJucyAwIGlmIHRoZXJlIGlzIGEgdmFsaWQgZmlybXdhcmUgdGhlcmU= @ 0x8800ae24
 CCu base64:U1lTQ1RMX0NMT0NLX0ZQSU9B @ 0x8800ae3c
 CCu base64:U1lTQ1RMX1JFU0VUX1NQSTA= @ 0x8800ae44
@@ -1353,16 +1504,22 @@ CCu base64:RlVOQ19TUEkwX0Qy @ 0x8800ae90
 CCu base64:aS9vIHBpbiAyODogU1BJMF9NT1NJIG9uIE1haXg= @ 0x8800ae94
 CCu base64:RlVOQ19TUEkwX0Qz @ 0x8800ae9c
 CCu base64:aS9vIHBpbiAyOTogU1BJMF9DUzAgb24gTWFpeA== @ 0x8800aea0
+CCu base64:cmVhZCBmaXJzdCBieXRlIG9mIGZsYXNo @ 0x8800aee8
+CCu base64:Yml0IDEgZGV0ZXJtaW5lcyByZWFkIG1vZGUgMSAoaWYgc2V0KSBvciAyIChpZiBub3Qgc2V0KQ== @ 0x8800af04
 CCu base64:ZGVjcnlwdCBmbGFzaCB1c2luZyBrZXkgZnJvbSBPVFAsIGFuZCBqdW1wIHRvIGl0 @ 0x8800af34
 CCu base64:PWhhcnRpZA== @ 0x8800af50
+CCu base64:ZXhpdCBpZiBlbmRpbmcgdXAgaGVyZSAoaW4gdHVyYm8gbW9kZSBib290KSBhbmQgZnVzZXMgQSBiaXQgMSBpcyBzZXQ= @ 0x8800af6c
 CCu base64:YTA9MTE1MjAw @ 0x8800af80
 CCu base64:anVtcCBiYWNrIGZyb20gMHg4MDVmODB4eCBhcnJpdmVzIGhlcmUgaWYgZnVzZXMtQiBiaXQgMzEgc2V0LCBza2lwcGluZyBvdmVyIGV2ZXJ5dGhpbmcgYWJvdmUgaGVyZQ== @ 0x8800af88
+CCu base64:R1BJT0hTIGNoZWNrIGZvciBJU1AgYml0 @ 0x8800afac
 CCu base64:aWYgZnVzZSBCIGJpdCA2MiBzZXQsIHRyeSBib290aW5nIHNwaTAgZmlyc3QgdGhlbiBzcGkz @ 0x8800aff0
 CCu base64:ZnVuY3Rpb24gcmV0dXJucyAxNCBpZiBzZXQ= @ 0x8800b004
 CCu base64:anVtcCBpZiBiaXQgNjIgbm90IHNldA== @ 0x8800b008
 CCu base64:Yml0IDYxOiBpZiBzZXQsIGJvb3Qgc3BpMCwgZWxzZSBzcGkz @ 0x8800b020
 CCu base64:ZnVuY3Rpb24gcmV0dXJucyAxNCBpZiBzZXQ= @ 0x8800b034
 CCu base64:anVtcCBpZiBiaXQgNjEgbm90IHNldA== @ 0x8800b038
+CCu base64:ZnVzZXMgQiBiaXQgOTogZmlybXdhcmUgU0hBIGNoZWNrIGFnYWluc3QgT1RQ @ 0x8800b0c0
+CCu base64:ZnVzZXMgQiBiaXQgODogc2tpcCBkZWNyeXB0aW9uIG9mIGZpcm13YXJl @ 0x8800b228
 CCu base64:QUVTIGtleSBmcm9tIE9UUD8= @ 0x8800b258
 CCu base64:Y2xlYXIga2V5IGFuZCBJVg== @ 0x8800b25c
 CCu base64:U1lTQ1RMX0NMT0NLX0FFUw== @ 0x8800b278
@@ -1493,8 +1650,8 @@ afS 0 @ 0x8800aa54
 afc rvg @ 0x8800a300
 afb+ 0x8800a300 0x8800a300 764 0xffffffffffffffff 0xffffffffffffffff n
 afS 0 @ 0x8800a300
-"f fcn.8800a160 416 0x8800a160"
-"af+ 0x8800a160 fcn.8800a160 f n"
+"f fcn.8800a160_slip 416 0x8800a160"
+"af+ 0x8800a160 fcn.8800a160_slip f n"
 afc rvg @ 0x8800a160
 afb+ 0x8800a160 0x8800a160 108 0x8800a248 0x8800a1cc n
 afb+ 0x8800a160 0x8800a1cc 100 0x8800a248 0x8800a230 n
@@ -1520,8 +1677,8 @@ afS 0 @ 0x88009bc8
 afc rvg @ 0x88009770
 afb+ 0x88009770 0x88009770 424 0xffffffffffffffff 0xffffffffffffffff n
 afS 0 @ 0x88009770
-"f fcn.88009918_flash 156 0x88009918"
-"af+ 0x88009918 fcn.88009918_flash f n"
+"f spi_flash_read_manufacturer_id 156 0x88009918"
+"af+ 0x88009918 spi_flash_read_manufacturer_id f n"
 afc rvg @ 0x88009918
 afb+ 0x88009918 0x88009918 156 0xffffffffffffffff 0xffffffffffffffff n
 afS 0 @ 0x88009918
@@ -1535,58 +1692,58 @@ afS 0 @ 0x880099b4
 afc rvg @ 0x88009a34
 afb+ 0x88009a34 0x88009a34 352 0xffffffffffffffff 0xffffffffffffffff n
 afS 0 @ 0x88009a34
-"f fcn.88009b94_flash 52 0x88009b94"
-"af+ 0x88009b94 fcn.88009b94_flash f n"
+"f spi_flash_set_read_mode 52 0x88009b94"
+"af+ 0x88009b94 spi_flash_set_read_mode f n"
 afc rvg @ 0x88009b94
 afb+ 0x88009b94 0x88009b94 52 0xffffffffffffffff 0xffffffffffffffff n
 afS 0 @ 0x88009b94
-"f fcn.8800955c_flash 532 0x8800955c"
-"af+ 0x8800955c fcn.8800955c_flash f n"
+"f flash_read_mode_1_2 532 0x8800955c"
+"af+ 0x8800955c flash_read_mode_1_2 f n"
 afc rvg @ 0x8800955c
 afb+ 0x8800955c 0x8800955c 532 0xffffffffffffffff 0xffffffffffffffff n
 afS 0 @ 0x8800955c
-"f fcn.88009410_flash 332 0x88009410"
-"af+ 0x88009410 fcn.88009410_flash f n"
+"f flash_read_mode0 332 0x88009410"
+"af+ 0x88009410 flash_read_mode0 f n"
 afc rvg @ 0x88009410
 afb+ 0x88009410 0x88009410 332 0xffffffffffffffff 0xffffffffffffffff n
 afS 0 @ 0x88009410
-"f fcn.8800939c_flash 116 0x8800939c"
-"af+ 0x8800939c fcn.8800939c_flash f n"
+"f w25qxx_enable_quad_mode 116 0x8800939c"
+"af+ 0x8800939c w25qxx_enable_quad_mode f n"
 afc rvg @ 0x8800939c
 afb+ 0x8800939c 0x8800939c 116 0xffffffffffffffff 0xffffffffffffffff n
 afS 0 @ 0x8800939c
-"f fcn.88009300_flash 156 0x88009300"
-"af+ 0x88009300 fcn.88009300_flash f n"
+"f w25qxx_read_status_reg2 156 0x88009300"
+"af+ 0x88009300 w25qxx_read_status_reg2 f n"
 afc rvg @ 0x88009300
 afb+ 0x88009300 0x88009300 156 0xffffffffffffffff 0xffffffffffffffff n
 afS 0 @ 0x88009300
-"f fcn.88009264_flash 156 0x88009264"
-"af+ 0x88009264 fcn.88009264_flash f n"
+"f w25qxx_read_status_reg1 156 0x88009264"
+"af+ 0x88009264 w25qxx_read_status_reg1 f n"
 afc rvg @ 0x88009264
 afb+ 0x88009264 0x88009264 156 0xffffffffffffffff 0xffffffffffffffff n
 afS 0 @ 0x88009264
-"f fcn.880091f8_flash 108 0x880091f8"
-"af+ 0x880091f8 fcn.880091f8_flash f n"
+"f w25qxx_write_status_reg 108 0x880091f8"
+"af+ 0x880091f8 w25qxx_write_status_reg f n"
 afc rvg @ 0x880091f8
 afb+ 0x880091f8 0x880091f8 108 0xffffffffffffffff 0xffffffffffffffff n
 afS 0 @ 0x880091f8
-"f fcn.88009160_flash 152 0x88009160"
-"af+ 0x88009160 fcn.88009160_flash f n"
+"f w25qxx_write_enable 152 0x88009160"
+"af+ 0x88009160 w25qxx_write_enable f n"
 afc rvg @ 0x88009160
 afb+ 0x88009160 0x88009160 152 0xffffffffffffffff 0xffffffffffffffff n
 afS 0 @ 0x88009160
-"f fcn.8800902c_flash 308 0x8800902c"
-"af+ 0x8800902c fcn.8800902c_flash f n"
+"f spi_receive_data_2 308 0x8800902c"
+"af+ 0x8800902c spi_receive_data_2 f n"
 afc rvg @ 0x8800902c
 afb+ 0x8800902c 0x8800902c 308 0xffffffffffffffff 0xffffffffffffffff n
 afS 0 @ 0x8800902c
-"f fcn.88008f10_flash 284 0x88008f10"
-"af+ 0x88008f10 fcn.88008f10_flash f n"
+"f spi_send_data 284 0x88008f10"
+"af+ 0x88008f10 spi_send_data f n"
 afc rvg @ 0x88008f10
 afb+ 0x88008f10 0x88008f10 284 0xffffffffffffffff 0xffffffffffffffff n
 afS 0 @ 0x88008f10
-"f fcn.88008dd8_flash 312 0x88008dd8"
-"af+ 0x88008dd8 fcn.88008dd8_flash f n"
+"f spi_receive_data_1 312 0x88008dd8"
+"af+ 0x88008dd8 spi_receive_data_1 f n"
 afc rvg @ 0x88008dd8
 afb+ 0x88008dd8 0x88008dd8 312 0xffffffffffffffff 0xffffffffffffffff n
 afS 0 @ 0x88008dd8
@@ -2105,8 +2262,8 @@ afS 0 @ 0x88009d10
 afc rvg @ 0x8800a5fc
 afb+ 0x8800a5fc 0x8800a5fc 1112 0xffffffffffffffff 0xffffffffffffffff n
 afS 0 @ 0x8800a5fc
-"f fcn.8800abb4 296 0x8800abb4"
-"af+ 0x8800abb4 fcn.8800abb4 f n"
+"f slip_unescape 296 0x8800abb4"
+"af+ 0x8800abb4 slip_unescape f n"
 afc rvg @ 0x8800abb4
 afb+ 0x8800abb4 0x8800abb4 296 0xffffffffffffffff 0xffffffffffffffff n
 afS 0 @ 0x8800abb4

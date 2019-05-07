@@ -21,6 +21,7 @@ Ofs   Type   Description
 3da2  u16    ?
 3da4  u16    ?
 3da6  u16    ?
+3db0  u8[32] Expected SHA256 hash of firmware
 3fd0  u8[16] 2 bits per entry, for 64 entries
 3fe0  u8[16] 2 bits per entry, for 64 entries
 3ff0  u8[16] Causes read errors. Might be write-only area for encryption key.
@@ -41,3 +42,35 @@ Ofs   Type   Description
 - Be careful: any writing to the OTP (if possible at all, I don't know, there
   are some routines in the ROM that look like they might do this but haven't
   tried !) might brick your chip unrecoverably.
+
+Fuses A
+-------
+
+OTP register `0x68` has some bits that affect the boot process.
+These might be one-time programmable fuses.
+
+The following bits are known:
+
+```
+Bit      Description
+-------- ------------------------------------------------------------
+1        If set, allow entering ISP even if Fuses B bit 7 disallows it, force normal boot
+```
+
+Fuses B
+-------
+
+OTP registers `0xbc` (=bits 32..63) and `0xb8` (=bits 0..31) affect the boot process.
+These might be one-time programmable fuses.
+
+```
+Bit      Description
+-------- ------------------------------------------------------------
+0        checked in unreached ROM code, specific use unknown
+7        disallow entering ISP
+8        skip decryption of firmware
+9        check SHA256 against OTP 0x3db0
+61       if bit 62 not set: if set, boot only SPI0 (external), else only SPI3 (internal)
+62       try booting SPI0 (external) flash first then SPI3 (internal) flash
+63       determines kind of boot (sets higher frequencies-might be the TURBO MODE mentioned in the datasheet)
+```
