@@ -1,4 +1,4 @@
-use crate::board::lcd_colors::rgb565;
+use k210_shared::board::lcd_colors::rgb565;
 use crate::cp437;
 use crate::cp437_8x8;
 

@@ -23,17 +23,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "k210-console"
-version = "0.1.0"
-dependencies = [
- "k210-hal 0.1.0 (git+https://github.com/riscv-rust/k210-hal.git?rev=725418b922d9bb6d8593ba4087b5d90f49e1b8e7)",
- "k210-shared 0.1.0",
- "panic-halt 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "riscv 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "riscv-rt 0.5.0 (git+https://github.com/rust-embedded/riscv-rt.git?rev=ecc1344ffc9af1c88b3dd76b83ad56284672f888)",
-]
-
-[[package]]
 name = "k210-hal"
 version = "0.1.0"
 source = "git+https://github.com/riscv-rust/k210-hal.git?rev=725418b922d9bb6d8593ba4087b5d90f49e1b8e7#725418b922d9bb6d8593ba4087b5d90f49e1b8e7"
@@ -60,6 +49,17 @@ name = "k210-shared"
 version = "0.1.0"
 dependencies = [
  "k210-hal 0.1.0 (git+https://github.com/riscv-rust/k210-hal.git?rev=725418b922d9bb6d8593ba4087b5d90f49e1b8e7)",
+ "riscv 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "riscv-rt 0.5.0 (git+https://github.com/rust-embedded/riscv-rt.git?rev=ecc1344ffc9af1c88b3dd76b83ad56284672f888)",
+]
+
+[[package]]
+name = "mandelbrot"
+version = "0.1.0"
+dependencies = [
+ "k210-hal 0.1.0 (git+https://github.com/riscv-rust/k210-hal.git?rev=725418b922d9bb6d8593ba4087b5d90f49e1b8e7)",
+ "k210-shared 0.1.0",
+ "panic-halt 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "riscv 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "riscv-rt 0.5.0 (git+https://github.com/rust-embedded/riscv-rt.git?rev=ecc1344ffc9af1c88b3dd76b83ad56284672f888)",
 ]

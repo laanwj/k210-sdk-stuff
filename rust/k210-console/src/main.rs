@@ -6,26 +6,24 @@
 
 extern crate panic_halt;
 
-mod board;
 mod console;
 mod cp437;
 mod cp437_8x8;
 mod lfsr;
 mod palette_xterm256;
-mod soc;
 
 use k210_hal::pac;
 use k210_hal::prelude::*;
 use k210_hal::stdout::Stdout;
+use k210_shared::board::lcd;
+use k210_shared::board::lcd_colors;
+use k210_shared::soc::fpioa;
+use k210_shared::soc::sleep::usleep;
+use k210_shared::soc::sysctl;
 use riscv_rt::entry;
 
-use crate::board::lcd;
-use crate::board::lcd_colors;
 use crate::console::{Color, Console, ScreenImage, DISP_HEIGHT, DISP_WIDTH};
 use crate::palette_xterm256::PALETTE;
-use crate::soc::fpioa;
-use crate::soc::sleep::usleep;
-use crate::soc::sysctl;
 
 /** Connect pins to internal functions */
 fn io_mux_init() {

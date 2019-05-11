@@ -1,5 +1,5 @@
 [package]
-name = "k210-console"
+name = "mandelbrot"
 version = "0.1.0"
 authors = ["W.J. van der Laan <laanwj@protonmail.com>"]
 edition = "2018"

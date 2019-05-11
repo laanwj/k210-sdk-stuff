@@ -58,6 +58,13 @@ in general.
 
 [README](rust/k210-console/README.md)
 
+rust/mandelbrot
+---------------
+
+Mandelbrot fractal zoom.
+
+[README](rust/mandelbrot/README.md)
+
 ROM re'ing
 ===========
 
