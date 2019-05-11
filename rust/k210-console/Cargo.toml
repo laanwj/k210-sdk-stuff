@@ -1,0 +1,16 @@
+[package]
+name = "k210-console"
+version = "0.1.0"
+authors = ["W.J. van der Laan <laanwj@protonmail.com>"]
+edition = "2018"
+
+[dependencies]
+panic-halt = "0.2.0"
+riscv-rt = "0.5.0"
+k210-hal = "0.1.0"
+riscv = "0.5"
+
+[patch.crates-io]
+riscv-rt = { git = "https://github.com/rust-embedded/riscv-rt.git", rev = "ecc1344ffc9af1c88b3dd76b83ad56284672f888"}
+k210-pac = { git = "https://github.com/riscv-rust/k210-pac.git", rev =  "eea80433bf6c0f91e1eeb89cd9f0b892b970149a"}
+k210-hal = { git = "https://github.com/riscv-rust/k210-hal.git", rev = "725418b922d9bb6d8593ba4087b5d90f49e1b8e7" }

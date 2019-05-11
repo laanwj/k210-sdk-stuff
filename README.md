@@ -47,6 +47,17 @@ serial output in Intel HEX format.
 
 [README](src/dump_otp/README.md)
 
+rust/k210-console
+-----------------
+
+Console emulator written in Rust for the Maix Go.
+
+Barely functional at the moment. This is really a test for some functionality
+like SPI and driving the display from Rust, and for playing with Rust RISC-V 64
+in general.
+
+[README](rust/k210-console/README.md)
+
 ROM re'ing
 ===========
 
