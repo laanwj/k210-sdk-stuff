@@ -47,6 +47,11 @@ serial output in Intel HEX format.
 
 [README](src/dump_otp/README.md)
 
+secp256k1\_{tests,bench}
+------------------------
+
+Run tests and benchmarks for the secp256k1 elliptic curve cryptographic library on this RISC-V CPU.
+
 rust/k210-console
 -----------------
 
@@ -73,7 +78,7 @@ Annotated radare2 config files for the Boot ROM and OTP can be found under [r2](
 Other projects
 ==============
 
-Some other interesting K210-based projects and demos:
+Some interesting K210-based projects and demos by other people:
 
 - [accelerometer](https://github.com/GitJer/Some-Sipeed-MAIX-GO-k210-stuff/tree/master/src/accelerometer) - Example of using the MSA300 accelerometer on the MAIX Go board, by GitJer
 
