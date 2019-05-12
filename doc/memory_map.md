@@ -57,10 +57,21 @@ This is a rough memory map for the Kendryte K210 (as used on the Sipeed Maix boa
     0x80600000 0x807fffff     AI SRAM (cached)
     0x88000000 0x8801ffff     ROM
 
-Source (paths refer to Kendryte SDK):
+Source (paths refer to Kendryte stand-alone SDK):
 - `lib/bsp/include/platform.h`
 - `lib/drivers/apu.c`
-- ROM dump
+- ROM dump (there's a compiled device tree in there)
+
+RAM ranges
+-----------
+
+- The 2MB of AI SRAM at `0x80600000` can be used as normal RAM when the KPU is not used.
+
+- The `0x4xxxxxxx` range has a non-cached mirror of the SRAMs. Interestingly, floating point load instructions [don't work](https://github.com/rust-embedded/riscv-rt/issues/25#issuecomment-491524341) from this area.
+
+- There is a mirror of the cached SRAM area at `0xffffffff80000000`, this is useful for the [medlow memory model](https://www.sifive.com/blog/all-aboard-part-4-risc-v-code-models).
+
+  - More generally, it looks like the upper 32 bits of the address are ignored.
 
 Boot sequence
 -------------
