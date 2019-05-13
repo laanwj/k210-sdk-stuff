@@ -5,3 +5,4 @@
 
 pub mod board;
 pub mod soc;
+mod util;
