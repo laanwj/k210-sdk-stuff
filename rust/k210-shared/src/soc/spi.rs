@@ -1,3 +1,4 @@
+use core::cmp;
 use k210_hal::pac;
 use pac::spi0::ctrlr0;
 use pac::spi0::spi_ctrlr0;
@@ -70,12 +71,9 @@ pub fn init(
 
 pub fn set_clk_rate(spi_clk: u32) -> u32 {
     let clock_freq: u32 = sysctl::clock_get_freq(sysctl::clock::SPI0);
-    let mut spi_baudr = clock_freq / spi_clk;
-    if spi_baudr < 2 {
-        spi_baudr = 2;
-    } else if spi_baudr > 65534 {
-        spi_baudr = 65534;
-    }
+    let spi_baudr = clock_freq / spi_clk;
+    // Clamp baudrate divider to valid range
+    let spi_baudr = cmp::min(cmp::max(spi_baudr, 2), 65534);
     unsafe {
         (*pac::SPI0::ptr()).baudr.write(|w| w.bits(spi_baudr));
     }
@@ -93,8 +91,8 @@ pub fn send_data<X: Into<u32> + Copy>(chip_select: u32, tx: &[X]) {
         let mut i = 0;
         let mut tx_len = tx.len();
         while tx_len != 0 {
-            let mut fifo_len = (32 - (*ptr).txflr.read().bits()) as usize;
-            fifo_len = if fifo_len < tx_len { fifo_len } else { tx_len };
+            let fifo_len = (32 - (*ptr).txflr.read().bits()) as usize;
+            let fifo_len = cmp::min(fifo_len, tx_len);
             for _ in 0..fifo_len {
                 (*ptr).dr[0].write(|f| f.bits(tx[i].into()));
                 i += 1;
@@ -118,8 +116,8 @@ pub fn fill_data(chip_select: u32, value: u32, mut tx_len: usize) {
         (*ptr).ssienr.write(|w| w.bits(0x01));
 
         while tx_len != 0 {
-            let mut fifo_len = (32 - (*ptr).txflr.read().bits()) as usize;
-            fifo_len = if fifo_len < tx_len { fifo_len } else { tx_len };
+            let fifo_len = (32 - (*ptr).txflr.read().bits()) as usize;
+            let fifo_len = cmp::min(fifo_len, tx_len);
             for _ in 0..fifo_len {
                 (*ptr).dr[0].write(|f| f.bits(value));
             }
