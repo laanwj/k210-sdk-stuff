@@ -197,71 +197,45 @@ fn clock_device_en(clock: clock, en: bool) {
     unsafe {
         let ptr = pac::SYSCTL::ptr();
         match clock {
-            /*
-            /*
-             * These devices are PLL
-             */
-            clock::PLL0 => sysctl->pll0.pll_out_en0 = en;
-            clock::PLL1 => sysctl->pll1.pll_out_en1 = en;
-            clock::PLL2 => sysctl->pll2.pll_out_en2 = en;
-
-            /*
-             * These devices are CPU, SRAM, APB bus, ROM, DMA, AI
-             */
-            clock::CPU => sysctl->clk_en_cent.cpu_clk_en = en;
-            clock::SRAM0 => sysctl->clk_en_cent.sram0_clk_en = en;
-            clock::SRAM1 => sysctl->clk_en_cent.sram1_clk_en = en;
-            clock::APB0 => sysctl->clk_en_cent.apb0_clk_en = en;
-            clock::APB1 => sysctl->clk_en_cent.apb1_clk_en = en;
-            clock::APB2 => sysctl->clk_en_cent.apb2_clk_en = en;
-            clock::ROM => sysctl->clk_en_peri.rom_clk_en = en;
-            clock::DMA => sysctl->clk_en_peri.dma_clk_en = en;
-            clock::AI => sysctl->clk_en_peri.ai_clk_en = en;
-            clock::DVP => sysctl->clk_en_peri.dvp_clk_en = en;
-            clock::FFT => sysctl->clk_en_peri.fft_clk_en = en;
-            clock::SPI3 => sysctl->clk_en_peri.spi3_clk_en = en;
-
-            /*
-             * These peripheral devices are under APB0
-             * GPIO, UART1, UART2, UART3, SPI_SLAVE, I2S0, I2S1,
-             * I2S2, I2C0, I2C1, I2C2, FPIOA, SHA256, TIMER0,
-             * TIMER1, TIMER2
-             */
-            clock::GPIO => sysctl->clk_en_peri.gpio_clk_en = en;
-            clock::SPI2 => sysctl->clk_en_peri.spi2_clk_en = en;
-            clock::I2S0 => sysctl->clk_en_peri.i2s0_clk_en = en;
-            clock::I2S1 => sysctl->clk_en_peri.i2s1_clk_en = en;
-            clock::I2S2 => sysctl->clk_en_peri.i2s2_clk_en = en;
-            clock::I2C0 => sysctl->clk_en_peri.i2c0_clk_en = en;
-            clock::I2C1 => sysctl->clk_en_peri.i2c1_clk_en = en;
-            clock::I2C2 => sysctl->clk_en_peri.i2c2_clk_en = en;
-            clock::UART1 => sysctl->clk_en_peri.uart1_clk_en = en;
-            clock::UART2 => sysctl->clk_en_peri.uart2_clk_en = en;
-            clock::UART3 => sysctl->clk_en_peri.uart3_clk_en = en;
-            clock::FPIOA => sysctl->clk_en_peri.fpioa_clk_en = en;
-            clock::TIMER0 => sysctl->clk_en_peri.timer0_clk_en = en;
-            clock::TIMER1 => sysctl->clk_en_peri.timer1_clk_en = en;
-            clock::TIMER2 => sysctl->clk_en_peri.timer2_clk_en = en;
-            clock::SHA => sysctl->clk_en_peri.sha_clk_en = en;
-
-            /*
-             * These peripheral devices are under APB1
-             * WDT, AES, OTP, DVP, SYSCTL
-             */
-            clock::AES => sysctl->clk_en_peri.aes_clk_en = en;
-            clock::WDT0 => sysctl->clk_en_peri.wdt0_clk_en = en;
-            clock::WDT1 => sysctl->clk_en_peri.wdt1_clk_en = en;
-            clock::OTP => sysctl->clk_en_peri.otp_clk_en = en;
-            clock::RTC => sysctl->clk_en_peri.rtc_clk_en = en;
-            */
-            /*
-             * These peripheral devices are under APB2
-             * SPI0, SPI1
-             */
+            clock::PLL0 => (*ptr).pll0.modify(|_, w| w.out_en().bit(en)),
+            clock::PLL1 => (*ptr).pll1.modify(|_, w| w.out_en().bit(en)),
+            clock::PLL2 => (*ptr).pll2.modify(|_, w| w.out_en().bit(en)),
+            clock::CPU => (*ptr).clk_en_cent.modify(|_, w| w.cpu_clk_en().bit(en)),
+            clock::SRAM0 => (*ptr).clk_en_cent.modify(|_, w| w.sram0_clk_en().bit(en)),
+            clock::SRAM1 => (*ptr).clk_en_cent.modify(|_, w| w.sram1_clk_en().bit(en)),
+            clock::APB0 => (*ptr).clk_en_cent.modify(|_, w| w.apb0_clk_en().bit(en)),
+            clock::APB1 => (*ptr).clk_en_cent.modify(|_, w| w.apb1_clk_en().bit(en)),
+            clock::APB2 => (*ptr).clk_en_cent.modify(|_, w| w.apb2_clk_en().bit(en)),
+            clock::ROM => (*ptr).clk_en_peri.modify(|_, w| w.rom_clk_en().bit(en)),
+            clock::DMA => (*ptr).clk_en_peri.modify(|_, w| w.dma_clk_en().bit(en)),
+            clock::AI => (*ptr).clk_en_peri.modify(|_, w| w.ai_clk_en().bit(en)),
+            clock::DVP => (*ptr).clk_en_peri.modify(|_, w| w.dvp_clk_en().bit(en)),
+            clock::FFT => (*ptr).clk_en_peri.modify(|_, w| w.fft_clk_en().bit(en)),
+            clock::SPI3 => (*ptr).clk_en_peri.modify(|_, w| w.spi3_clk_en().bit(en)),
+            clock::GPIO => (*ptr).clk_en_peri.modify(|_, w| w.gpio_clk_en().bit(en)),
+            clock::SPI2 => (*ptr).clk_en_peri.modify(|_, w| w.spi2_clk_en().bit(en)),
+            clock::I2S0 => (*ptr).clk_en_peri.modify(|_, w| w.i2s0_clk_en().bit(en)),
+            clock::I2S1 => (*ptr).clk_en_peri.modify(|_, w| w.i2s1_clk_en().bit(en)),
+            clock::I2S2 => (*ptr).clk_en_peri.modify(|_, w| w.i2s2_clk_en().bit(en)),
+            clock::I2C0 => (*ptr).clk_en_peri.modify(|_, w| w.i2c0_clk_en().bit(en)),
+            clock::I2C1 => (*ptr).clk_en_peri.modify(|_, w| w.i2c1_clk_en().bit(en)),
+            clock::I2C2 => (*ptr).clk_en_peri.modify(|_, w| w.i2c2_clk_en().bit(en)),
+            clock::UART1 => (*ptr).clk_en_peri.modify(|_, w| w.uart1_clk_en().bit(en)),
+            clock::UART2 => (*ptr).clk_en_peri.modify(|_, w| w.uart2_clk_en().bit(en)),
+            clock::UART3 => (*ptr).clk_en_peri.modify(|_, w| w.uart3_clk_en().bit(en)),
+            clock::FPIOA => (*ptr).clk_en_peri.modify(|_, w| w.fpioa_clk_en().bit(en)),
+            clock::TIMER0 => (*ptr).clk_en_peri.modify(|_, w| w.timer0_clk_en().bit(en)),
+            clock::TIMER1 => (*ptr).clk_en_peri.modify(|_, w| w.timer1_clk_en().bit(en)),
+            clock::TIMER2 => (*ptr).clk_en_peri.modify(|_, w| w.timer2_clk_en().bit(en)),
+            clock::SHA => (*ptr).clk_en_peri.modify(|_, w| w.sha_clk_en().bit(en)),
+            clock::AES => (*ptr).clk_en_peri.modify(|_, w| w.aes_clk_en().bit(en)),
+            clock::WDT0 => (*ptr).clk_en_peri.modify(|_, w| w.wdt0_clk_en().bit(en)),
+            clock::WDT1 => (*ptr).clk_en_peri.modify(|_, w| w.wdt1_clk_en().bit(en)),
+            clock::OTP => (*ptr).clk_en_peri.modify(|_, w| w.otp_clk_en().bit(en)),
+            clock::RTC => (*ptr).clk_en_peri.modify(|_, w| w.rtc_clk_en().bit(en)),
             clock::SPI0 => (*ptr).clk_en_peri.modify(|_, w| w.spi0_clk_en().bit(en)),
             clock::SPI1 => (*ptr).clk_en_peri.modify(|_, w| w.spi1_clk_en().bit(en)),
-
-            _ => {}
+            clock::ACLK | clock::HCLK | clock::IN0 => { /* no separate enables */ }
         }
     }
 }
@@ -280,85 +254,42 @@ pub fn clock_set_threshold(which: threshold, threshold: u32) {
     unsafe {
         let ptr = pac::SYSCTL::ptr();
         match which {
-            /*
-            /*
-             * These threshold is 2 bit width
-             */
-            threshold::ACLK =>
-                sysctl->clk_sel0.aclk_divider_sel = (uint8_t)threshold & 0x03;
+            /* 2 bit wide */
+            threshold::ACLK => (*ptr).clk_sel0.modify(|_, w| w.aclk_divider_sel().bits(threshold as u8)),
 
-            /*
-             * These threshold is 3 bit width
-             */
-            threshold::APB0 =>
-                sysctl->clk_sel0.apb0_clk_sel = (uint8_t)threshold & 0x07;
-            threshold::APB1 =>
-                sysctl->clk_sel0.apb1_clk_sel = (uint8_t)threshold & 0x07;
-            threshold::APB2 =>
-                sysctl->clk_sel0.apb2_clk_sel = (uint8_t)threshold & 0x07;
+            /* 3 bit wide */
+            threshold::APB0 => (*ptr).clk_sel0.modify(|_, w| w.apb0_clk_sel().bits(threshold as u8)),
+            threshold::APB1 => (*ptr).clk_sel0.modify(|_, w| w.apb1_clk_sel().bits(threshold as u8)),
+            threshold::APB2 => (*ptr).clk_sel0.modify(|_, w| w.apb2_clk_sel().bits(threshold as u8)),
 
-            /*
-             * These threshold is 4 bit width
-             */
-            threshold::SRAM0 =>
-                sysctl->clk_th0.sram0_gclk_threshold = (uint8_t)threshold & 0x0F;
-            threshold::SRAM1 =>
-                sysctl->clk_th0.sram1_gclk_threshold = (uint8_t)threshold & 0x0F;
-            threshold::AI =>
-                sysctl->clk_th0.ai_gclk_threshold = (uint8_t)threshold & 0x0F;
-            threshold::DVP =>
-                sysctl->clk_th0.dvp_gclk_threshold = (uint8_t)threshold & 0x0F;
-            threshold::ROM =>
-                sysctl->clk_th0.rom_gclk_threshold = (uint8_t)threshold & 0x0F;
+            /* 4 bit wide */
+            threshold::SRAM0 => (*ptr).clk_th0.modify(|_, w| w.sram0_gclk().bits(threshold as u8)),
+            threshold::SRAM1 => (*ptr).clk_th0.modify(|_, w| w.sram1_gclk().bits(threshold as u8)),
+            threshold::AI => (*ptr).clk_th0.modify(|_, w| w.ai_gclk().bits(threshold as u8)),
+            threshold::DVP => (*ptr).clk_th0.modify(|_, w| w.dvp_gclk().bits(threshold as u8)),
+            threshold::ROM => (*ptr).clk_th0.modify(|_, w| w.rom_gclk().bits(threshold as u8)),
 
-            /*
-             * These threshold is 8 bit width
-             */
-            */
-            threshold::SPI0 => (*ptr)
-                .clk_th1
-                .modify(|_, w| w.spi0_clk().bits(threshold as u8)),
-            /*
-            threshold::SPI1 =>
-                sysctl->clk_th1.spi1_clk_threshold = (uint8_t)threshold;
-            threshold::SPI2 =>
-                sysctl->clk_th1.spi2_clk_threshold = (uint8_t)threshold;
-            threshold::SPI3 =>
-                sysctl->clk_th1.spi3_clk_threshold = (uint8_t)threshold;
-            threshold::TIMER0 =>
-                sysctl->clk_th2.timer0_clk_threshold = (uint8_t)threshold;
-            threshold::TIMER1 =>
-                sysctl->clk_th2.timer1_clk_threshold = (uint8_t)threshold;
-            threshold::TIMER2 =>
-                sysctl->clk_th2.timer2_clk_threshold = (uint8_t)threshold;
-            threshold::I2S0_M =>
-                sysctl->clk_th4.i2s0_mclk_threshold = (uint8_t)threshold;
-            threshold::I2S1_M =>
-                sysctl->clk_th4.i2s1_mclk_threshold = (uint8_t)threshold;
-            threshold::I2S2_M =>
-                sysctl->clk_th5.i2s2_mclk_threshold = (uint8_t)threshold;
-            threshold::I2C0 =>
-                sysctl->clk_th5.i2c0_clk_threshold = (uint8_t)threshold;
-            threshold::I2C1 =>
-                sysctl->clk_th5.i2c1_clk_threshold = (uint8_t)threshold;
-            threshold::I2C2 =>
-                sysctl->clk_th5.i2c2_clk_threshold = (uint8_t)threshold;
-            threshold::WDT0 =>
-                sysctl->clk_th6.wdt0_clk_threshold = (uint8_t)threshold;
-            threshold::WDT1 =>
-                sysctl->clk_th6.wdt1_clk_threshold = (uint8_t)threshold;
+            /* 8 bit wide */
+            threshold::SPI0 => (*ptr).clk_th1.modify(|_, w| w.spi0_clk().bits(threshold as u8)),
+            threshold::SPI1 => (*ptr).clk_th1.modify(|_, w| w.spi1_clk().bits(threshold as u8)),
+            threshold::SPI2 => (*ptr).clk_th1.modify(|_, w| w.spi2_clk().bits(threshold as u8)),
+            threshold::SPI3 => (*ptr).clk_th1.modify(|_, w| w.spi3_clk().bits(threshold as u8)),
+            threshold::TIMER0 => (*ptr).clk_th2.modify(|_, w| w.timer0_clk().bits(threshold as u8)),
+            threshold::TIMER1 => (*ptr).clk_th2.modify(|_, w| w.timer1_clk().bits(threshold as u8)),
+            threshold::TIMER2 => (*ptr).clk_th2.modify(|_, w| w.timer2_clk().bits(threshold as u8)),
+            threshold::I2S0_M => (*ptr).clk_th4.modify(|_, w| w.i2s0_mclk().bits(threshold as u8)),
+            threshold::I2S1_M => (*ptr).clk_th4.modify(|_, w| w.i2s1_mclk().bits(threshold as u8)),
+            threshold::I2S2_M => (*ptr).clk_th5.modify(|_, w| w.i2s2_mclk().bits(threshold as u8)),
+            threshold::I2C0 => (*ptr).clk_th5.modify(|_, w| w.i2c0_clk().bits(threshold as u8)),
+            threshold::I2C1 => (*ptr).clk_th5.modify(|_, w| w.i2c1_clk().bits(threshold as u8)),
+            threshold::I2C2 => (*ptr).clk_th5.modify(|_, w| w.i2c2_clk().bits(threshold as u8)),
+            threshold::WDT0 => (*ptr).clk_th6.modify(|_, w| w.wdt0_clk().bits(threshold as u8)),
+            threshold::WDT1 => (*ptr).clk_th6.modify(|_, w| w.wdt1_clk().bits(threshold as u8)),
 
-            /*
-             * These threshold is 16 bit width
-             */
-            threshold::I2S0 =>
-                sysctl->clk_th3.i2s0_clk_threshold = (uint16_t)threshold;
-            threshold::I2S1 =>
-                sysctl->clk_th3.i2s1_clk_threshold = (uint16_t)threshold;
-            threshold::I2S2 =>
-                sysctl->clk_th4.i2s2_clk_threshold = (uint16_t)threshold;
-            */
-            _ => {}
+            /* 16 bit wide */
+            threshold::I2S0 => (*ptr).clk_th3.modify(|_, w| w.i2s0_clk().bits(threshold as u16)),
+            threshold::I2S1 => (*ptr).clk_th3.modify(|_, w| w.i2s1_clk().bits(threshold as u16)),
+            threshold::I2S2 => (*ptr).clk_th4.modify(|_, w| w.i2s2_clk().bits(threshold as u16)),
         }
     }
 }
@@ -367,12 +298,42 @@ pub fn clock_get_threshold(which: threshold) -> u32 {
     unsafe {
         let ptr = pac::SYSCTL::ptr();
         match which {
+            /* 2 bit wide */
             threshold::ACLK => (*ptr).clk_sel0.read().aclk_divider_sel().bits().into(),
-            threshold::SPI0 => (*ptr).clk_th1.read().spi0_clk().bits().into(),
 
-            _ => {
-                panic!("no such threshold");
-            }
+            /* 3 bit wide */
+            threshold::APB0 => (*ptr).clk_sel0.read().apb0_clk_sel().bits().into(),
+            threshold::APB1 => (*ptr).clk_sel0.read().apb1_clk_sel().bits().into(),
+            threshold::APB2 => (*ptr).clk_sel0.read().apb2_clk_sel().bits().into(),
+
+            /* 4 bit wide */
+            threshold::SRAM0 => (*ptr).clk_th0.read().sram0_gclk().bits().into(),
+            threshold::SRAM1 => (*ptr).clk_th0.read().sram1_gclk().bits().into(),
+            threshold::AI => (*ptr).clk_th0.read().ai_gclk().bits().into(),
+            threshold::DVP => (*ptr).clk_th0.read().dvp_gclk().bits().into(),
+            threshold::ROM => (*ptr).clk_th0.read().rom_gclk().bits().into(),
+
+            /* 8 bit wide */
+            threshold::SPI0 => (*ptr).clk_th1.read().spi0_clk().bits().into(),
+            threshold::SPI1 => (*ptr).clk_th1.read().spi1_clk().bits().into(),
+            threshold::SPI2 => (*ptr).clk_th1.read().spi2_clk().bits().into(),
+            threshold::SPI3 => (*ptr).clk_th1.read().spi3_clk().bits().into(),
+            threshold::TIMER0 => (*ptr).clk_th2.read().timer0_clk().bits().into(),
+            threshold::TIMER1 => (*ptr).clk_th2.read().timer1_clk().bits().into(),
+            threshold::TIMER2 => (*ptr).clk_th2.read().timer2_clk().bits().into(),
+            threshold::I2S0_M => (*ptr).clk_th4.read().i2s0_mclk().bits().into(),
+            threshold::I2S1_M => (*ptr).clk_th4.read().i2s1_mclk().bits().into(),
+            threshold::I2S2_M => (*ptr).clk_th5.read().i2s2_mclk().bits().into(),
+            threshold::I2C0 => (*ptr).clk_th5.read().i2c0_clk().bits().into(),
+            threshold::I2C1 => (*ptr).clk_th5.read().i2c1_clk().bits().into(),
+            threshold::I2C2 => (*ptr).clk_th5.read().i2c2_clk().bits().into(),
+            threshold::WDT0 => (*ptr).clk_th6.read().wdt0_clk().bits().into(),
+            threshold::WDT1 => (*ptr).clk_th6.read().wdt1_clk().bits().into(),
+
+            /* 16 bit wide */
+            threshold::I2S0 => (*ptr).clk_th3.read().i2s0_clk().bits().into(),
+            threshold::I2S1 => (*ptr).clk_th3.read().i2s1_clk().bits().into(),
+            threshold::I2S2 => (*ptr).clk_th4.read().i2s2_clk().bits().into(),
         }
     }
 }
@@ -462,13 +423,28 @@ pub fn clock_source_get_freq(source: clock_source) -> u32 {
     }
 }
 
+pub fn clock_set_clock_select(which: clock_select, select: u8) {
+    unsafe {
+        let ptr = pac::SYSCTL::ptr();
+        match which {
+            clock_select::PLL0_BYPASS => (*ptr).pll0.modify(|_, w| w.bypass().bit(select != 0)),
+            clock_select::PLL1_BYPASS => (*ptr).pll1.modify(|_, w| w.bypass().bit(select != 0)),
+            clock_select::PLL2_BYPASS => (*ptr).pll2.modify(|_, w| w.bypass().bit(select != 0)),
+            clock_select::PLL2 => (*ptr).pll2.modify(|_, w| w.ckin_sel().bits(select)),
+            clock_select::ACLK => (*ptr).clk_sel0.modify(|_, w| w.aclk_sel().bit(select != 0)),
+            clock_select::SPI3 => (*ptr).clk_sel0.modify(|_, w| w.spi3_clk_sel().bit(select != 0)),
+            clock_select::TIMER0 => (*ptr).clk_sel0.modify(|_, w| w.timer0_clk_sel().bit(select != 0)),
+            clock_select::TIMER1 => (*ptr).clk_sel0.modify(|_, w| w.timer1_clk_sel().bit(select != 0)),
+            clock_select::TIMER2 => (*ptr).clk_sel0.modify(|_, w| w.timer2_clk_sel().bit(select != 0)),
+            clock_select::SPI3_SAMPLE => (*ptr).clk_sel1.modify(|_, w| w.spi3_sample_clk_sel().bit(select != 0)),
+        }
+    }
+}
+
 pub fn clock_get_clock_select(which: clock_select) -> u8 {
     unsafe {
         let ptr = pac::SYSCTL::ptr();
         match which {
-            /*
-             * Select and get clock select value
-             */
             clock_select::PLL0_BYPASS => (*ptr).pll0.read().bypass().bit().into(),
             clock_select::PLL1_BYPASS => (*ptr).pll1.read().bypass().bit().into(),
             clock_select::PLL2_BYPASS => (*ptr).pll2.read().bypass().bit().into(),
