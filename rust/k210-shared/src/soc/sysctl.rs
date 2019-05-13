@@ -460,6 +460,9 @@ pub fn clock_get_clock_select(which: clock_select) -> u8 {
 }
 
 pub fn clock_get_freq(clock: clock) -> u32 {
+    // TODO: all of these are source / threshold, where source can depend on clock_select: generalize this
+    //       to some kind of clock tree
+    // TODO: clock_source_get_freq(ACLK) calls back into here, don't do this
     match clock {
         clock::PLL0 => clock_source_get_freq(clock_source::PLL0),
         clock::PLL1 => clock_source_get_freq(clock_source::PLL1),
@@ -475,6 +478,18 @@ pub fn clock_get_freq(clock: clock) -> u32 {
         clock::SPI0 => {
             let source = clock_source_get_freq(clock_source::PLL0);
             source / ((clock_get_threshold(threshold::SPI0) + 1) * 2)
+        }
+        clock::I2C0 => {
+            let source = clock_source_get_freq(clock_source::PLL0);
+            source / ((clock_get_threshold(threshold::I2C0) + 1) * 2)
+        }
+        clock::I2C1 => {
+            let source = clock_source_get_freq(clock_source::PLL0);
+            source / ((clock_get_threshold(threshold::I2C1) + 1) * 2)
+        }
+        clock::I2C2 => {
+            let source = clock_source_get_freq(clock_source::PLL0);
+            source / ((clock_get_threshold(threshold::I2C2) + 1) * 2)
         }
         _ => panic!("not implemented"),
     }
