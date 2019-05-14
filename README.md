@@ -1,6 +1,9 @@
 Maix Go / K210 stuff
 =====================
 
+Building the C projects
+-----------------------
+
 First, get the Kendryte C toolchain and copy or symlink the contents of the
 `src/` folder to a checkout of `https://github.com/sipeed/LicheeDan_K210_examples.git`.
 
@@ -14,6 +17,32 @@ cmake .. -DPROJ=<ProjectName> -DTOOLCHAIN=/opt/riscv-toolchain/bin && make
 You will get 2 files, `build/<ProjectName>` and `build/<ProjectName>.bin`. The former
 is an ELF executable, the latter a raw binary that can be flashed or written to
 0x80000000 in SRAM and directly executed.
+
+Building the Rust projects
+--------------------------
+
+Target configuration is set up in `.cargo/config`, so building is a matter of:
+
+```
+cd rust/<name_of_project>
+cargo build --release
+```
+
+This will produce an ELF executable in the workspace's target directory named
+`rust/target/riscv64gc-unknown-none-elf/release/<name_of_project>`.
+
+Running ELF
+-----------
+
+There is no need anymore to convert to raw binary, as ELF executables can be executed directly on
+the device (no flashing) using
+
+```bash
+kflash.py -t -s -p /dev/ttyUSB1 -B goE "${ELF_NAME}"
+```
+
+This works for both the C and Rust-produced executables. It is also possible to upload
+and run code on the device through JTAG and OpenOCD, but I have never done so myself.
 
 Documentation
 ==============
@@ -30,6 +59,8 @@ External:
 
 Projects
 =========
+
+This is a general random sandbox with silly projects for me to play around with the Maix Go, some are in C and some are in Rust.
 
 glyph_mapping
 -------------
