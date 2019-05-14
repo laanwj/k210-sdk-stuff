@@ -3,6 +3,7 @@ members = [
     "k210-console",
     "mandelbrot",
     "game-of-life",
+    "accelerometer",
 ]
 
 [patch.crates-io]

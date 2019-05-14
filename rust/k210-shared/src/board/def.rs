@@ -20,6 +20,12 @@ pub const NS2009_CAL: [i32; 7] = [65, 5853, -1083592, -4292, -15, 16450115, 6553
 /** I2C address of MSA300 (accelerometer) */
 pub const MSA300_SLV_ADDR: u16 = 0x26;
 
+/** I2C address bits for NS2009 */
+pub const MSA300_ADDR_BITS: u32 = 7;
+
+/** I2C clock speed for MSA300 */
+pub const MSA300_CLK: u32 = 500000;
+
 /** I/O pins for FPIOA */
 #[derive(Copy, Clone)]
 #[repr(u32)]

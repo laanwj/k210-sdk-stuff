@@ -89,3 +89,40 @@ pub fn recv_data(send_buf: &[u8], receive_buf: &mut [u8]) -> Result<(), ()>
     Ok(())
 }
 
+pub fn send_data(send_buf: &[u8]) -> Result<(), ()>
+{
+    unsafe {
+        let ptr = pac::I2C0::ptr();
+        let mut txi = 0;
+        let mut tx_left = send_buf.len();
+
+        // Clear TX abort by reading from clear register
+        // Hopefully this is not optimized out
+        (*ptr).clr_tx_abrt.read().bits();
+
+        // Send all data that is left, handle errors that occur
+        while tx_left != 0 {
+            let fifo_len = 8 - ((*ptr).txflr.read().bits() as usize);
+            let fifo_len = cmp::min(tx_left, fifo_len);
+            for _ in 0..fifo_len {
+                (*ptr).data_cmd.write(|w| w.data().bits(send_buf[txi]));
+                txi += 1;
+            }
+            if (*ptr).tx_abrt_source.read().bits() != 0 {
+                return Err(());
+            }
+            tx_left -= fifo_len;
+        }
+
+        // Wait for TX succeed
+        while (*ptr).status.read().activity().bit() || !(*ptr).status.read().tfe().bit() {
+            // NOP
+        }
+
+        // Check for errors one last time
+        if (*ptr).tx_abrt_source.read().bits() != 0 {
+            return Err(());
+        }
+    }
+    Ok(())
+}

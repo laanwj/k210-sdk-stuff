@@ -91,6 +91,13 @@ secp256k1\_{tests,bench}
 
 Run tests and benchmarks for the secp256k1 elliptic curve cryptographic library on this RISC-V CPU.
 
+rust/accelerometer
+-----------------
+
+Read measurements from MSA300 accelerometer. Doesn't do anything interesting with them yet.
+
+[README](rust/accelerometer/README.md)
+
 rust/k210-console
 -----------------
 
