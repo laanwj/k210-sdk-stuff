@@ -31,6 +31,13 @@ cargo build --release
 This will produce an ELF executable in the workspace's target directory named
 `rust/target/riscv64gc-unknown-none-elf/release/<name_of_project>`.
 
+If you have openocd working for the board, the below should work:
+```
+cargo run
+```
+
+Otherwise, see next section.
+
 Running ELF
 -----------
 
@@ -42,7 +49,8 @@ kflash.py -t -s -p /dev/ttyUSB1 -B goE "${ELF_NAME}"
 ```
 
 This works for both the C and Rust-produced executables. It is also possible to upload
-and run code on the device through JTAG and OpenOCD, but I have never done so myself.
+and run code on the device through JTAG and OpenOCD, but I have never got this to work myself
+(openocd cannot find the device).
 
 Documentation
 ==============
