@@ -7,10 +7,10 @@ def rgb565(r, g, b):
 
 image = [[(0, 0, 0)] * BLK_SIZE for _ in range(BLK_SIZE)]
 
-mm = BLK_SIZE//2
+mm = BLK_SIZE//2-1
 for y in range(BLK_SIZE//2):
     for x in range(BLK_SIZE//2):
-        l = min(x,y)
+        l = min(min(x,y),mm)
         col = (0xa8*(l+1)//mm,0x48*(l+1)//mm,0xa8*(l+1)//mm)
         image[y][x] = col
         image[BLK_SIZE-y-1][x] = col
@@ -24,4 +24,4 @@ for y in range(BLK_SIZE):
 print('pub static BLOCK_SPRITE: [[u32; 4];8] = [')
 for y in outb:
     print('    [%s],' % (', '.join(('0x%08x' % i) for i in y)))
-print(']')
+print('];')

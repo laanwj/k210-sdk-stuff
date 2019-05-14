@@ -11,6 +11,7 @@ mod palette;
 use k210_hal::pac;
 use k210_hal::prelude::*;
 use k210_hal::stdout::Stdout;
+use k210_shared::board::def::{io,DISP_WIDTH,DISP_HEIGHT};
 use k210_shared::board::lcd;
 use k210_shared::board::lcd_colors;
 use k210_shared::soc::fpioa;
@@ -20,20 +21,17 @@ use riscv_rt::entry;
 
 use crate::palette::PALETTE;
 
-pub const DISP_WIDTH: usize = 320;
-pub const DISP_HEIGHT: usize = 240;
-
 pub type ScreenImage = [u32; DISP_WIDTH * DISP_HEIGHT / 2];
 
 /** Connect pins to internal functions */
 fn io_mux_init() {
     /* Init SPI IO map and function settings */
-    fpioa::set_function(37, fpioa::function::gpiohs(lcd::RST_GPIONUM));
-    fpioa::set_io_pull(37, fpioa::pull::DOWN); // outputs must be pull-down
-    fpioa::set_function(38, fpioa::function::gpiohs(lcd::DCX_GPIONUM));
-    fpioa::set_io_pull(38, fpioa::pull::DOWN);
-    fpioa::set_function(36, fpioa::function::SPI0_SS3);
-    fpioa::set_function(39, fpioa::function::SPI0_SCLK);
+    fpioa::set_function(io::LCD_RST.into(), fpioa::function::gpiohs(lcd::RST_GPIONUM));
+    fpioa::set_io_pull(io::LCD_RST.into(), fpioa::pull::DOWN); // outputs must be pull-down
+    fpioa::set_function(io::LCD_DC.into(), fpioa::function::gpiohs(lcd::DCX_GPIONUM));
+    fpioa::set_io_pull(io::LCD_DC.into(), fpioa::pull::DOWN);
+    fpioa::set_function(io::LCD_CS.into(), fpioa::function::SPI0_SS3);
+    fpioa::set_function(io::LCD_WR.into(), fpioa::function::SPI0_SCLK);
 
     sysctl::set_spi0_dvp_data(true);
 }

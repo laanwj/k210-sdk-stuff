@@ -349,7 +349,7 @@ static FUNCTION_DEFAULTS: &[u32] = &[
     0x00001ff8, 0x00001ff9, 0x00001ffa, 0x00001ffb, 0x00001ffc, 0x00001ffd, 0x00001ffe, 0x00001fff,
 ];
 
-pub fn set_function(number: u32, function: function) {
+pub fn set_function(number: u8, function: function) {
     // TODO: check for overlapping assignments and assign to RESV0 as the Kendryte SDK does?
     unsafe {
         let ptr = pac::FPIOA::ptr();
@@ -357,7 +357,7 @@ pub fn set_function(number: u32, function: function) {
     }
 }
 
-pub fn set_io_pull(number: u32, pull: pull) {
+pub fn set_io_pull(number: u8, pull: pull) {
     unsafe {
         (*pac::FPIOA::ptr()).io[number as usize].modify(|_, w| match pull {
             pull::NONE => w.pu().bit(false).pd().bit(false),

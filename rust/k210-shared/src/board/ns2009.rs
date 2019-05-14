@@ -3,7 +3,17 @@ use core::result::Result;
 use crate::soc::i2c;
 use crate::util::filters;
 
+/** Touch event will trigger at a z1 value higher than this (lower values regarded as noise)
+ */
+const TOUCH_THR_MIN: u16 = 80;
+/** Touch event will no longer trigger at a z1 value higher than this (higher values regarded as
+ * noise)
+ */
+const TOUCH_THR_MAX: u16 = 2000;
+
 /* low level functions */
+
+/** NS2009 commands. */
 #[repr(u8)]
 #[derive(Copy, Clone)]
 pub enum command {
@@ -13,6 +23,7 @@ pub enum command {
     LOW_POWER_READ_Z2 = 0xf0,
 }
 
+/** Read a 12-bit value. */
 pub fn read(cmd: command) -> Result<u16, ()>
 {
     let mut buf = [0u8; 2];
@@ -22,6 +33,8 @@ pub fn read(cmd: command) -> Result<u16, ()>
         Err(())
     }
 }
+
+/* high level functions */
 
 /** Position filter */
 pub struct TSFilter {
@@ -106,7 +119,7 @@ impl TouchScreen {
     pub fn poll(&mut self) -> Option<Event> {
         let mut ev: Option<Event> = None;
         if let Ok(z1) = read(command::LOW_POWER_READ_Z1) {
-            if z1 > 80 && z1 < 2000 {
+            if z1 > TOUCH_THR_MIN && z1 < TOUCH_THR_MAX {
                 if let (Ok(x), Ok(y)) = (read(command::LOW_POWER_READ_X), read(command::LOW_POWER_READ_Y)) {
                     let (x, y) = self.filter.update(x, y);
                     if !self.press

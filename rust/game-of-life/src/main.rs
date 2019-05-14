@@ -9,7 +9,7 @@ extern crate panic_halt;
 use k210_hal::pac;
 use k210_hal::prelude::*;
 use k210_hal::stdout::Stdout;
-use k210_shared::board::def::{DISP_WIDTH,DISP_HEIGHT,NS2009_SLV_ADDR,NS2009_CAL,NS2009_ADDR_BITS,NS2009_CLK};
+use k210_shared::board::def::{io,DISP_WIDTH,DISP_HEIGHT,NS2009_SLV_ADDR,NS2009_CAL,NS2009_ADDR_BITS,NS2009_CLK};
 use k210_shared::board::lcd;
 use k210_shared::board::lcd_colors;
 use k210_shared::board::ns2009::TouchScreen;
@@ -23,14 +23,20 @@ pub const BLK_SIZE: usize = 8;
 pub const GRID_WIDTH: usize = DISP_WIDTH / BLK_SIZE;
 pub const GRID_HEIGHT: usize = DISP_HEIGHT / BLK_SIZE;
 
+/** Array for representing an image of the entire screen.
+ * This is an array of DISP_WIDTH / 2 × DISP_HEIGHT, each two horizontally consecutive
+ * pixels are encoded in a u32 with `(a << 16)|b`.
+ */
 pub type ScreenImage = [u32; DISP_WIDTH * DISP_HEIGHT / 2];
 
+/** Universe abstraction */
 struct Universe {
     state: [[bool; GRID_WIDTH*GRID_HEIGHT]; 2],
     cur: usize,
 }
 
 impl Universe {
+    /** Create a new universe */
     pub fn new() -> Self {
         Self {
             state: [[false; GRID_WIDTH*GRID_HEIGHT]; 2],
@@ -38,14 +44,17 @@ impl Universe {
         }
     }
 
+    /** Get status of a cell */
     pub fn get(&self, x: usize, y: usize) -> bool {
         self.state[self.cur][y * GRID_WIDTH + x]
     }
 
+    /** Set status of a cell */
     pub fn set(&mut self, x: usize, y: usize, state: bool) {
         self.state[self.cur][y * GRID_WIDTH + x] = state;
     }
 
+    /** Toggle a cell dead/alive */
     pub fn toggle(&mut self, x: usize, y: usize) {
         self.state[self.cur][y * GRID_WIDTH + x] ^= true;
     }
@@ -96,16 +105,16 @@ impl Universe {
 /** Connect pins to internal functions */
 fn io_mux_init() {
     /* Init SPI IO map and function settings */
-    fpioa::set_function(37, fpioa::function::gpiohs(lcd::RST_GPIONUM));
-    fpioa::set_io_pull(37, fpioa::pull::DOWN); // outputs must be pull-down
-    fpioa::set_function(38, fpioa::function::gpiohs(lcd::DCX_GPIONUM));
-    fpioa::set_io_pull(38, fpioa::pull::DOWN);
-    fpioa::set_function(36, fpioa::function::SPI0_SS3);
-    fpioa::set_function(39, fpioa::function::SPI0_SCLK);
+    fpioa::set_function(io::LCD_RST.into(), fpioa::function::gpiohs(lcd::RST_GPIONUM));
+    fpioa::set_io_pull(io::LCD_RST.into(), fpioa::pull::DOWN); // outputs must be pull-down
+    fpioa::set_function(io::LCD_DC.into(), fpioa::function::gpiohs(lcd::DCX_GPIONUM));
+    fpioa::set_io_pull(io::LCD_DC.into(), fpioa::pull::DOWN);
+    fpioa::set_function(io::LCD_CS.into(), fpioa::function::SPI0_SS3);
+    fpioa::set_function(io::LCD_WR.into(), fpioa::function::SPI0_SCLK);
 
     /* I2C0 for touch-screen */
-    fpioa::set_function(30, fpioa::function::I2C0_SCLK);
-    fpioa::set_function(31, fpioa::function::I2C0_SDA);
+    fpioa::set_function(io::I2C1_SCL.into(), fpioa::function::I2C0_SCLK);
+    fpioa::set_function(io::I2C1_SDA.into(), fpioa::function::I2C0_SDA);
 
     sysctl::set_spi0_dvp_data(true);
 }
@@ -119,14 +128,14 @@ fn io_set_power() {
 
 /** How to show a block */
 pub static BLOCK_SPRITE: [[u32; 4];8] = [
-    [0x28852885, 0x28852885, 0x28852885, 0x28852885],
-    [0x2885512a, 0x512a512a, 0x512a512a, 0x512a2885],
-    [0x2885512a, 0x79af79af, 0x79af79af, 0x512a2885],
-    [0x2885512a, 0x79afaa55, 0xaa5579af, 0x512a2885],
-    [0x2885512a, 0x79afaa55, 0xaa5579af, 0x512a2885],
-    [0x2885512a, 0x79af79af, 0x79af79af, 0x512a2885],
-    [0x2885512a, 0x512a512a, 0x512a512a, 0x512a2885],
-    [0x28852885, 0x28852885, 0x28852885, 0x28852885],
+    [0x38c738c7, 0x38c738c7, 0x38c738c7, 0x38c738c7],
+    [0x38c7718e, 0x718e718e, 0x718e718e, 0x718e38c7],
+    [0x38c7718e, 0xaa55aa55, 0xaa55aa55, 0x718e38c7],
+    [0x38c7718e, 0xaa55e31c, 0xe31caa55, 0x718e38c7],
+    [0x38c7718e, 0xaa55e31c, 0xe31caa55, 0x718e38c7],
+    [0x38c7718e, 0xaa55aa55, 0xaa55aa55, 0x718e38c7],
+    [0x38c7718e, 0x718e718e, 0x718e718e, 0x718e38c7],
+    [0x38c738c7, 0x38c738c7, 0x38c738c7, 0x38c738c7],
 ];
 
 #[entry]
@@ -174,11 +183,11 @@ fn main() -> ! {
     universe.set(GRID_WIDTH/2+1, GRID_HEIGHT/2+1, true);
     loop {
         if let Some(ev) = filter.poll() {
-            // writeln!(stdout, "{:?}", ev).unwrap();
+            //writeln!(stdout, "{:?}", ev).unwrap();
             let x = ev.x / (BLK_SIZE as i32);
             let y = ev.y / (BLK_SIZE as i32);
             // Determine radius of changed area from pressure
-            let r = ev.z / 300;
+            let r = (ev.z / 300) + 1;
             for yi in y-r..y+r+1 {
                 for xi in x-r..x+r+1 {
                     if (xi as usize) < DISP_WIDTH && (yi as usize) < DISP_HEIGHT {
