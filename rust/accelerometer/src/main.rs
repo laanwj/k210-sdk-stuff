@@ -54,6 +54,12 @@ fn io_set_power() {
     sysctl::set_power_mode(sysctl::power_bank::BANK7, sysctl::io_power_mode::V18);
 }
 
+fn sample_cirle(x: i32, y: i32, cx: i32, cy: i32, r: i32, rr: i32) -> bool {
+    // Early-out based on bounding box
+    (x - cx).abs() <= r && (y - cy).abs() <= r &&
+      ((x - cx) * (x - cx) +  (y - cy) * (y - cy)) <= rr
+}
+
 #[entry]
 fn main() -> ! {
     let p = pac::Peripherals::take().unwrap();
@@ -79,12 +85,29 @@ fn main() -> ! {
 
     writeln!(stdout, "MSA300 init").unwrap();
     i2c::init(MSA300_SLV_ADDR, MSA300_ADDR_BITS, MSA300_CLK);
-    msa300::init();
+    msa300::init().unwrap();
 
     loop {
         let (x, y, z) = msa300::measure().unwrap();
         let mag = (x*x+y*y+z*z).sqrt();
-        writeln!(stdout, "m/s^2 x={} y={} z={} (size={})", x, y, z, mag).unwrap();
-        usleep(100000);
+        // writeln!(stdout, "m/s^2 x={} y={} z={} (size={})", x, y, z, mag).unwrap();
+
+        // draw bubble
+        let cx = ((y/8.5 + 1.0) * ((DISP_WIDTH / 2) as f32)) as i32;
+        let cy = ((x/8.5 + 1.0) * ((DISP_HEIGHT / 2) as f32)) as i32;
+        let r = (1.5*mag) as i32;
+        let rr = r * r;
+        let mut idx = 0;
+        for y in 0..DISP_HEIGHT as i32 {
+            for x2 in 0..(DISP_WIDTH/2) as i32 {
+                let x = x2 * 2;
+                image[idx] = (if sample_cirle(x + 0, y, cx, cy, r, rr) { 0xffff } else { 0 } << 16) |
+                             if sample_cirle(x + 1, y, cx, cy, r, rr) { 0xffff } else { 0 };
+                idx += 1;
+            }
+        }
+
+        lcd::draw_picture(0, 0, DISP_WIDTH as u16, DISP_HEIGHT as u16, &image);
+        // usleep(10000);
     }
 }

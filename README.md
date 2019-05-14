@@ -94,7 +94,8 @@ Run tests and benchmarks for the secp256k1 elliptic curve cryptographic library 
 rust/accelerometer
 -----------------
 
-Read measurements from MSA300 accelerometer. Doesn't do anything interesting with them yet.
+Read measurements from MSA300 accelerometer. Display a dot on the screen to visualize the current orientation
+and magnitude.
 
 [README](rust/accelerometer/README.md)
 
