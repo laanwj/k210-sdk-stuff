@@ -4,8 +4,6 @@
 #![no_std]
 #![no_main]
 
-extern crate panic_halt;
-
 mod palette;
 
 use k210_hal::pac;

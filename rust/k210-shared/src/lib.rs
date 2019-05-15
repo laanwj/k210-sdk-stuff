@@ -4,5 +4,6 @@
 #![no_std]
 
 pub mod board;
+pub mod panic;
 pub mod soc;
 mod util;

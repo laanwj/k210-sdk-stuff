@@ -4,8 +4,6 @@
 #![no_std]
 #![no_main]
 
-extern crate panic_halt;
-
 mod console;
 mod cp437;
 mod cp437_8x8;

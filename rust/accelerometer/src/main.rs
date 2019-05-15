@@ -4,8 +4,6 @@
 #![no_std]
 #![no_main]
 
-extern crate panic_halt;
-
 use k210_hal::pac;
 use k210_hal::prelude::*;
 use k210_hal::stdout::Stdout;
