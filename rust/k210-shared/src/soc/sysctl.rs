@@ -1,6 +1,7 @@
 use k210_hal::pac;
 
 use crate::soc::utils::set_bit;
+use crate::soc::sleep::usleep;
 
 const SYSCTRL_CLOCK_FREQ_IN0: u32 = 26000000;
 
@@ -126,6 +127,39 @@ pub enum power_bank {
     BANK5,
     BANK6,
     BANK7,
+}
+
+#[derive(Copy, Clone)]
+pub enum reset {
+    SOC,
+    ROM,
+    DMA,
+    AI,
+    DVP,
+    FFT,
+    GPIO,
+    SPI0,
+    SPI1,
+    SPI2,
+    SPI3,
+    I2S0,
+    I2S1,
+    I2S2,
+    I2C0,
+    I2C1,
+    I2C2,
+    UART1,
+    UART2,
+    UART3,
+    AES,
+    FPIOA,
+    TIMER0,
+    TIMER1,
+    TIMER2,
+    WDT0,
+    WDT1,
+    SHA,
+    RTC,
 }
 
 fn clock_bus_en(clock: clock, en: bool) {
@@ -505,4 +539,47 @@ pub fn clock_get_freq(clock: clock) -> u32 {
         }
         _ => panic!("not implemented"),
     }
+}
+
+fn reset_ctl(reset: reset, rst_value: bool) {
+    unsafe {
+        let ptr = pac::SYSCTL::ptr();
+        match reset {
+            reset::SOC => (*ptr).soft_reset.modify(|_, w| w.soft_reset().bit(rst_value)),
+            reset::ROM => (*ptr).peri_reset.modify(|_, w| w.rom_reset().bit(rst_value)),
+            reset::DMA => (*ptr).peri_reset.modify(|_, w| w.dma_reset().bit(rst_value)),
+            reset::AI => (*ptr).peri_reset.modify(|_, w| w.ai_reset().bit(rst_value)),
+            reset::DVP => (*ptr).peri_reset.modify(|_, w| w.dvp_reset().bit(rst_value)),
+            reset::FFT => (*ptr).peri_reset.modify(|_, w| w.fft_reset().bit(rst_value)),
+            reset::GPIO => (*ptr).peri_reset.modify(|_, w| w.gpio_reset().bit(rst_value)),
+            reset::SPI0 => (*ptr).peri_reset.modify(|_, w| w.spi0_reset().bit(rst_value)),
+            reset::SPI1 => (*ptr).peri_reset.modify(|_, w| w.spi1_reset().bit(rst_value)),
+            reset::SPI2 => (*ptr).peri_reset.modify(|_, w| w.spi2_reset().bit(rst_value)),
+            reset::SPI3 => (*ptr).peri_reset.modify(|_, w| w.spi3_reset().bit(rst_value)),
+            reset::I2S0 => (*ptr).peri_reset.modify(|_, w| w.i2s0_reset().bit(rst_value)),
+            reset::I2S1 => (*ptr).peri_reset.modify(|_, w| w.i2s1_reset().bit(rst_value)),
+            reset::I2S2 => (*ptr).peri_reset.modify(|_, w| w.i2s2_reset().bit(rst_value)),
+            reset::I2C0 => (*ptr).peri_reset.modify(|_, w| w.i2c0_reset().bit(rst_value)),
+            reset::I2C1 => (*ptr).peri_reset.modify(|_, w| w.i2c1_reset().bit(rst_value)),
+            reset::I2C2 => (*ptr).peri_reset.modify(|_, w| w.i2c2_reset().bit(rst_value)),
+            reset::UART1 => (*ptr).peri_reset.modify(|_, w| w.uart1_reset().bit(rst_value)),
+            reset::UART2 => (*ptr).peri_reset.modify(|_, w| w.uart2_reset().bit(rst_value)),
+            reset::UART3 => (*ptr).peri_reset.modify(|_, w| w.uart3_reset().bit(rst_value)),
+            reset::AES => (*ptr).peri_reset.modify(|_, w| w.aes_reset().bit(rst_value)),
+            reset::FPIOA => (*ptr).peri_reset.modify(|_, w| w.fpioa_reset().bit(rst_value)),
+            reset::TIMER0 => (*ptr).peri_reset.modify(|_, w| w.timer0_reset().bit(rst_value)),
+            reset::TIMER1 => (*ptr).peri_reset.modify(|_, w| w.timer1_reset().bit(rst_value)),
+            reset::TIMER2 => (*ptr).peri_reset.modify(|_, w| w.timer2_reset().bit(rst_value)),
+            reset::WDT0 => (*ptr).peri_reset.modify(|_, w| w.wdt0_reset().bit(rst_value)),
+            reset::WDT1 => (*ptr).peri_reset.modify(|_, w| w.wdt1_reset().bit(rst_value)),
+            reset::SHA => (*ptr).peri_reset.modify(|_, w| w.sha_reset().bit(rst_value)),
+            reset::RTC => (*ptr).peri_reset.modify(|_, w| w.rtc_reset().bit(rst_value)),
+        }
+    }
+}
+
+pub fn reset(reset: reset) {
+    reset_ctl(reset, true);
+    usleep(10);
+    reset_ctl(reset, false);
 }
