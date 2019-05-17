@@ -72,6 +72,24 @@ fn main() -> ! {
     .unwrap();
     writeln!(
         stdout,
+        "  APB0 {}",
+        sysctl::clock_get_freq(sysctl::clock::APB0)
+    )
+    .unwrap();
+    writeln!(
+        stdout,
+        "  APB1 {}",
+        sysctl::clock_get_freq(sysctl::clock::APB1)
+    )
+    .unwrap();
+    writeln!(
+        stdout,
+        "  APB2 {}",
+        sysctl::clock_get_freq(sysctl::clock::APB2)
+    )
+    .unwrap();
+    writeln!(
+        stdout,
         "  SPI0 {}",
         sysctl::clock_get_freq(sysctl::clock::SPI0)
     )

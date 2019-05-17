@@ -467,7 +467,7 @@ pub fn clock_get_freq(clock: clock) -> u32 {
         clock::PLL0 => clock_source_get_freq(clock_source::PLL0),
         clock::PLL1 => clock_source_get_freq(clock_source::PLL1),
         clock::PLL2 => clock_source_get_freq(clock_source::PLL2),
-        clock::CPU => match clock_get_clock_select(clock_select::ACLK) {
+        clock::CPU | clock::DMA | clock::FFT | clock::ACLK | clock::HCLK => match clock_get_clock_select(clock_select::ACLK) {
             0 => clock_source_get_freq(clock_source::IN0),
             1 => {
                 clock_source_get_freq(clock_source::PLL0)
@@ -490,6 +490,18 @@ pub fn clock_get_freq(clock: clock) -> u32 {
         clock::I2C2 => {
             let source = clock_source_get_freq(clock_source::PLL0);
             source / ((clock_get_threshold(threshold::I2C2) + 1) * 2)
+        }
+        clock::APB0 => {
+            let source = clock_source_get_freq(clock_source::ACLK);
+            source / (clock_get_threshold(threshold::APB0) + 1)
+        }
+        clock::APB1 => {
+            let source = clock_source_get_freq(clock_source::ACLK);
+            source / (clock_get_threshold(threshold::APB1) + 1)
+        }
+        clock::APB2 => {
+            let source = clock_source_get_freq(clock_source::ACLK);
+            source / (clock_get_threshold(threshold::APB2) + 1)
         }
         _ => panic!("not implemented"),
     }
