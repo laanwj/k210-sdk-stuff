@@ -284,6 +284,7 @@ pub fn sysctl_clock_disable(clock: clock) {
     clock_device_en(clock, false);
 }
 
+/// Set clock divider
 pub fn clock_set_threshold(which: threshold, threshold: u32) {
     unsafe {
         let ptr = pac::SYSCTL::ptr();
@@ -328,6 +329,7 @@ pub fn clock_set_threshold(which: threshold, threshold: u32) {
     }
 }
 
+/// Get clock divider
 pub fn clock_get_threshold(which: threshold) -> u32 {
     unsafe {
         let ptr = pac::SYSCTL::ptr();
@@ -498,6 +500,7 @@ pub fn clock_get_freq(clock: clock) -> u32 {
     //       to some kind of clock tree
     // TODO: clock_source_get_freq(ACLK) calls back into here, don't do this
     match clock {
+        clock::IN0 => clock_source_get_freq(clock_source::IN0),
         clock::PLL0 => clock_source_get_freq(clock_source::PLL0),
         clock::PLL1 => clock_source_get_freq(clock_source::PLL1),
         clock::PLL2 => clock_source_get_freq(clock_source::PLL2),
@@ -509,35 +512,60 @@ pub fn clock_get_freq(clock: clock) -> u32 {
             }
             _ => panic!("invalid cpu clock select"),
         },
-        clock::SPI0 => {
-            let source = clock_source_get_freq(clock_source::PLL0);
-            source / ((clock_get_threshold(threshold::SPI0) + 1) * 2)
+        clock::SRAM0 => clock_source_get_freq(clock_source::ACLK) / (clock_get_threshold(threshold::SRAM0) + 1),
+        clock::SRAM1 => clock_source_get_freq(clock_source::ACLK) / (clock_get_threshold(threshold::SRAM1) + 1),
+        clock::ROM => clock_source_get_freq(clock_source::ACLK) / (clock_get_threshold(threshold::ROM) + 1),
+        clock::DVP => clock_source_get_freq(clock_source::ACLK) / (clock_get_threshold(threshold::DVP) + 1),
+        clock::APB0 | clock::GPIO | clock::UART1 | clock::UART2 | clock::UART3 | clock::FPIOA | clock::SHA =>
+            clock_source_get_freq(clock_source::ACLK) / (clock_get_threshold(threshold::APB0) + 1),
+        clock::APB1 | clock::AES | clock::OTP =>
+            clock_source_get_freq(clock_source::ACLK) / (clock_get_threshold(threshold::APB1) + 1),
+        clock::APB2 => clock_source_get_freq(clock_source::ACLK) / (clock_get_threshold(threshold::APB2) + 1),
+        clock::AI => clock_source_get_freq(clock_source::PLL1) / (clock_get_threshold(threshold::AI) + 1),
+        clock::I2S0 => clock_source_get_freq(clock_source::PLL2) / ((clock_get_threshold(threshold::I2S0) + 1) * 2),
+        clock::I2S1 => clock_source_get_freq(clock_source::PLL2) / ((clock_get_threshold(threshold::I2S1) + 1) * 2),
+        clock::I2S2 => clock_source_get_freq(clock_source::PLL2) / ((clock_get_threshold(threshold::I2S2) + 1) * 2),
+        clock::WDT0 => clock_source_get_freq(clock_source::IN0) / ((clock_get_threshold(threshold::WDT0) + 1) * 2),
+        clock::WDT1 => clock_source_get_freq(clock_source::IN0) / ((clock_get_threshold(threshold::WDT1) + 1) * 2),
+        clock::SPI0 => clock_source_get_freq(clock_source::PLL0) / ((clock_get_threshold(threshold::SPI0) + 1) * 2),
+        clock::SPI1 => clock_source_get_freq(clock_source::PLL0) / ((clock_get_threshold(threshold::SPI1) + 1) * 2),
+        clock::SPI2 => clock_source_get_freq(clock_source::PLL0) / ((clock_get_threshold(threshold::SPI2) + 1) * 2),
+        clock::I2C0 => clock_source_get_freq(clock_source::PLL0) / ((clock_get_threshold(threshold::I2C0) + 1) * 2),
+        clock::I2C1 => clock_source_get_freq(clock_source::PLL0) / ((clock_get_threshold(threshold::I2C1) + 1) * 2),
+        clock::I2C2 => clock_source_get_freq(clock_source::PLL0) / ((clock_get_threshold(threshold::I2C2) + 1) * 2),
+        clock::SPI3 => {
+            let source = match clock_get_clock_select(clock_select::SPI3) {
+                0 => clock_source_get_freq(clock_source::IN0),
+                1 => clock_source_get_freq(clock_source::PLL0),
+                _ => panic!("unimplemented clock source"),
+            };
+            source / ((clock_get_threshold(threshold::SPI3) + 1) * 2)
         }
-        clock::I2C0 => {
-            let source = clock_source_get_freq(clock_source::PLL0);
-            source / ((clock_get_threshold(threshold::I2C0) + 1) * 2)
+        clock::TIMER0 => {
+            let source = match clock_get_clock_select(clock_select::TIMER0) {
+                0 => clock_source_get_freq(clock_source::IN0),
+                1 => clock_source_get_freq(clock_source::PLL0),
+                _ => panic!("unimplemented clock source"),
+            };
+            source / ((clock_get_threshold(threshold::TIMER0) + 1) * 2)
         }
-        clock::I2C1 => {
-            let source = clock_source_get_freq(clock_source::PLL0);
-            source / ((clock_get_threshold(threshold::I2C1) + 1) * 2)
+        clock::TIMER1 => {
+            let source = match clock_get_clock_select(clock_select::TIMER1) {
+                0 => clock_source_get_freq(clock_source::IN0),
+                1 => clock_source_get_freq(clock_source::PLL0),
+                _ => panic!("unimplemented clock source"),
+            };
+            source / ((clock_get_threshold(threshold::TIMER1) + 1) * 2)
         }
-        clock::I2C2 => {
-            let source = clock_source_get_freq(clock_source::PLL0);
-            source / ((clock_get_threshold(threshold::I2C2) + 1) * 2)
+        clock::TIMER2 => {
+            let source = match clock_get_clock_select(clock_select::TIMER2) {
+                0 => clock_source_get_freq(clock_source::IN0),
+                1 => clock_source_get_freq(clock_source::PLL0),
+                _ => panic!("unimplemented clock source"),
+            };
+            source / ((clock_get_threshold(threshold::TIMER2) + 1) * 2)
         }
-        clock::APB0 => {
-            let source = clock_source_get_freq(clock_source::ACLK);
-            source / (clock_get_threshold(threshold::APB0) + 1)
-        }
-        clock::APB1 => {
-            let source = clock_source_get_freq(clock_source::ACLK);
-            source / (clock_get_threshold(threshold::APB1) + 1)
-        }
-        clock::APB2 => {
-            let source = clock_source_get_freq(clock_source::ACLK);
-            source / (clock_get_threshold(threshold::APB2) + 1)
-        }
-        _ => panic!("not implemented"),
+        clock::RTC => clock_source_get_freq(clock_source::IN0),
     }
 }
 
