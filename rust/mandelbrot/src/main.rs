@@ -81,7 +81,7 @@ fn main() -> ! {
     io_set_power();
 
     let spi = p.SPI0.constrain();
-    let lcd = LCD::new(spi);
+    let mut lcd = LCD::new(spi);
     lcd.init();
     lcd.set_direction(lcd::direction::YX_RLDU);
     lcd.clear(lcd_colors::PURPLE);

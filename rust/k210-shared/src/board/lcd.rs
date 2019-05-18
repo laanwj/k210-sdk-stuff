@@ -12,8 +12,8 @@ pub const SPI_SLAVE_SELECT: u32 = 3;
 pub const DCX_GPIONUM: u8 = 2;
 pub const RST_GPIONUM: u8 = 3;
 
-pub const LCD_X_MAX: u16 = 320;
-pub const LCD_Y_MAX: u16 = 240;
+pub const LCD_X_MAX: u16 = 240;
+pub const LCD_Y_MAX: u16 = 320;
 
 #[repr(u8)]
 #[derive(Copy, Clone)]
@@ -113,11 +113,17 @@ pub const DIR_MASK: u8 = 0xE0;
 
 pub struct LCD<SPI> {
     spi: SPI,
+    pub width: u16,
+    pub height: u16,
 }
 
 impl<X: SPI> LCD<X> {
     pub fn new(spi: X) -> Self {
-        Self { spi }
+        Self {
+            spi,
+            width: 0,
+            height: 0,
+        }
     }
 
     /* Low-level functions */
@@ -245,7 +251,7 @@ impl<X: SPI> LCD<X> {
 
     /* High-level functions */
 
-    pub fn init(&self) {
+    pub fn init(&mut self) {
         self.hard_init();
         /*soft reset*/
         self.write_command(command::SOFTWARE_RESET);
@@ -262,20 +268,14 @@ impl<X: SPI> LCD<X> {
         self.write_command(command::DISPLAY_ON);
     }
 
-    pub fn set_direction(&self, dir: direction) {
-        /* No support for YX orientations right now --
-        lcd_ctl.dir = dir;
-        if (dir & DIR_XY_MASK)
-        {
-            lcd_ctl.width = LCD_Y_MAX - 1;
-            lcd_ctl.height = LCD_X_MAX - 1;
+    pub fn set_direction(&mut self, dir: direction) {
+        if ((dir as u8) & DIR_XY_MASK) != 0 {
+            self.width = LCD_Y_MAX;
+            self.height = LCD_X_MAX;
+        } else {
+            self.width = LCD_X_MAX;
+            self.height = LCD_Y_MAX;
         }
-        else
-        {
-            lcd_ctl.width = LCD_X_MAX - 1;
-            lcd_ctl.height = LCD_Y_MAX - 1;
-        }
-        */
 
         self.write_command(command::MEMORY_ACCESS_CTL);
         self.write_byte(&[dir as u8]);
@@ -304,8 +304,7 @@ impl<X: SPI> LCD<X> {
     pub fn clear(&self, color: u16) {
         let data = ((color as u32) << 16) | (color as u32);
 
-        //set_area(0, 0, lcd_ctl.width, lcd_ctl.height);
-        self.set_area(0, 0, LCD_X_MAX - 1, LCD_Y_MAX - 1);
+        self.set_area(0, 0, self.width - 1, self.height - 1);
         self.fill_data(data, (LCD_X_MAX as usize) * (LCD_Y_MAX as usize) / 2);
     }
 
