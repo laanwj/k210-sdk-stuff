@@ -57,8 +57,6 @@ impl<IF: I2C012> I2CImpl<IF> {
 
 impl<IF: I2C012> I2C for I2CImpl<IF> {
     fn init(&self, slave_address: u16, address_width: u32, i2c_clk: u32) {
-        assert!(address_width == 7 || address_width == 10);
-
         sysctl::clock_enable(IF::CLK);
         sysctl::clock_set_threshold(IF::DIV, 3);
 
@@ -67,13 +65,19 @@ impl<IF: I2C012> I2C for I2CImpl<IF> {
         let v_period_clk_cnt: u16 = v_period_clk_cnt.try_into().unwrap();
         let v_period_clk_cnt = cmp::max(v_period_clk_cnt, 1);
 
+        use i2c0::con::{ADDR_SLAVE_WIDTHW,SPEEDW};
+        let v_width = match address_width {
+            7 => ADDR_SLAVE_WIDTHW::B7,
+            10 => ADDR_SLAVE_WIDTHW::B10,
+            _ => panic!("unsupported address width"),
+        };
         unsafe {
             self.i2c.enable.write(|w| w.bits(0));
             self.i2c.con.write(|w| w.master_mode().bit(true)
                                  .slave_disable().bit(true)
                                  .restart_en().bit(true)
-                                 .addr_slave_width().bit(address_width == 10) // TODO variant
-                                 .speed().bits(1)); // TODO variant
+                                 .addr_slave_width().variant(v_width)
+                                 .speed().variant(SPEEDW::FAST));
             self.i2c.ss_scl_hcnt.write(|w| w.count().bits(v_period_clk_cnt));
             self.i2c.ss_scl_lcnt.write(|w| w.count().bits(v_period_clk_cnt));
             self.i2c.tar.write(|w| w.address().bits(slave_address));
