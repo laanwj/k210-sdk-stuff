@@ -6,7 +6,7 @@ use pac::spi0::spi_ctrlr0;
 use crate::soc::gpio;
 use crate::soc::gpiohs;
 use crate::soc::sleep::usleep;
-use crate::soc::spi;
+use crate::soc::spi::SPI;
 
 pub const SPI_SLAVE_SELECT: u32 = 3;
 pub const DCX_GPIONUM: u8 = 2;
@@ -111,198 +111,207 @@ pub enum direction {
 pub const DIR_XY_MASK: u8 = 0x20;
 pub const DIR_MASK: u8 = 0xE0;
 
-/* Low-level functions */
-
-fn init_dcx() {
-    gpiohs::set_direction(DCX_GPIONUM, gpio::direction::OUTPUT);
-    gpiohs::set_pin(DCX_GPIONUM, true);
+pub struct LCD<SPI> {
+    spi: SPI,
 }
 
-fn set_dcx_control() {
-    gpiohs::set_pin(DCX_GPIONUM, false);
-}
-
-fn set_dcx_data() {
-    gpiohs::set_pin(DCX_GPIONUM, true);
-}
-
-fn init_rst() {
-    gpiohs::set_direction(RST_GPIONUM, gpio::direction::OUTPUT);
-    gpiohs::set_pin(RST_GPIONUM, true);
-}
-
-fn set_rst(val: bool) {
-    gpiohs::set_pin(RST_GPIONUM, val);
-}
-
-pub fn hard_init() {
-    init_dcx();
-    init_rst();
-    set_rst(false);
-    spi::clk_init();
-    spi::init(
-        ctrlr0::WORK_MODEW::MODE0,
-        ctrlr0::FRAME_FORMATW::OCTAL,
-        8,
-        0,
-        8, /*instruction length*/
-        0, /*address length*/
-        0, /*wait cycles*/
-        spi_ctrlr0::AITMW::AS_FRAME_FORMAT,
-        ctrlr0::TMODW::TRANS,
-    );
-    spi::set_clk_rate(10000000);
-    set_rst(true);
-}
-
-pub fn write_command(cmd: command) {
-    set_dcx_control();
-    spi::init(
-        ctrlr0::WORK_MODEW::MODE0,
-        ctrlr0::FRAME_FORMATW::OCTAL,
-        8,
-        0,
-        8, /*instruction length*/
-        0, /*address length*/
-        0, /*wait cycles*/
-        spi_ctrlr0::AITMW::AS_FRAME_FORMAT,
-        ctrlr0::TMODW::TRANS,
-    );
-    spi::send_data(SPI_SLAVE_SELECT, &[cmd as u8]);
-}
-
-pub fn write_byte(data_buf: &[u8]) {
-    set_dcx_data();
-    spi::init(
-        ctrlr0::WORK_MODEW::MODE0,
-        ctrlr0::FRAME_FORMATW::OCTAL,
-        8,
-        0,
-        0, /*instruction length*/
-        8, /*address length*/
-        0, /*wait cycles*/
-        spi_ctrlr0::AITMW::AS_FRAME_FORMAT,
-        ctrlr0::TMODW::TRANS,
-    );
-    spi::send_data(SPI_SLAVE_SELECT, data_buf);
-}
-
-pub fn write_half(data_buf: &[u16]) {
-    set_dcx_data();
-    spi::init(
-        ctrlr0::WORK_MODEW::MODE0,
-        ctrlr0::FRAME_FORMATW::OCTAL,
-        16,
-        0,
-        0,  /*instruction length*/
-        16, /*address length*/
-        0,  /*wait cycles*/
-        spi_ctrlr0::AITMW::AS_FRAME_FORMAT,
-        ctrlr0::TMODW::TRANS,
-    );
-    spi::send_data(SPI_SLAVE_SELECT, data_buf);
-}
-
-pub fn write_word(data_buf: &[u32]) {
-    set_dcx_data();
-    spi::init(
-        ctrlr0::WORK_MODEW::MODE0,
-        ctrlr0::FRAME_FORMATW::OCTAL,
-        32,
-        0,
-        0,  /*instruction length*/
-        32, /*address length*/
-        0,  /*wait cycles*/
-        spi_ctrlr0::AITMW::AS_FRAME_FORMAT,
-        ctrlr0::TMODW::TRANS,
-    );
-    spi::send_data(SPI_SLAVE_SELECT, data_buf);
-}
-
-pub fn fill_data(data: u32, length: usize) {
-    set_dcx_data();
-    spi::init(
-        ctrlr0::WORK_MODEW::MODE0,
-        ctrlr0::FRAME_FORMATW::OCTAL,
-        32,
-        0,
-        0,  /*instruction length*/
-        32, /*address length*/
-        0,  /*wait cycles*/
-        spi_ctrlr0::AITMW::AS_FRAME_FORMAT,
-        ctrlr0::TMODW::TRANS,
-    );
-    spi::fill_data(SPI_SLAVE_SELECT, data, length);
-}
-
-/* High-level functions */
-
-pub fn init() {
-    hard_init();
-    /*soft reset*/
-    write_command(command::SOFTWARE_RESET);
-    usleep(100000);
-    /*exit sleep*/
-    write_command(command::SLEEP_OFF);
-    usleep(100000);
-    /*pixel format*/
-    write_command(command::PIXEL_FORMAT_SET);
-    write_byte(&[0x55]);
-    set_direction(direction::XY_LRUD);
-
-    /*display on*/
-    write_command(command::DISPLAY_ON);
-}
-
-pub fn set_direction(dir: direction) {
-    /* No support for YX orientations right now --
-    lcd_ctl.dir = dir;
-    if (dir & DIR_XY_MASK)
-    {
-        lcd_ctl.width = LCD_Y_MAX - 1;
-        lcd_ctl.height = LCD_X_MAX - 1;
+impl<X: SPI> LCD<X> {
+    pub fn new(spi: X) -> Self {
+        Self { spi }
     }
-    else
-    {
-        lcd_ctl.width = LCD_X_MAX - 1;
-        lcd_ctl.height = LCD_Y_MAX - 1;
+
+    /* Low-level functions */
+
+    fn init_dcx(&self) {
+        gpiohs::set_direction(DCX_GPIONUM, gpio::direction::OUTPUT);
+        gpiohs::set_pin(DCX_GPIONUM, true);
     }
-    */
 
-    write_command(command::MEMORY_ACCESS_CTL);
-    write_byte(&[dir as u8]);
-}
+    fn set_dcx_control(&self) {
+        gpiohs::set_pin(DCX_GPIONUM, false);
+    }
 
-pub fn set_area(x1: u16, y1: u16, x2: u16, y2: u16) {
-    write_command(command::HORIZONTAL_ADDRESS_SET);
-    write_byte(&[
-        (x1 >> 8) as u8,
-        (x1 & 0xff) as u8,
-        (x2 >> 8) as u8,
-        (x2 & 0xff) as u8,
-    ]);
+    fn set_dcx_data(&self) {
+        gpiohs::set_pin(DCX_GPIONUM, true);
+    }
 
-    write_command(command::VERTICAL_ADDRESS_SET);
-    write_byte(&[
-        (y1 >> 8) as u8,
-        (y1 & 0xff) as u8,
-        (y2 >> 8) as u8,
-        (y2 & 0xff) as u8,
-    ]);
+    fn init_rst(&self) {
+        gpiohs::set_direction(RST_GPIONUM, gpio::direction::OUTPUT);
+        gpiohs::set_pin(RST_GPIONUM, true);
+    }
 
-    write_command(command::MEMORY_WRITE);
-}
+    fn set_rst(&self, val: bool) {
+        gpiohs::set_pin(RST_GPIONUM, val);
+    }
 
-pub fn clear(color: u16) {
-    let data = ((color as u32) << 16) | (color as u32);
+    pub fn hard_init(&self) {
+        self.init_dcx();
+        self.init_rst();
+        self.set_rst(false);
+        self.spi.set_clk_rate(10000000);
+        self.spi.configure(
+            ctrlr0::WORK_MODEW::MODE0,
+            ctrlr0::FRAME_FORMATW::OCTAL,
+            8,
+            0,
+            8, /*instruction length*/
+            0, /*address length*/
+            0, /*wait cycles*/
+            spi_ctrlr0::AITMW::AS_FRAME_FORMAT,
+            ctrlr0::TMODW::TRANS,
+        );
+        self.set_rst(true);
+    }
 
-    //set_area(0, 0, lcd_ctl.width, lcd_ctl.height);
-    set_area(0, 0, LCD_X_MAX - 1, LCD_Y_MAX - 1);
-    fill_data(data, (LCD_X_MAX as usize) * (LCD_Y_MAX as usize) / 2);
-}
+    pub fn write_command(&self, cmd: command) {
+        self.set_dcx_control();
+        self.spi.configure(
+            ctrlr0::WORK_MODEW::MODE0,
+            ctrlr0::FRAME_FORMATW::OCTAL,
+            8,
+            0,
+            8, /*instruction length*/
+            0, /*address length*/
+            0, /*wait cycles*/
+            spi_ctrlr0::AITMW::AS_FRAME_FORMAT,
+            ctrlr0::TMODW::TRANS,
+        );
+        self.spi.send_data(SPI_SLAVE_SELECT, &[cmd as u8]);
+    }
 
-pub fn draw_picture(x1: u16, y1: u16, width: u16, height: u16, data: &[u32]) {
-    set_area(x1, y1, x1 + width - 1, y1 + height - 1);
-    assert!(data.len() == (width as usize) * (height as usize) / 2);
-    write_word(data);
+    pub fn write_byte(&self, data_buf: &[u8]) {
+        self.set_dcx_data();
+        self.spi.configure(
+            ctrlr0::WORK_MODEW::MODE0,
+            ctrlr0::FRAME_FORMATW::OCTAL,
+            8,
+            0,
+            0, /*instruction length*/
+            8, /*address length*/
+            0, /*wait cycles*/
+            spi_ctrlr0::AITMW::AS_FRAME_FORMAT,
+            ctrlr0::TMODW::TRANS,
+        );
+        self.spi.send_data(SPI_SLAVE_SELECT, data_buf);
+    }
+
+    pub fn write_half(&self, data_buf: &[u16]) {
+        self.set_dcx_data();
+        self.spi.configure(
+            ctrlr0::WORK_MODEW::MODE0,
+            ctrlr0::FRAME_FORMATW::OCTAL,
+            16,
+            0,
+            0,  /*instruction length*/
+            16, /*address length*/
+            0,  /*wait cycles*/
+            spi_ctrlr0::AITMW::AS_FRAME_FORMAT,
+            ctrlr0::TMODW::TRANS,
+        );
+        self.spi.send_data(SPI_SLAVE_SELECT, data_buf);
+    }
+
+    pub fn write_word(&self, data_buf: &[u32]) {
+        self.set_dcx_data();
+        self.spi.configure(
+            ctrlr0::WORK_MODEW::MODE0,
+            ctrlr0::FRAME_FORMATW::OCTAL,
+            32,
+            0,
+            0,  /*instruction length*/
+            32, /*address length*/
+            0,  /*wait cycles*/
+            spi_ctrlr0::AITMW::AS_FRAME_FORMAT,
+            ctrlr0::TMODW::TRANS,
+        );
+        self.spi.send_data(SPI_SLAVE_SELECT, data_buf);
+    }
+
+    pub fn fill_data(&self, data: u32, length: usize) {
+        self.set_dcx_data();
+        self.spi.configure(
+            ctrlr0::WORK_MODEW::MODE0,
+            ctrlr0::FRAME_FORMATW::OCTAL,
+            32,
+            0,
+            0,  /*instruction length*/
+            32, /*address length*/
+            0,  /*wait cycles*/
+            spi_ctrlr0::AITMW::AS_FRAME_FORMAT,
+            ctrlr0::TMODW::TRANS,
+        );
+        self.spi.fill_data(SPI_SLAVE_SELECT, data, length);
+    }
+
+    /* High-level functions */
+
+    pub fn init(&self) {
+        self.hard_init();
+        /*soft reset*/
+        self.write_command(command::SOFTWARE_RESET);
+        usleep(100000);
+        /*exit sleep*/
+        self.write_command(command::SLEEP_OFF);
+        usleep(100000);
+        /*pixel format*/
+        self.write_command(command::PIXEL_FORMAT_SET);
+        self.write_byte(&[0x55]);
+        self.set_direction(direction::XY_LRUD);
+
+        /*display on*/
+        self.write_command(command::DISPLAY_ON);
+    }
+
+    pub fn set_direction(&self, dir: direction) {
+        /* No support for YX orientations right now --
+        lcd_ctl.dir = dir;
+        if (dir & DIR_XY_MASK)
+        {
+            lcd_ctl.width = LCD_Y_MAX - 1;
+            lcd_ctl.height = LCD_X_MAX - 1;
+        }
+        else
+        {
+            lcd_ctl.width = LCD_X_MAX - 1;
+            lcd_ctl.height = LCD_Y_MAX - 1;
+        }
+        */
+
+        self.write_command(command::MEMORY_ACCESS_CTL);
+        self.write_byte(&[dir as u8]);
+    }
+
+    pub fn set_area(&self, x1: u16, y1: u16, x2: u16, y2: u16) {
+        self.write_command(command::HORIZONTAL_ADDRESS_SET);
+        self.write_byte(&[
+            (x1 >> 8) as u8,
+            (x1 & 0xff) as u8,
+            (x2 >> 8) as u8,
+            (x2 & 0xff) as u8,
+        ]);
+
+        self.write_command(command::VERTICAL_ADDRESS_SET);
+        self.write_byte(&[
+            (y1 >> 8) as u8,
+            (y1 & 0xff) as u8,
+            (y2 >> 8) as u8,
+            (y2 & 0xff) as u8,
+        ]);
+
+        self.write_command(command::MEMORY_WRITE);
+    }
+
+    pub fn clear(&self, color: u16) {
+        let data = ((color as u32) << 16) | (color as u32);
+
+        //set_area(0, 0, lcd_ctl.width, lcd_ctl.height);
+        self.set_area(0, 0, LCD_X_MAX - 1, LCD_Y_MAX - 1);
+        self.fill_data(data, (LCD_X_MAX as usize) * (LCD_Y_MAX as usize) / 2);
+    }
+
+    pub fn draw_picture(&self, x1: u16, y1: u16, width: u16, height: u16, data: &[u32]) {
+        self.set_area(x1, y1, x1 + width - 1, y1 + height - 1);
+        assert!(data.len() == (width as usize) * (height as usize) / 2);
+        self.write_word(data);
+    }
 }

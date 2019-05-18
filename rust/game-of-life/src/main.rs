@@ -8,12 +8,13 @@ use k210_hal::pac;
 use k210_hal::prelude::*;
 use k210_hal::stdout::Stdout;
 use k210_shared::board::def::{io,DISP_WIDTH,DISP_HEIGHT,NS2009_SLV_ADDR,NS2009_CAL,NS2009_ADDR_BITS,NS2009_CLK};
-use k210_shared::board::lcd;
+use k210_shared::board::lcd::{LCD,self};
 use k210_shared::board::lcd_colors;
 use k210_shared::board::ns2009::TouchScreen;
 use k210_shared::soc::fpioa;
 use k210_shared::soc::i2c;
 use k210_shared::soc::sleep::usleep;
+use k210_shared::soc::spi::SPIExt;
 use k210_shared::soc::sysctl;
 use riscv_rt::entry;
 
@@ -153,9 +154,11 @@ fn main() -> ! {
     io_mux_init();
     io_set_power();
 
-    lcd::init();
-    lcd::set_direction(lcd::direction::YX_LRUD);
-    lcd::clear(lcd_colors::PURPLE);
+    let spi = p.SPI0.constrain();
+    let lcd = LCD::new(spi);
+    lcd.init();
+    lcd.set_direction(lcd::direction::YX_LRUD);
+    lcd.clear(lcd_colors::PURPLE);
 
     let mut image: ScreenImage = [0; DISP_WIDTH * DISP_HEIGHT / 2];
 
@@ -205,7 +208,7 @@ fn main() -> ! {
                 }
             }
         }
-        lcd::draw_picture(0, 0, DISP_WIDTH as u16, DISP_HEIGHT as u16, &image);
+        lcd.draw_picture(0, 0, DISP_WIDTH as u16, DISP_HEIGHT as u16, &image);
 
         universe.iterate();
     }
