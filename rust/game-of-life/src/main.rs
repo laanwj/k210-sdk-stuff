@@ -12,7 +12,7 @@ use k210_shared::board::lcd::{LCD,self};
 use k210_shared::board::lcd_colors;
 use k210_shared::board::ns2009::TouchScreen;
 use k210_shared::soc::fpioa;
-use k210_shared::soc::i2c;
+use k210_shared::soc::i2c::{I2C,I2CExt};
 use k210_shared::soc::sleep::usleep;
 use k210_shared::soc::spi::SPIExt;
 use k210_shared::soc::sysctl;
@@ -163,9 +163,10 @@ fn main() -> ! {
     let mut image: ScreenImage = [0; DISP_WIDTH * DISP_HEIGHT / 2];
 
     writeln!(stdout, "NS2009 init").unwrap();
-    i2c::init(NS2009_SLV_ADDR, NS2009_ADDR_BITS, NS2009_CLK);
+    let i2c = p.I2C0.constrain();
+    i2c.init(NS2009_SLV_ADDR, NS2009_ADDR_BITS, NS2009_CLK);
 
-    let mut filter = if let Some(filter) = TouchScreen::init(NS2009_CAL) {
+    let mut filter = if let Some(filter) = TouchScreen::init(i2c, NS2009_CAL) {
         filter
     } else {
         writeln!(stdout, "NS2009 init failure").unwrap();

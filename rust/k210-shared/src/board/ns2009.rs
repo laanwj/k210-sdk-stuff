@@ -1,6 +1,6 @@
 use core::result::Result;
 
-use crate::soc::i2c;
+use crate::soc::i2c::I2C;
 use crate::util::filters;
 
 /** Touch event will trigger at a z1 value higher than this (lower values regarded as noise)
@@ -24,10 +24,10 @@ pub enum command {
 }
 
 /** Read a 12-bit value. */
-pub fn read(cmd: command) -> Result<u16, ()>
+pub fn read<IF: I2C>(i2c: &IF, cmd: command) -> Result<u16, ()>
 {
     let mut buf = [0u8; 2];
-    if i2c::recv_data(&[cmd as u8], &mut buf).is_ok() {
+    if i2c.recv_data(&[cmd as u8], &mut buf).is_ok() {
         Ok(((buf[0] as u16) << 4) | ((buf[1] as u16) >> 4))
     } else {
         Err(())
@@ -92,19 +92,21 @@ pub struct Event {
 }
 
 /** High-level touch screen abstraction */
-pub struct TouchScreen {
+pub struct TouchScreen<IF> {
+    i2c: IF,
     filter: TSFilter,
     press: bool,
     x: i32,
     y: i32,
 }
 
-impl TouchScreen {
+impl<IF: I2C> TouchScreen<IF> {
     /* input: calibration matrix */
-    pub fn init(cal: [i32; 7]) -> Option<Self> {
+    pub fn init(i2c: IF, cal: [i32; 7]) -> Option<Self> {
         // Do a test read
-        if let Ok(_) = read(command::LOW_POWER_READ_Z1) {
+        if let Ok(_) = read(&i2c, command::LOW_POWER_READ_Z1) {
             Some(Self {
+                i2c: i2c,
                 filter: TSFilter::new(cal),
                 press: false,
                 x: 0,
@@ -118,9 +120,9 @@ impl TouchScreen {
     /** Poll for touch screen event, return the current event (Begin, Move, End) or None */
     pub fn poll(&mut self) -> Option<Event> {
         let mut ev: Option<Event> = None;
-        if let Ok(z1) = read(command::LOW_POWER_READ_Z1) {
+        if let Ok(z1) = read(&self.i2c, command::LOW_POWER_READ_Z1) {
             if z1 > TOUCH_THR_MIN && z1 < TOUCH_THR_MAX {
-                if let (Ok(x), Ok(y)) = (read(command::LOW_POWER_READ_X), read(command::LOW_POWER_READ_Y)) {
+                if let (Ok(x), Ok(y)) = (read(&self.i2c, command::LOW_POWER_READ_X), read(&self.i2c, command::LOW_POWER_READ_Y)) {
                     let (x, y) = self.filter.update(x, y);
                     if !self.press
                     {

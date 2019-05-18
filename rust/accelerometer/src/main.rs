@@ -10,9 +10,9 @@ use k210_hal::stdout::Stdout;
 use k210_shared::board::def::{io,DISP_WIDTH,DISP_HEIGHT,MSA300_SLV_ADDR,MSA300_ADDR_BITS,MSA300_CLK};
 use k210_shared::board::lcd::{LCD,self};
 use k210_shared::board::lcd_colors;
-use k210_shared::board::msa300;
+use k210_shared::board::msa300::Accelerometer;
 use k210_shared::soc::fpioa;
-use k210_shared::soc::i2c;
+use k210_shared::soc::i2c::{I2C,I2CExt};
 use k210_shared::soc::sleep::usleep;
 use k210_shared::soc::spi::SPIExt;
 use k210_shared::soc::sysctl;
@@ -85,11 +85,12 @@ fn main() -> ! {
     let mut image: ScreenImage = [0; DISP_WIDTH * DISP_HEIGHT / 2];
 
     writeln!(stdout, "MSA300 init").unwrap();
-    i2c::init(MSA300_SLV_ADDR, MSA300_ADDR_BITS, MSA300_CLK);
-    msa300::init().unwrap();
+    let i2c = p.I2C0.constrain();
+    i2c.init(MSA300_SLV_ADDR, MSA300_ADDR_BITS, MSA300_CLK);
+    let acc = Accelerometer::init(i2c).unwrap();
 
     loop {
-        let (x, y, z) = msa300::measure().unwrap();
+        let (x, y, z) = acc.measure().unwrap();
         let mag = (x*x+y*y+z*z).sqrt();
         // writeln!(stdout, "m/s^2 x={} y={} z={} (size={})", x, y, z, mag).unwrap();
 
