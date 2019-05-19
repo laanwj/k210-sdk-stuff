@@ -3,8 +3,8 @@ Peripherals
 
 List of on-board peripherals and chips for the various boards with a K210.
 
-Sipeed M1 module
-----------------
+Sipeed M1(w) module
+-------------------
 
 Also called "Dan" or "LicheeDan".
 
@@ -13,10 +13,13 @@ Also called "Dan" or "LicheeDan".
 - K210 - CPU
 - GD25LQ128D - 128Mbit w25qxx Flash chip (seems hardwired on SPI3)
 - RY1303 - 3 Channel 5.5V 2A 1.5MHz DC/DC Step down PMU
-- ESP8285 - WiFi module (serial)
 - PT8211 - DAC audio (I2S)
 - CH340C - USB to serial chip CH340. used to flash firmware over USB connector and console access on boards except for the Maix Go
 - MSM261S4030H0 - Microphone (I2S)
+
+M1w only:
+
+- Espressif ESP8285 - WiFi module (serial, connected to FPIOA pin 6/7/8), this is a ESP8266 with built-in 1M flash
 
 Maix Go
 -------
