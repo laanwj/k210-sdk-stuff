@@ -125,6 +125,13 @@ The amount of pressure applied determines the radius of the state change.
 
 [README](rust/game-of-life/README.md)
 
+rust/uart-passthrough
+---------------------
+
+Pass through UART from host to the ESP8285 WIFI chip.
+
+[README](rust/uart-passthrough/README.md)
+
 ROM re'ing
 ===========
 

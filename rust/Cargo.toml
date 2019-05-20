@@ -4,6 +4,7 @@ members = [
     "mandelbrot",
     "game-of-life",
     "accelerometer",
+    "uart-passthrough",
 ]
 
 [patch.crates-io]
