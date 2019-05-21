@@ -22,3 +22,5 @@ The connection from the K210 to the ESP can handle up to `115200*40=4608000` bau
 however the connection to the host seems to get stuck at a lower number. Use
 `AT+UART_CUR=` (not `UART_DEF` !) to set the baudrate at the ESP side so that
 it is always possible to reset the MCU to get back to 115200 baud.
+
+There's a demo in `demo/weather.py`.
