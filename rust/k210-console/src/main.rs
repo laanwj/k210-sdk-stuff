@@ -67,14 +67,16 @@ fn main() -> ! {
     writeln!(stdout, "Clocks:").unwrap();
     writeln!(
         stdout,
-        "  CPU {}",
-        sysctl::clock_get_freq(sysctl::clock::CPU)
+        "  CPU {} (HAL assumes {})",
+        sysctl::clock_get_freq(sysctl::clock::CPU),
+        clocks.cpu().0,
     )
     .unwrap();
     writeln!(
         stdout,
-        "  APB0 {}",
-        sysctl::clock_get_freq(sysctl::clock::APB0)
+        "  APB0 {} (HAL assumes {})",
+        sysctl::clock_get_freq(sysctl::clock::APB0),
+        clocks.apb0().0,
     )
     .unwrap();
     writeln!(

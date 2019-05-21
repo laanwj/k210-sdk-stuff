@@ -1,7 +1,7 @@
 use k210_hal::pac;
 
 use crate::soc::gpio;
-use crate::soc::utils::set_bit;
+use crate::soc::utils::{set_bit,get_bit};
 
 pub fn set_direction(pin: u8, direction: gpio::direction) {
     unsafe {
@@ -21,5 +21,12 @@ pub fn set_pin(pin: u8, value: bool) {
         (*ptr)
             .output_val
             .modify(|r, w| w.bits(set_bit(r.bits(), pin, value)));
+    }
+}
+
+pub fn get_pin(pin: u8) -> bool {
+    unsafe {
+        let ptr = pac::GPIOHS::ptr();
+        get_bit((*ptr).input_val.read().bits(), pin)
     }
 }
