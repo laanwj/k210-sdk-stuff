@@ -4,6 +4,7 @@
 #![no_std]
 #![no_main]
 
+use core::cmp::{min,max};
 use k210_hal::pac;
 use k210_hal::prelude::*;
 use k210_hal::stdout::Stdout;
@@ -107,15 +108,11 @@ fn main() -> ! {
 
     loop {
         if let Some(ev) = ts.poll() {
-            if ev.z > 0
-                && ev.x >= 0
-                && ev.x < (DISP_WIDTH as i32)
-                && ev.y >= 0
-                && ev.y < (DISP_HEIGHT as i32)
-            {
+            if ev.z > 0 {
+                let x = max(min(ev.x, DISP_WIDTH as i32 - 1), 0) as u16;
+                let y = max(min(ev.y, DISP_HEIGHT as i32 - 1), 0) as u16;
                 //writeln!(stdout, "{:?}", ev).unwrap();
-                let (r, g, b) =
-                    color_from_xy(ev.x as u16, ev.y as u16, clampf(ev.z as f32 / 1000.0));
+                let (r, g, b) = color_from_xy(x, y, clampf(ev.z as f32 / 1000.0));
 
                 pwm_set(Channel::CH1, freq, 1.0 - r * R_SCALE);
                 pwm_set(Channel::CH2, freq, 1.0 - g * G_SCALE);
