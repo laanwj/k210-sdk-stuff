@@ -5,6 +5,7 @@ members = [
     "game-of-life",
     "accelerometer",
     "uart-passthrough",
+    "rgbcontrol",
 ]
 
 [patch.crates-io]

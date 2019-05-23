@@ -10,8 +10,9 @@ use k210_hal::pac;
 use k210_hal::prelude::*;
 use k210_hal::stdout::Stdout;
 use k210_shared::board::def::{io,DISP_WIDTH,DISP_HEIGHT};
-use k210_shared::board::lcd::{LCD,self};
+use k210_shared::board::lcd::{LCD,LCDHL,self};
 use k210_shared::board::lcd_colors;
+use k210_shared::board::lcd_render::render_image;
 use k210_shared::soc::fpioa;
 use k210_shared::soc::sleep::usleep;
 use k210_shared::soc::spi::SPIExt;
@@ -19,8 +20,6 @@ use k210_shared::soc::sysctl;
 use riscv_rt::entry;
 
 use crate::palette::PALETTE;
-
-pub type ScreenImage = [u32; DISP_WIDTH * DISP_HEIGHT / 2];
 
 /** Connect pins to internal functions */
 fn io_mux_init() {
@@ -52,16 +51,6 @@ fn mandelbrot(cx: f32, cy: f32, iterations: u32) -> u32 {
     i
 }
 
-fn compute(x: u16, y: u16, zoom: f32) -> u16 {
-    let ofsx = 0.02997f32;
-    let ofsy = 0.80386f32;
-    let xx = 2.0 * (x as f32) / ((DISP_WIDTH-1) as f32) - 1.0;
-    let yy = 2.0 * (y as f32) / ((DISP_HEIGHT-1) as f32) - 1.0;
-    let i = mandelbrot(xx * zoom + ofsx, yy * zoom + ofsy, 20);
-
-    PALETTE[i as usize]
-}
-
 #[entry]
 fn main() -> ! {
     let p = pac::Peripherals::take().unwrap();
@@ -86,22 +75,19 @@ fn main() -> ! {
     lcd.set_direction(lcd::direction::YX_RLDU);
     lcd.clear(lcd_colors::PURPLE);
 
-    let mut image: ScreenImage = [0; DISP_WIDTH * DISP_HEIGHT / 2];
-
     writeln!(stdout, "First frame").unwrap();
-    let mut frame = 0;
     let mut zoom = 5.0f32;
+    let ofsx = 0.02997f32;
+    let ofsy = 0.80386f32;
     loop {
-        let mut ofs = 0;
-        for y in 0..DISP_HEIGHT as u16 {
-            for x in 0..(DISP_WIDTH/2) as u16 {
-                image[ofs] = ((compute(x*2+0, y, zoom) as u32)<<16) | (compute(x*2+1, y, zoom) as u32);
-                ofs += 1;
-            }
-        }
-        lcd.draw_picture(0, 0, DISP_WIDTH as u16, DISP_HEIGHT as u16, &image);
+        render_image(&mut lcd, |x,y| {
+            let xx = 2.0 * (x as f32) / ((DISP_WIDTH-1) as f32) - 1.0;
+            let yy = 2.0 * (y as f32) / ((DISP_HEIGHT-1) as f32) - 1.0;
+            let i = mandelbrot(xx * zoom + ofsx, yy * zoom + ofsy, 20);
 
-        frame += 1;
+            PALETTE[i as usize]
+        });
+
         zoom *= 0.98f32;
     }
 }

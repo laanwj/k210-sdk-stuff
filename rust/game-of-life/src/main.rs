@@ -8,7 +8,7 @@ use k210_hal::pac;
 use k210_hal::prelude::*;
 use k210_hal::stdout::Stdout;
 use k210_shared::board::def::{io,DISP_WIDTH,DISP_HEIGHT,NS2009_SLV_ADDR,NS2009_CAL,NS2009_ADDR_BITS,NS2009_CLK};
-use k210_shared::board::lcd::{LCD,self};
+use k210_shared::board::lcd::{LCD,LCDHL,self};
 use k210_shared::board::lcd_colors;
 use k210_shared::board::ns2009::TouchScreen;
 use k210_shared::soc::fpioa;

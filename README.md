@@ -132,6 +132,13 @@ Pass through UART from host to the ESP8285 WIFI chip.
 
 [README](rust/uart-passthrough/README.md)
 
+rust/rgbcontrol
+----------------
+
+Control the color of the RGB LED from the touch screen.
+
+[README](rust/rgbcontrol/README.md)
+
 ROM re'ing
 ===========
 

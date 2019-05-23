@@ -8,8 +8,9 @@ use k210_hal::pac;
 use k210_hal::prelude::*;
 use k210_hal::stdout::Stdout;
 use k210_shared::board::def::{io,DISP_WIDTH,DISP_HEIGHT,MSA300_SLV_ADDR,MSA300_ADDR_BITS,MSA300_CLK};
-use k210_shared::board::lcd::{LCD,self};
+use k210_shared::board::lcd::{LCD,LCDHL,self};
 use k210_shared::board::lcd_colors;
+use k210_shared::board::lcd_render::render_image;
 use k210_shared::board::msa300::Accelerometer;
 use k210_shared::soc::fpioa;
 use k210_shared::soc::i2c::{I2C,I2CExt};
@@ -22,12 +23,6 @@ use riscv_rt::entry;
 pub const BLK_SIZE: usize = 8;
 pub const GRID_WIDTH: usize = DISP_WIDTH / BLK_SIZE;
 pub const GRID_HEIGHT: usize = DISP_HEIGHT / BLK_SIZE;
-
-/** Array for representing an image of the entire screen.
- * This is an array of DISP_WIDTH / 2 × DISP_HEIGHT, each two horizontally consecutive
- * pixels are encoded in a u32 with `(a << 16)|b`.
- */
-pub type ScreenImage = [u32; DISP_WIDTH * DISP_HEIGHT / 2];
 
 /** Connect pins to internal functions */
 fn io_mux_init() {
@@ -82,8 +77,6 @@ fn main() -> ! {
     lcd.set_direction(lcd::direction::YX_LRUD);
     lcd.clear(lcd_colors::PURPLE);
 
-    let mut image: ScreenImage = [0; DISP_WIDTH * DISP_HEIGHT / 2];
-
     writeln!(stdout, "MSA300 init").unwrap();
     let i2c = p.I2C0.constrain();
     i2c.init(MSA300_SLV_ADDR, MSA300_ADDR_BITS, MSA300_CLK);
@@ -99,17 +92,13 @@ fn main() -> ! {
         let cy = ((x/8.5 + 1.0) * ((DISP_HEIGHT / 2) as f32)) as i32;
         let r = (1.5*mag) as i32;
         let rr = r * r;
-        let mut idx = 0;
-        for y in 0..DISP_HEIGHT as i32 {
-            for x2 in 0..(DISP_WIDTH/2) as i32 {
-                let x = x2 * 2;
-                image[idx] = (if sample_cirle(x + 0, y, cx, cy, r, rr) { 0xffff } else { 0 } << 16) |
-                             if sample_cirle(x + 1, y, cx, cy, r, rr) { 0xffff } else { 0 };
-                idx += 1;
+        render_image(&mut lcd, |x,y| {
+            if sample_cirle(x as i32, y as i32, cx, cy, r, rr) {
+                0xffff
+            } else {
+                0
             }
-        }
-
-        lcd.draw_picture(0, 0, DISP_WIDTH as u16, DISP_HEIGHT as u16, &image);
+        });
         // usleep(10000);
     }
 }

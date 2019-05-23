@@ -117,6 +117,25 @@ pub struct LCD<SPI> {
     pub height: u16,
 }
 
+/** Low-level interface */
+pub trait LCDLL {
+    fn hard_init(&self);
+    fn write_command(&self, cmd: command);
+    fn write_byte(&self, data_buf: &[u8]);
+    fn write_half(&self, data_buf: &[u16]);
+    fn write_word(&self, data_buf: &[u32]);
+    fn fill_data(&self, data: u32, length: usize);
+}
+
+/** High-level interface */
+pub trait LCDHL {
+    fn init(&mut self);
+    fn set_direction(&mut self, dir: direction);
+    fn set_area(&self, x1: u16, y1: u16, x2: u16, y2: u16);
+    fn clear(&self, color: u16);
+    fn draw_picture(&self, x1: u16, y1: u16, width: u16, height: u16, data: &[u32]);
+}
+
 impl<X: SPI> LCD<X> {
     pub fn new(spi: X) -> Self {
         Self {
@@ -125,8 +144,6 @@ impl<X: SPI> LCD<X> {
             height: 0,
         }
     }
-
-    /* Low-level functions */
 
     fn init_dcx(&self) {
         gpiohs::set_direction(DCX_GPIONUM, gpio::direction::OUTPUT);
@@ -149,8 +166,11 @@ impl<X: SPI> LCD<X> {
     fn set_rst(&self, val: bool) {
         gpiohs::set_pin(RST_GPIONUM, val);
     }
+}
 
-    pub fn hard_init(&self) {
+/** Low-level functions */
+impl<X: SPI> LCDLL for LCD<X> {
+    fn hard_init(&self) {
         self.init_dcx();
         self.init_rst();
         self.set_rst(false);
@@ -169,7 +189,7 @@ impl<X: SPI> LCD<X> {
         self.set_rst(true);
     }
 
-    pub fn write_command(&self, cmd: command) {
+    fn write_command(&self, cmd: command) {
         self.set_dcx_control();
         self.spi.configure(
             ctrlr0::WORK_MODEW::MODE0,
@@ -185,7 +205,7 @@ impl<X: SPI> LCD<X> {
         self.spi.send_data(SPI_SLAVE_SELECT, &[cmd as u8]);
     }
 
-    pub fn write_byte(&self, data_buf: &[u8]) {
+    fn write_byte(&self, data_buf: &[u8]) {
         self.set_dcx_data();
         self.spi.configure(
             ctrlr0::WORK_MODEW::MODE0,
@@ -201,7 +221,7 @@ impl<X: SPI> LCD<X> {
         self.spi.send_data(SPI_SLAVE_SELECT, data_buf);
     }
 
-    pub fn write_half(&self, data_buf: &[u16]) {
+    fn write_half(&self, data_buf: &[u16]) {
         self.set_dcx_data();
         self.spi.configure(
             ctrlr0::WORK_MODEW::MODE0,
@@ -217,7 +237,7 @@ impl<X: SPI> LCD<X> {
         self.spi.send_data(SPI_SLAVE_SELECT, data_buf);
     }
 
-    pub fn write_word(&self, data_buf: &[u32]) {
+    fn write_word(&self, data_buf: &[u32]) {
         self.set_dcx_data();
         self.spi.configure(
             ctrlr0::WORK_MODEW::MODE0,
@@ -233,7 +253,7 @@ impl<X: SPI> LCD<X> {
         self.spi.send_data(SPI_SLAVE_SELECT, data_buf);
     }
 
-    pub fn fill_data(&self, data: u32, length: usize) {
+    fn fill_data(&self, data: u32, length: usize) {
         self.set_dcx_data();
         self.spi.configure(
             ctrlr0::WORK_MODEW::MODE0,
@@ -248,10 +268,11 @@ impl<X: SPI> LCD<X> {
         );
         self.spi.fill_data(SPI_SLAVE_SELECT, data, length);
     }
+}
 
-    /* High-level functions */
-
-    pub fn init(&mut self) {
+/* High-level functions */
+impl<X: SPI> LCDHL for LCD<X> {
+    fn init(&mut self) {
         self.hard_init();
         /*soft reset*/
         self.write_command(command::SOFTWARE_RESET);
@@ -268,7 +289,7 @@ impl<X: SPI> LCD<X> {
         self.write_command(command::DISPLAY_ON);
     }
 
-    pub fn set_direction(&mut self, dir: direction) {
+    fn set_direction(&mut self, dir: direction) {
         if ((dir as u8) & DIR_XY_MASK) != 0 {
             self.width = LCD_Y_MAX;
             self.height = LCD_X_MAX;
@@ -281,7 +302,7 @@ impl<X: SPI> LCD<X> {
         self.write_byte(&[dir as u8]);
     }
 
-    pub fn set_area(&self, x1: u16, y1: u16, x2: u16, y2: u16) {
+    fn set_area(&self, x1: u16, y1: u16, x2: u16, y2: u16) {
         self.write_command(command::HORIZONTAL_ADDRESS_SET);
         self.write_byte(&[
             (x1 >> 8) as u8,
@@ -301,14 +322,14 @@ impl<X: SPI> LCD<X> {
         self.write_command(command::MEMORY_WRITE);
     }
 
-    pub fn clear(&self, color: u16) {
+    fn clear(&self, color: u16) {
         let data = ((color as u32) << 16) | (color as u32);
 
         self.set_area(0, 0, self.width - 1, self.height - 1);
         self.fill_data(data, (LCD_X_MAX as usize) * (LCD_Y_MAX as usize) / 2);
     }
 
-    pub fn draw_picture(&self, x1: u16, y1: u16, width: u16, height: u16, data: &[u32]) {
+    fn draw_picture(&self, x1: u16, y1: u16, width: u16, height: u16, data: &[u32]) {
         self.set_area(x1, y1, x1 + width - 1, y1 + height - 1);
         assert!(data.len() == (width as usize) * (height as usize) / 2);
         self.write_word(data);
