@@ -1,0 +1,236 @@
+#![allow(dead_code)]
+#![allow(non_snake_case)]
+#![allow(non_camel_case_types)]
+#![no_std]
+#![no_main]
+
+use core::str;
+use embedded_hal::serial;
+use esp8266at::handler::{NetworkEvent, SerialNetworkHandler};
+use esp8266at::response::{parse_response, ConnectionType};
+use esp8266at::traits::{self, Write};
+use k210_hal::pac;
+use k210_hal::prelude::*;
+use k210_hal::stdout::Stdout;
+use k210_shared::board::def::io;
+use k210_shared::board::lcd::{self, LCD, LCDHL};
+use k210_shared::soc::fpioa;
+use k210_shared::soc::gpio;
+use k210_shared::soc::gpiohs;
+use k210_shared::soc::sleep::usleep;
+use k210_shared::soc::spi::SPIExt;
+use k210_shared::soc::sysctl;
+use nb::block;
+use nom::Offset;
+use riscv::register::mcycle;
+use riscv_rt::entry;
+use k210_console::console::{Console, ScreenImage, DISP_HEIGHT, DISP_WIDTH};
+
+mod config;
+
+const DEFAULT_BAUD: u32 = 115_200;
+const TIMEOUT: usize = 390_000_000 * 40 / 115200;
+
+struct WriteAdapter<'a, TX>
+where
+    TX: serial::Write<u8>,
+{
+    tx: &'a mut TX,
+}
+impl<'a, TX> WriteAdapter<'a, TX>
+where
+    TX: serial::Write<u8>,
+    TX::Error: core::fmt::Debug,
+{
+    fn new(tx: &'a mut TX) -> Self {
+        Self { tx }
+    }
+}
+impl<'a, TX> traits::Write for WriteAdapter<'a, TX>
+where
+    TX: serial::Write<u8>,
+    TX::Error: core::fmt::Debug,
+{
+    type Error = TX::Error;
+
+    fn write_all(&mut self, buf: &[u8]) -> Result<(), Self::Error> {
+        for ch in buf {
+            block!(self.tx.write(*ch))?;
+        }
+        Ok(())
+    }
+}
+
+/** Connect pins to internal functions */
+fn io_init() {
+    /* Init SPI IO map and function settings */
+    fpioa::set_function(
+        io::LCD_RST.into(),
+        fpioa::function::gpiohs(lcd::RST_GPIONUM),
+    );
+    fpioa::set_io_pull(io::LCD_RST.into(), fpioa::pull::DOWN); // outputs must be pull-down
+    fpioa::set_function(io::LCD_DC.into(), fpioa::function::gpiohs(lcd::DCX_GPIONUM));
+    fpioa::set_io_pull(io::LCD_DC.into(), fpioa::pull::DOWN);
+    fpioa::set_function(io::LCD_CS.into(), fpioa::function::SPI0_SS3);
+    fpioa::set_function(io::LCD_WR.into(), fpioa::function::SPI0_SCLK);
+
+    sysctl::set_spi0_dvp_data(true);
+
+    /* Set dvp and spi pin to 1.8V */
+    sysctl::set_power_mode(sysctl::power_bank::BANK6, sysctl::io_power_mode::V18);
+    sysctl::set_power_mode(sysctl::power_bank::BANK7, sysctl::io_power_mode::V18);
+}
+
+#[entry]
+fn main() -> ! {
+    let p = pac::Peripherals::take().unwrap();
+    let clocks = k210_hal::clock::Clocks::new();
+
+    usleep(200000);
+    io_init();
+
+    // Configure UARTHS (→host)
+    let mut serial = p.UARTHS.constrain(DEFAULT_BAUD.bps(), &clocks);
+    let (mut tx, mut rx) = serial.split();
+    let mut debug = Stdout(&mut tx);
+
+    // Configure UART1 (→WIFI)
+    sysctl::clock_enable(sysctl::clock::UART1);
+    sysctl::reset(sysctl::reset::UART1);
+    fpioa::set_function(io::WIFI_RX as u8, fpioa::function::UART1_TX);
+    fpioa::set_function(io::WIFI_TX as u8, fpioa::function::UART1_RX);
+    fpioa::set_function(io::WIFI_EN as u8, fpioa::function::GPIOHS8);
+    fpioa::set_io_pull(io::WIFI_EN as u8, fpioa::pull::DOWN);
+    gpiohs::set_pin(8, true);
+    gpiohs::set_direction(8, gpio::direction::OUTPUT);
+    let mut wifi_serial = p.UART1.constrain(DEFAULT_BAUD.bps(), &clocks);
+    let (mut wtx, mut wrx) = wifi_serial.split();
+
+    let mut wa = WriteAdapter::new(&mut wtx);
+    let mut sh = SerialNetworkHandler::new(&mut wa, config::APNAME.as_bytes(), config::APPASS.as_bytes());
+
+    // LCD ini
+    let spi = p.SPI0.constrain();
+    let mut lcd = LCD::new(spi);
+    lcd.init();
+    lcd.set_direction(lcd::direction::YX_LRUD);
+    let mut console: Console = Console::new();
+
+    let mut i:u16 = 0;
+    writeln!(console, "\x1b[48;2;128;192;255;38;5;0m WEATHER \x1b[0m \x1b[38;2;128;128;128mfetching...\x1b[0m").unwrap();
+
+    // Start off connection process state machine
+    sh.start(false);
+    writeln!(console, "∙ Connecting to AP").unwrap();
+
+    let mut serial_buf = [0u8; 2560]; // 2048 + some
+    let mut ofs: usize = 0;
+
+    let mut cur_link = 0;
+    loop {
+        if console.dirty {
+            let mut image: ScreenImage = [0; DISP_WIDTH * DISP_HEIGHT / 2];
+            console.render(&mut image);
+            lcd.draw_picture(0, 0, DISP_WIDTH as u16, DISP_HEIGHT as u16, &image);
+            console.dirty = false;
+        }
+
+        // Receive byte into buffer
+        if let Ok(ch) = wrx.read() {
+            let ofs0 = ofs;
+            serial_buf[ofs] = ch;
+            ofs += 1;
+            let mut lastrecv = mcycle::read();
+            loop {
+                // Read until we stop receiving for a certain duration
+                // This is a hack around the fact that in the time that the parser runs,
+                // more than one FIFO full of characters can be received so characters could be
+                // lost. The right way would be to receive in an interrupt handler, but,
+                // we don't have that yet.
+                if let Ok(ch) = wrx.read() {
+                    serial_buf[ofs] = ch;
+                    ofs += 1;
+                    lastrecv = mcycle::read();
+                } else if (mcycle::read().wrapping_sub(lastrecv)) >= TIMEOUT {
+                    break;
+                }
+            }
+            //writeln!(debug, "ofs: {} received {} chars {:?}", ofs0, ofs - ofs0,
+            //         &serial_buf[ofs0..ofs]).unwrap();
+
+            // Loop as long as there's something in the buffer to parse, starting at the
+            // beginning
+            let mut start = 0;
+            while start < ofs {
+                // try parsing
+                let tail = &serial_buf[start..ofs];
+                let erase = match parse_response(tail) {
+                    Ok((residue, resp)) => {
+                        sh.message(&resp, &mut |port, ev, debug| {
+                            match ev {
+                                NetworkEvent::Ready => {
+                                    writeln!(console, "∙ Connected to AP").unwrap();
+                                    cur_link = port.connect(ConnectionType::TCP, b"wttr.in", 80).unwrap();
+                                    writeln!(console, "∙ \x1b[38;5;141m[{}]\x1b[0m Opening TCP conn", cur_link).unwrap();
+                                }
+                                NetworkEvent::Error => {
+                                    writeln!(console, "∙ Could not connect to AP").unwrap();
+                                }
+                                NetworkEvent::ConnectionEstablished(link) => {
+                                    if link == cur_link {
+                                        writeln!(console, "∙ \x1b[38;5;141m[{}]\x1b[0m Sending HTTP request", link).unwrap();
+                                        port.write_all(b"GET /?0qA HTTP/1.1\r\nHost: wttr.in\r\nConnection: close\r\nUser-Agent: Weather-Spy\r\n\r\n").unwrap();
+                                        port.send(link).unwrap();
+                                    }
+                                }
+                                NetworkEvent::Data(link, data) => {
+                                    // write!(debug, "{}", str::from_utf8(data).unwrap());
+                                    if link == cur_link {
+                                        console.puts(str::from_utf8(data).unwrap_or("???"));
+                                    }
+                                }
+                                NetworkEvent::ConnectionClosed(link) => {
+                                    writeln!(console, "∙ \x1b[38;5;141m[{}]\x1b[0m \x1b[38;2;100;100;100m[closed]\x1b[0m", link).unwrap();
+                                }
+                                _ => { }
+                            }
+                        }, &mut debug).unwrap();
+
+                        tail.offset(residue)
+                    }
+                    Err(nom::Err::Incomplete(_)) => {
+                        // Incomplete, ignored, just retry after a new receive
+                        0
+                    }
+                    Err(err) => {
+                        writeln!(debug, "err: {:?}", err).unwrap();
+                        // Erase unparseable data to next line, if line is complete
+                        if let Some(ofs) = tail.iter().position(|&x| x == b'\n') {
+                            ofs + 1
+                        } else {
+                            // If not, retry next time
+                            0
+                        }
+                    }
+                };
+
+                if erase == 0 {
+                    // End of input or remainder unparseable
+                    break;
+                }
+                start += erase;
+            }
+            // Erase everything before new starting offset
+            for i in start..ofs {
+                serial_buf[i - start] = serial_buf[i];
+            }
+            ofs -= start;
+        }
+
+        /*
+        if let Ok(ch) = rx.read() {
+            let _res = block!(wtx.write(ch));
+        }
+        */
+    }
+}

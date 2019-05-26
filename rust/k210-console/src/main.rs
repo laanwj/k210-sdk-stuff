@@ -4,11 +4,7 @@
 #![no_std]
 #![no_main]
 
-mod console;
-mod cp437;
-mod cp437_8x8;
 mod lfsr;
-mod palette_xterm256;
 
 use k210_hal::pac;
 use k210_hal::prelude::*;
@@ -22,8 +18,9 @@ use k210_shared::soc::spi::SPIExt;
 use k210_shared::soc::sysctl;
 use riscv_rt::entry;
 
-use crate::console::{Color, Console, ScreenImage, DISP_HEIGHT, DISP_WIDTH};
-use crate::palette_xterm256::PALETTE;
+use k210_console::console::{Color, Console, ScreenImage, DISP_HEIGHT, DISP_WIDTH};
+use k210_console::cp437;
+use k210_console::palette_xterm256::PALETTE;
 
 /** Connect pins to internal functions */
 fn io_mux_init() {
@@ -120,7 +117,7 @@ fn main() -> ! {
     let spi = p.SPI0.constrain();
     let mut lcd = LCD::new(spi);
     lcd.init();
-    lcd.set_direction(lcd::direction::YX_RLDU);
+    lcd.set_direction(lcd::direction::YX_LRUD);
     lcd.clear(lcd_colors::PURPLE);
 
     let mut image: ScreenImage = [0; DISP_WIDTH * DISP_HEIGHT / 2];

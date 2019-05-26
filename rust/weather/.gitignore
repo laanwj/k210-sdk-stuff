@@ -1,0 +1,4 @@
+/target
+**/*.rs.bk
+# Do not check in secrets file
+config.rs

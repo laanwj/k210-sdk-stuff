@@ -139,6 +139,21 @@ Control the color of the RGB LED from the touch screen.
 
 [README](rust/rgbcontrol/README.md)
 
+rust/esp8266at
+--------------
+
+A crate for communicating with WiFi using the ESP8266 using AT commands. TODO: move this to its own repository.
+
+[README](rust/esp8266at/README.md)
+
+rust/weather
+------------
+
+Uses the ESP8285 WiFi chip of the Maix Go to fetch weather data from
+[wttr.in](https://wttr.in) and print it to the display using `k210-console`.
+
+[README](rust/weather/README.md)
+
 ROM re'ing
 ===========
 

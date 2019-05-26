@@ -6,6 +6,7 @@ members = [
     "accelerometer",
     "uart-passthrough",
     "rgbcontrol",
+    "weather",
 ]
 
 [patch.crates-io]
