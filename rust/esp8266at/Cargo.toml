@@ -1,0 +1,25 @@
+[package]
+name = "esp8266at"
+version = "0.1.0"
+authors = ["Wladimir J. van der Laan <laanwj@gmail.com>"]
+edition = "2018"
+
+[features]
+std = []
+default = ["std"]
+
+[dependencies]
+nom = { version = "4", default-features = false }
+
+[dev-dependencies]
+clap = "2"
+serialport = { version = "3", default-features = false }
+arrayvec = "0.4"
+
+[[example]]
+name = "parsetest"
+required-features = ["std"]
+
+[[example]]
+name = "serial"
+required-features = ["std"]

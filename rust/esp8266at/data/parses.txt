@@ -1,0 +1,53 @@
+> AT
+< OK
+> AT+CWJAP_CUR?
+< No AP
+< OK
+> AT+CWQAP
+< OK
+> AT+CWMODE?
+< +CWMODE:1
+< OK
+> AT+CWJAP_CUR="x","x"
+< WIFI DISCONNECT
+> AT+CWJAP_CUR="x","x"
+< busy p...
+> AT+CWJAP_CUR="x","x"
+< busy p...
+< +CWJAP:3
+< FAIL
+> AT
+< OK
+> AT+CWJAP_CUR?
+< No AP
+< OK
+> AT+CWQAP
+< OK
+> AT+CWMODE?
+< +CWMODE:1
+< OK
+> AT+CWJAP_CUR="x","x"
+< WIFI CONNECTED
+< WIFI GOT IP
+< OK
+> AT+CIFSR
+< +CIFSR:STAIP,"192.168.1.1"
+< +CIFSR:STAMAC,"12:34:56:78:9a:bc"
+< OK
+> AT+CIPSTATUS
+< STATUS:2
+< OK
+> AT+CIPMUX=0
+< OK
+> AT+CIPSTART="TCP","wttr.in",80
+< CONNECT
+< OK
+> AT+CIPSEND=81
+< OK
+< >
+< Recv 81 bytes
+< SEND OK
+> AT+CWJAP_CUR?
+< +CWJAP_CUR:"xxxxxxxx","12:34:56:78:9a:bc",10,-58
+< +IPD:8:012345
+< 
