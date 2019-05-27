@@ -14,6 +14,10 @@ const DEF_BG: u16 = rgb565(0, 0, 0);
 
 pub type ScreenImage = [u32; DISP_WIDTH * DISP_HEIGHT / 2];
 
+/* TODO
+ * - pass in font and unicode mapping instead of hardcoding cp437
+ */
+
 #[derive(Copy, Clone)]
 pub struct Color {
     r: u8,
@@ -29,6 +33,18 @@ impl Color {
 
     pub const fn new_rgba(r: u8, g: u8, b: u8, a: u8) -> Color {
         Color { r, g, b, a: a }
+    }
+
+    pub const fn from_rgb565(val: u16) -> Color {
+        let rs = ((val >> 11) & 0x1f) as u8;
+        let gs = ((val >> 5) & 0x3f) as u8;
+        let bs = ((val >> 0) & 0x1f) as u8;
+        Color {
+            r: (rs << 3) | (rs >> 2),
+            g: (gs << 2) | (gs >> 4),
+            b: (bs << 3) | (bs >> 2),
+            a: 255,
+        }
     }
 
     pub const fn from_rgba32(val: u32) -> Color {
@@ -67,7 +83,7 @@ pub struct Rect {
 }
 
 impl Rect {
-    fn new(x0: u16, y0: u16, x1: u16, y1: u16) -> Self {
+    pub fn new(x0: u16, y0: u16, x1: u16, y1: u16) -> Self {
         Self { x0, y0, x1, y1 }
     }
 }
@@ -75,15 +91,21 @@ impl Rect {
 /** One character cell */
 #[derive(Copy, Clone)]
 pub struct Cell {
+    /** Background color in RGB565 */
     fg: u16,
+    /** Background color in RGB565 */
     bg: u16,
-    ch: char,
+    /** Font index. The only hard requirement on the font is that 0 is an empty glyph. */
+    ch: u16,
+    /** Cell flags (currently unused) */
+    _flags: u16,
 }
 
 enum State {
     Initial,
     Escape,
     CSI,
+    Xterm,
 }
 
 enum Sgr {
@@ -134,7 +156,8 @@ impl Console {
             cells: [Cell {
                 fg: DEF_FG,
                 bg: DEF_BG,
-                ch: '\x00',
+                ch: 0,
+                _flags: 0,
             }; GRID_WIDTH * GRID_HEIGHT],
             cursor_pos: Coord::new(0, 0),
             cursor_visible: true,
@@ -155,7 +178,7 @@ impl Console {
         for y in 0..(GRID_HEIGHT as u16) {
             for x in 0..(GRID_WIDTH as u16) {
                 let cell = &self.cells[cell_idx];
-                let glyph = &cp437_8x8::FONT[cp437::to(cell.ch) as usize];
+                let glyph = &cp437_8x8::FONT[cell.ch as usize];
                 let mut image_ofs = image_base;
                 let is_cursor =
                     self.cursor_visible && (y == self.cursor_pos.y) && (x == self.cursor_pos.x);
@@ -202,12 +225,22 @@ impl Console {
         self.cells[(y as usize) * GRID_WIDTH + (x as usize)] = Cell {
             fg: rgb565(fg.r, fg.g, fg.b),
             bg: rgb565(bg.r, bg.g, bg.b),
-            ch,
+            ch: cp437::to(ch) as u16,
+            _flags: 0,
+        };
+    }
+
+    /** Raw put */
+    pub fn put_raw(&mut self, x: u16, y: u16, fg: u16, bg: u16, ch: u16) {
+        self.dirty = true;
+        self.cells[(y as usize) * GRID_WIDTH + (x as usize)] = Cell {
+            fg, bg, ch,
+            _flags: 0,
         };
     }
 
     /** Handle SGR escape sequence parameters */
-    pub fn handle_sgr(&mut self) {
+    fn handle_sgr(&mut self) {
         let mut state = Sgr::Initial;
         let mut color = Color::new(0, 0, 0);
         for param in &self.num[0..self.idx+1] {
@@ -215,12 +248,12 @@ impl Console {
                 Sgr::Initial => {
                     match param {
                         0 => { self.cur_fg = self.def_fg; self.cur_bg = self.def_bg; }
-                        30..=37 => { self.cur_fg = Color::from_rgba32(PALETTE[(param - 30) as usize]).to_rgb565(); }
+                        30..=37 => { self.cur_fg = PALETTE[(param - 30) as usize]; }
                         38 => { state = Sgr::SpecialFg; }
-                        40..=47 => { self.cur_bg = Color::from_rgba32(PALETTE[(param - 40) as usize]).to_rgb565(); }
+                        40..=47 => { self.cur_bg = PALETTE[(param - 40) as usize]; }
                         48 => { state = Sgr::SpecialBg; }
-                        90..=97 => { self.cur_fg = Color::from_rgba32(PALETTE[8 + (param - 90) as usize]).to_rgb565(); }
-                        100..=107 => { self.cur_bg = Color::from_rgba32(PALETTE[8 + (param - 100) as usize]).to_rgb565(); }
+                        90..=97 => { self.cur_fg = PALETTE[8 + (param - 90) as usize]; }
+                        100..=107 => { self.cur_bg = PALETTE[8 + (param - 100) as usize]; }
                         _ => {}
                     }
                 }
@@ -239,11 +272,11 @@ impl Console {
                     }
                 }
                 Sgr::Fg256 => {
-                    self.cur_fg = Color::from_rgba32(PALETTE[(param & 0xff) as usize]).to_rgb565();
+                    self.cur_fg = PALETTE[(param & 0xff) as usize];
                     state = Sgr::Initial;
                 }
                 Sgr::Bg256 => {
-                    self.cur_bg = Color::from_rgba32(PALETTE[(param & 0xff) as usize]).to_rgb565();
+                    self.cur_bg = PALETTE[(param & 0xff) as usize];
                     state = Sgr::Initial;
                 }
                 Sgr::FgR => { color.r = (param & 0xff) as u8; state = Sgr::FgG; }
@@ -256,63 +289,95 @@ impl Console {
         }
     }
 
+    /** Scroll (only up, currently) */
+    pub fn scroll(&mut self) {
+        for i in 0..(GRID_HEIGHT-1)*GRID_WIDTH {
+            self.cells[i] = self.cells[i + GRID_WIDTH];
+        }
+        for i in 0..GRID_WIDTH {
+            self.cells[(GRID_HEIGHT-1)*GRID_WIDTH + i] = Cell {
+                fg: self.cur_fg,
+                bg: self.cur_bg,
+                ch: 0,
+                _flags: 0,
+            };
+        }
+        if self.cursor_pos.y > 0 {
+            self.cursor_pos.y -= 1;
+        }
+        self.dirty = true;
+    }
+
     /** Put a char at current cursor position, interpreting control and escape codes. */
     pub fn putch(&mut self, ch: char) {
         match self.state {
-            State::Initial => {
-                match ch {
-                    '\r' => { self.cursor_pos.x = 0; }
-                    '\n' => { self.cursor_pos.y += 1; self.cursor_pos.x = 0; }
-                    '\x1b' => { self.state = State::Escape; }
-                    ch => {
-                        self.dirty = true;
-                        self.cells[(self.cursor_pos.y as usize) * GRID_WIDTH + (self.cursor_pos.x as usize)] = Cell {
-                            fg: self.cur_fg,
-                            bg: self.cur_bg,
-                            ch,
-                        };
-                        self.cursor_pos.x += 1;
+            State::Initial => match ch {
+                '\x08' => { // backspace
+                    if self.cursor_pos.x > 0 {
+                        self.cursor_pos.x -= 1;
+                        self.put_raw(self.cursor_pos.x, self.cursor_pos.y, self.cur_fg, self.cur_bg, 0);
                     }
                 }
-            }
-            State::Escape => {
-                match ch {
-                    '[' => { self.state = State::CSI; self.idx = 0; self.num[0] = 0; }
-                    _ => { self.state = State::Initial; }
+                '\r' => { self.cursor_pos.x = 0; self.dirty = true; }
+                '\n' => {
+                    self.cursor_pos.y += 1; self.cursor_pos.x = 0; self.dirty = true;
+                    if self.cursor_pos.y == GRID_HEIGHT as u16 {
+                        self.scroll();
+                    }
+                }
+                '\x1b' => { self.state = State::Escape; }
+                '\x00'..='\x1f' => {
+                    // Unhandled control character, skip it
+                }
+                ch => {
+                    // allow cursor to be at 'virtual' column GRID_WIDTH to allow using all
+                    // (limited number of) columns
+                    if self.cursor_pos.x == GRID_WIDTH as u16 {
+                        self.cursor_pos.x = 0;
+                        self.cursor_pos.y += 1;
+                    }
+                    if self.cursor_pos.y == GRID_HEIGHT as u16 {
+                        self.scroll();
+                    }
+
+                    self.put_raw(self.cursor_pos.x, self.cursor_pos.y, self.cur_fg, self.cur_bg, cp437::to(ch) as u16);
+                    self.cursor_pos.x += 1;
                 }
             }
-            State::CSI => {
-                match ch {
-                    '0'..='9' => {
-                        self.num[self.idx] *= 10;
-                        self.num[self.idx] += ((ch as u8) - b'0') as u16;
+            State::Escape => match ch {
+                '[' => { self.state = State::CSI; self.idx = 0; self.num[0] = 0; }
+                ']' => { self.state = State::Xterm; }
+                _ => { self.state = State::Initial; }
+            }
+            State::CSI => match ch {
+                '0'..='9' => {
+                    self.num[self.idx] = self.num[self.idx].wrapping_mul(10).wrapping_add(((ch as u8) - b'0') as u16);
+                }
+                ';' => {
+                    self.idx += 1;
+                    if self.idx == self.num.len() {
+                        // Too many arguments, ignore sequence
+                        self.state = State::Initial;
+                    } else {
+                        self.num[self.idx] = 0;
                     }
-                    ';' => {
-                        self.idx += 1;
-                        if self.idx == self.num.len() {
-                            // Too many arguments, ignore sequence
-                            self.state = State::Initial;
-                        } else {
-                            self.num[self.idx] = 0;
-                        }
-                    }
-                    'm' => {
-                        self.handle_sgr();
+                }
+                'm' => {
+                    self.handle_sgr();
+                    self.state = State::Initial;
+                }
+                _ => {
+                    self.state = State::Initial;
+                }
+            }
+            // This sets window title and such, we can't do anything with this information so
+            // ignore until the BEL
+            State::Xterm => match ch {
+                    '\x07' => {
                         self.state = State::Initial;
                     }
-                    _ => {
-                        self.state = State::Initial;
-                    }
-                }
+                    _ => { }
             }
-        }
-        // wrap around
-        if self.cursor_pos.x == GRID_WIDTH as u16 {
-            self.cursor_pos.x = 0;
-            self.cursor_pos.y += 1;
-        }
-        if self.cursor_pos.y == GRID_HEIGHT as u16 {
-            self.cursor_pos.y = 0;
         }
     }
 

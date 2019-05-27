@@ -128,23 +128,23 @@ fn main() -> ! {
     let bg = Color::new(0x00, 0x00, 0x00);
     // Sides
     for x in 1..console.width() - 1 {
-        console.put(x, 0, fg, bg, cp437::from(196));
-        console.put(x, console.height() - 1, fg, bg, cp437::from(196));
+        console.put(x, 0, fg, bg, '─');
+        console.put(x, console.height() - 1, fg, bg, '─');
     }
     for y in 1..console.height() - 1 {
-        console.put(0, y, fg, bg, cp437::from(179));
-        console.put(console.width() - 1, y, fg, bg, cp437::from(179));
+        console.put(0, y, fg, bg, '│');
+        console.put(console.width() - 1, y, fg, bg, '│');
     }
     // Corners
-    console.put(0, 0, fg, bg, cp437::from(218));
-    console.put(console.width() - 1, 0, fg, bg, cp437::from(191));
-    console.put(0, console.height() - 1, fg, bg, cp437::from(192));
+    console.put(0, 0, fg, bg, '┌');
+    console.put(console.width() - 1, 0, fg, bg, '┐');
+    console.put(0, console.height() - 1, fg, bg, '└');
     console.put(
         console.width() - 1,
         console.height() - 1,
         fg,
         bg,
-        cp437::from(217),
+        '┘',
     );
 
     let mut frame = 0;
@@ -186,8 +186,8 @@ fn main() -> ! {
                 console.put(
                     x,
                     y,
-                    Color::from_rgba32(PALETTE[((rv >> 24) & 0xf) as usize]),
-                    Color::from_rgba32(PALETTE[((rv >> 20) & 0x7) as usize]),
+                    Color::from_rgb565(PALETTE[((rv >> 24) & 0xf) as usize]),
+                    Color::from_rgb565(PALETTE[((rv >> 20) & 0x7) as usize]),
                     cp437::from((rv & 0xff) as u8),
                 );
             }
@@ -196,8 +196,8 @@ fn main() -> ! {
         console.render(&mut image);
         lcd.draw_picture(0, 0, DISP_WIDTH as u16, DISP_HEIGHT as u16, &image);
 
-        writeln!(stdout, "test {}", frame).unwrap();
-        usleep(1_000_000);
+        // writeln!(stdout, "test {}", frame).unwrap();
+        usleep(100_000);
         frame += 1;
     }
 }
