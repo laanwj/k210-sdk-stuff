@@ -16,18 +16,24 @@ cmake .. -DPROJ=<ProjectName> -DTOOLCHAIN=/opt/riscv-toolchain/bin && make
 
 You will get 2 files, `build/<ProjectName>` and `build/<ProjectName>.bin`. The former
 is an ELF executable, the latter a raw binary that can be flashed or written to
-0x80000000 in SRAM and directly executed.
+address `0x80000000` in SRAM and directly executed.
 
 Building the Rust projects
 --------------------------
 
-**Note:** *it's possible that these projects require Rust nightly to build.
-I don't intentially use nightly features, however, I always test the latest one so it's
-likely that something will sneak in*
+**Note:** *it's possible that these projects require Rust nightly to build.  I
+don't intentially use nightly features, however, I always test only using the
+latest one so it's likely that something will sneak in*
+
+Make sure the appropriate target has been added to the toolchain that you wish
+to use:
+```bash
+rustup target add riscv64gc-unknown-none-elf
+```
 
 Target configuration is set up in `.cargo/config`, so building is a matter of:
 
-```
+```bash
 cd rust/<name_of_project>
 cargo build --release
 ```
@@ -46,7 +52,7 @@ Running ELF
 -----------
 
 There is no need anymore to convert to raw binary, as ELF executables can be executed directly on
-the device (no flashing) using
+the device (no flashing) using a recent checkout of [kflash](https://github.com/kendryte/kflash.py)
 
 ```bash
 kflash.py -t -s -p /dev/ttyUSB1 -B goE "${ELF_NAME}"
@@ -55,6 +61,27 @@ kflash.py -t -s -p /dev/ttyUSB1 -B goE "${ELF_NAME}"
 This works for both the C and Rust-produced executables. It is also possible to upload
 and run code on the device through JTAG and OpenOCD, but I have never got this to work myself
 (openocd cannot find the device).
+
+Currently, rust generates ELF executables based at address `0xffffffff80000000`
+instead of the expected `0x80000000`, to work around lack of medany memory
+model support in LLVM. To make this work with kflash I had to patch the
+following:
+
+```patch
+diff --git a/kflash.py b/kflash.py
+index c092d08..b3bc457 100755
+--- a/kflash.py
++++ b/kflash.py
+@@ -976,7 +976,7 @@ class KFlash:
+                     if segment['p_type']!='PT_LOAD' or segment['p_filesz']==0 or segment['p_vaddr']==0:
+                         print("Skipped")
+                         continue
+-                    self.flash_dataframe(segment.data(), segment['p_vaddr'])
++                    self.flash_dataframe(segment.data(), segment['p_vaddr'] & 0xffffffff)
+
+             def flash_firmware(self, firmware_bin, aes_key = None, address_offset = 0, sha256Prefix = True):
+                 # type: (bytes, bytes, int, bool) -> None
+```
 
 Documentation
 ==============
