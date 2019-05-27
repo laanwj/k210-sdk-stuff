@@ -214,7 +214,7 @@ class ESP8266(object):
         return self._getResponse()
 
     def _sendStr(self, s):
-        logging.debug('> %s' % s)
+        logging.debug('> %s' % s.decode())
         self._serial.flushInput()
         self._serial.write(s + b'\r\n')
         # eat echo
@@ -230,7 +230,7 @@ class ESP8266(object):
                     ' / '.format(responseLines_list)))
             r = r.strip()
             if r:
-                logging.debug('< {}'.format(r))
+                logging.debug('< {}'.format(r.decode()))
                 responseLines_list.append(r)
                 if (r.lower() in self._successResponse_list):
                     return responseLines_list
