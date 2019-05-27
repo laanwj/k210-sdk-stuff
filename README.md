@@ -21,6 +21,10 @@ is an ELF executable, the latter a raw binary that can be flashed or written to
 Building the Rust projects
 --------------------------
 
+**Note:** *it's possible that these projects require Rust nightly to build.
+I don't intentially use nightly features, however, I always test the latest one so it's
+likely that something will sneak in*
+
 Target configuration is set up in `.cargo/config`, so building is a matter of:
 
 ```
