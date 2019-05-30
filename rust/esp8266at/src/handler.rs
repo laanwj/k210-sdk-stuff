@@ -20,6 +20,7 @@ enum State {
     Error,
     Idle,
     Sending(u32),
+    RequestListen(u16),
 }
 
 /** Wifi network state */
@@ -34,15 +35,20 @@ enum WifiState {
 /** Event type for callback */
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum NetworkEvent<'a> {
+    /** Device initialization error */
+    InitError,
     /** Network handler became idle */
     Ready,
-    /** Error connecting to AP */
+    /** Error connecting to AP or querying IP information */
     Error,
     ConnectionEstablished(u32),
     ConnectionFailed(u32),
     Data(u32, &'a [u8]),
     ConnectionClosed(u32),
     SendComplete(u32),
+    SendFailed(u32),
+    ListenSuccess(IPAddress, u16),
+    ListenFailed(u16),
 }
 
 /** Max CIPSEND buffer size */
@@ -130,17 +136,23 @@ where
             }
         }
         match self.state {
-            State::Initial => {
-                if let Response::Gen(GenResponse::OK) = resp {
+            State::Initial => match resp {
+                Response::Gen(GenResponse::OK) => {
                     writeln!(debug, "Initial AT confirmed - configuring station mode").unwrap();
                     // Set station mode so that we're sure we can connect to an AP
                     self.port.write_all(b"AT+CWMODE_CUR=1\r\n").unwrap();
                     self.state = State::SetStationMode;
                 }
-                // TODO: retry if ERROR
+                Response::Gen(GenResponse::FAIL) | Response::Gen(GenResponse::ERROR) => {
+                    // TODO: retry if ERROR
+                    writeln!(debug, "Fatal: Initial AT had unexpected result").unwrap();
+                    on_event(self, NetworkEvent::InitError, debug);
+                    self.state = State::Error;
+                }
+                _ => {}
             }
-            State::SetStationMode => {
-                if let Response::Gen(GenResponse::OK) = resp {
+            State::SetStationMode => match resp {
+                Response::Gen(GenResponse::OK) => {
                     writeln!(debug, "Station mode set - connecting to AP").unwrap();
                     self.port.write_all(b"AT+CWJAP_CUR=").unwrap();
                     write_qstr(self.port, self.apname)?;
@@ -149,6 +161,12 @@ where
                     self.port.write_all(b"\r\n")?;
                     self.state = State::ConnectingToAP;
                 }
+                Response::Gen(GenResponse::FAIL) | Response::Gen(GenResponse::ERROR) => {
+                    writeln!(debug, "Fatal: failed to set station mode").unwrap();
+                    self.state = State::Error;
+                    on_event(self, NetworkEvent::Error, debug);
+                }
+                _ => {}
             }
             State::ConnectingToAP => match resp {
                 Response::Gen(GenResponse::FAIL) | Response::Gen(GenResponse::ERROR) => {
@@ -166,17 +184,20 @@ where
                 }
                 _ => {}
             },
-            State::QueryIP => {
-                match resp {
-                    Response::Gen(GenResponse::OK) => {
-                        writeln!(debug, "Succesfully queried IP").unwrap();
+            State::QueryIP => match resp {
+                Response::Gen(GenResponse::OK) => {
+                    writeln!(debug, "Succesfully queried IP").unwrap();
 
-                        // Multi-connection mode
-                        self.port.write_all(b"AT+CIPMUX=1\r\n")?;
-                        self.state = State::SetMux;
-                    }
-                    _ => {}
+                    // Enable multi-connection mode
+                    self.port.write_all(b"AT+CIPMUX=1\r\n")?;
+                    self.state = State::SetMux;
                 }
+                Response::Gen(GenResponse::FAIL) | Response::Gen(GenResponse::ERROR) => {
+                    writeln!(debug, "Fatal: failed to query IP").unwrap();
+                    self.state = State::Error;
+                    on_event(self, NetworkEvent::Error, debug);
+                }
+                _ => {}
             }
             State::SetMux => match resp {
                 Response::Gen(GenResponse::OK) => {
@@ -185,6 +206,11 @@ where
                     self.state = State::Idle;
                     on_event(self, NetworkEvent::Ready, debug);
                 }
+                Response::Gen(GenResponse::FAIL) | Response::Gen(GenResponse::ERROR) => {
+                    writeln!(debug, "Fatal: failed to set multi-connection mode").unwrap();
+                    self.state = State::Error;
+                    on_event(self, NetworkEvent::Error, debug);
+                }
                 _ => {}
             },
             State::MakeConnection(link) => match resp {
@@ -192,27 +218,39 @@ where
                     self.state = State::Idle;
                     on_event(self, NetworkEvent::ConnectionEstablished(link), debug);
                 }
-                Response::Gen(GenResponse::ERROR) => {
+                Response::Gen(GenResponse::FAIL) | Response::Gen(GenResponse::ERROR) => {
                     self.state = State::Idle;
                     on_event(self, NetworkEvent::ConnectionFailed(link), debug);
                 }
                 _ => {}
             },
-            State::Sending(link) => {
-                match resp {
-                    Response::Gen(GenResponse::OK) => {}
-                    Response::Gen(GenResponse::ERROR) => {}
-                    Response::RecvPrompt => {
-                        // Send queued data
-                        self.port.write_all(&self.txbuf[0..self.txn])?;
-                        self.txn = 0;
-                    }
-                    Response::Status(Status::SEND_OK) => {
-                        self.state = State::Idle;
-                        on_event(self, NetworkEvent::SendComplete(link), debug);
-                    }
-                    _ => {}
+            State::Sending(link) => match resp {
+                Response::Gen(GenResponse::OK) => {}
+                Response::Gen(GenResponse::FAIL) | Response::Gen(GenResponse::ERROR) => {
+                    self.state = State::Idle;
+                    on_event(self, NetworkEvent::SendFailed(link), debug);
                 }
+                Response::RecvPrompt => {
+                    // Send queued data
+                    self.port.write_all(&self.txbuf[0..self.txn])?;
+                    self.txn = 0;
+                }
+                Response::Status(Status::SEND_OK) => {
+                    self.state = State::Idle;
+                    on_event(self, NetworkEvent::SendComplete(link), debug);
+                }
+                _ => {}
+            }
+            State::RequestListen(port) => match resp {
+                Response::Gen(GenResponse::OK) => {
+                    self.state = State::Idle;
+                    on_event(self, NetworkEvent::ListenSuccess(self.ip.unwrap(), port), debug);
+                }
+                Response::Gen(GenResponse::FAIL) | Response::Gen(GenResponse::ERROR) => {
+                    self.state = State::Idle;
+                    on_event(self, NetworkEvent::ListenFailed(port), debug);
+                }
+                _ => {}
             }
             _ => {}
         }
@@ -303,6 +341,19 @@ where
         self.state = State::Sending(link);
         Ok(())
     }
+
+    /** Listen to connections on a port */
+    pub fn listen(&mut self, port: u16) -> Result<(), S::Error> {
+        assert!(self.state == State::Idle);
+        // TODO: stop old listeners
+        self.port.write_all(b"AT+CIPSERVER=1,")?;
+        write_num_u32(self.port, port.into())?;
+        self.port.write_all(b"\r\n")?;
+        self.state = State::RequestListen(port);
+        Ok(())
+    }
+
+    // TODO missing: disconnect, unlisten
 }
 
 /** Write trait for writing to send buffer */

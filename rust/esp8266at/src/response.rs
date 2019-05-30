@@ -57,6 +57,7 @@ pub enum CmdResponse<'a> {
     CIFSR_STAMAC(MACAddress),
     STATUS(u32),
     ALREADY_CONNECTED,
+    NO_CHANGE,
 }
 
 /** Parsed response */
@@ -236,6 +237,8 @@ named!(cmdresponse<&[u8],CmdResponse>,
         /* AT+CIPSTART */
         | tag!(b"ALREADY CONNECTED") => { |_| CmdResponse::ALREADY_CONNECTED }
         // DNS Fail
+        /* AT+CIPSERVER */
+        | tag!(b"no change") => { |_| CmdResponse::NO_CHANGE }
     )
 );
 
