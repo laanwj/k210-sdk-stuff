@@ -90,8 +90,8 @@ fn main() -> ! {
     io_init();
 
     // Configure UARTHS (→host)
-    let mut serial = p.UARTHS.constrain(DEFAULT_BAUD.bps(), &clocks);
-    let (mut tx, mut rx) = serial.split();
+    let serial = p.UARTHS.constrain(DEFAULT_BAUD.bps(), &clocks);
+    let (mut tx, mut _rx) = serial.split();
     let mut debug = Stdout(&mut tx);
 
     // Configure UART1 (→WIFI)
@@ -103,7 +103,7 @@ fn main() -> ! {
     fpioa::set_io_pull(io::WIFI_EN as u8, fpioa::pull::DOWN);
     gpiohs::set_pin(8, true);
     gpiohs::set_direction(8, gpio::direction::OUTPUT);
-    let mut wifi_serial = p.UART1.constrain(DEFAULT_BAUD.bps(), &clocks);
+    let wifi_serial = p.UART1.constrain(DEFAULT_BAUD.bps(), &clocks);
     let (mut wtx, mut wrx) = wifi_serial.split();
 
     let mut wa = WriteAdapter::new(&mut wtx);
@@ -116,14 +116,13 @@ fn main() -> ! {
     lcd.set_direction(lcd::direction::YX_LRUD);
     let mut console: Console = Console::new();
 
-    let mut i:u16 = 0;
-    writeln!(console, "\x1b[48;2;128;192;255;38;5;0m WEATHER \x1b[0m \x1b[38;2;128;128;128mfetching...\x1b[0m").unwrap();
+    writeln!(console, "\x1b[48;2;128;192;255;38;5;0m WEATHER \x1b[0m \x1b[38;2;128;128;128m\x1b[0m").unwrap();
 
     // Start off connection process state machine
-    sh.start(false);
+    sh.start(false).unwrap();
     writeln!(console, "∙ Connecting to AP").unwrap();
 
-    let mut serial_buf = [0u8; 2560]; // 2048 + some
+    let mut serial_buf = [0u8; 8192];
     let mut ofs: usize = 0;
 
     let mut cur_link = 0;
@@ -135,96 +134,105 @@ fn main() -> ! {
             console.dirty = false;
         }
 
-        // Receive byte into buffer
-        if let Ok(ch) = wrx.read() {
-            let ofs0 = ofs;
-            serial_buf[ofs] = ch;
-            ofs += 1;
-            let mut lastrecv = mcycle::read();
-            loop {
-                // Read until we stop receiving for a certain duration
-                // This is a hack around the fact that in the time that the parser runs,
-                // more than one FIFO full of characters can be received so characters could be
-                // lost. The right way would be to receive in an interrupt handler, but,
-                // we don't have that yet.
-                if let Ok(ch) = wrx.read() {
-                    serial_buf[ofs] = ch;
-                    ofs += 1;
-                    lastrecv = mcycle::read();
-                } else if (mcycle::read().wrapping_sub(lastrecv)) >= TIMEOUT {
-                    break;
-                }
+        // Receive into buffer
+        let mut lastrecv = mcycle::read();
+        while ofs < serial_buf.len() {
+            // Read until we stop receiving for a certain duration
+            // This is a hack around the fact that in the time that the parser runs,
+            // more than one FIFO full of characters can be received so characters could be
+            // lost. The right way would be to receive in an interrupt handler, but,
+            // we don't have that yet.
+            if let Ok(ch) = wrx.read() {
+                serial_buf[ofs] = ch;
+                ofs += 1;
+                lastrecv = mcycle::read();
+            } else if (mcycle::read().wrapping_sub(lastrecv)) >= TIMEOUT {
+                break;
             }
-            //writeln!(debug, "ofs: {} received {} chars {:?}", ofs0, ofs - ofs0,
-            //         &serial_buf[ofs0..ofs]).unwrap();
+        }
+        //writeln!(debug, "ofs: {} received {} chars {:?}", ofs0, ofs - ofs0,
+        //         &serial_buf[ofs0..ofs]).unwrap();
 
-            // Loop as long as there's something in the buffer to parse, starting at the
-            // beginning
-            let mut start = 0;
-            while start < ofs {
-                // try parsing
-                let tail = &serial_buf[start..ofs];
-                let erase = match parse_response(tail) {
-                    Ok((residue, resp)) => {
-                        sh.message(&resp, &mut |port, ev, debug| {
-                            match ev {
-                                NetworkEvent::Ready => {
-                                    writeln!(console, "∙ Connected to AP").unwrap();
-                                    cur_link = port.connect(ConnectionType::TCP, b"wttr.in", 80).unwrap();
-                                    writeln!(console, "∙ \x1b[38;5;141m[{}]\x1b[0m Opening TCP conn", cur_link).unwrap();
-                                }
-                                NetworkEvent::Error => {
-                                    writeln!(console, "∙ Could not connect to AP").unwrap();
-                                }
-                                NetworkEvent::ConnectionEstablished(link) => {
-                                    if link == cur_link {
-                                        writeln!(console, "∙ \x1b[38;5;141m[{}]\x1b[0m Sending HTTP request", link).unwrap();
-                                        port.write_all(b"GET /?0qA HTTP/1.1\r\nHost: wttr.in\r\nConnection: close\r\nUser-Agent: Weather-Spy\r\n\r\n").unwrap();
-                                        port.send(link).unwrap();
-                                    }
-                                }
-                                NetworkEvent::Data(link, data) => {
-                                    // write!(debug, "{}", str::from_utf8(data).unwrap());
-                                    if link == cur_link {
-                                        console.puts(str::from_utf8(data).unwrap_or("???"));
-                                    }
-                                }
-                                NetworkEvent::ConnectionClosed(link) => {
-                                    writeln!(console, "∙ \x1b[38;5;141m[{}]\x1b[0m \x1b[38;2;100;100;100m[closed]\x1b[0m", link).unwrap();
-                                }
-                                _ => { }
+        // Loop as long as there's something in the buffer to parse, starting at the
+        // beginning
+        let mut start = 0;
+        while start < ofs {
+            // try parsing
+            let tail = &serial_buf[start..ofs];
+            let erase = match parse_response(tail) {
+                Ok((residue, resp)) => {
+                    sh.message(&resp, &mut |port, ev, _debug| {
+                        match ev {
+                            NetworkEvent::Ready => {
+                                writeln!(console, "∙ Connected to AP").unwrap();
+                                cur_link = port.connect(ConnectionType::TCP, b"wttr.in", 80).unwrap();
+                                writeln!(console, "∙ \x1b[38;5;141m[{}]\x1b[0m Opening TCP conn", cur_link).unwrap();
                             }
-                        }, &mut debug).unwrap();
+                            NetworkEvent::Error => {
+                                writeln!(console, "∙ Could not connect to AP").unwrap();
+                            }
+                            NetworkEvent::ListenSuccess(ip, port) => {
+                                writeln!(console, "∙ Listening on {}.{}.{}.{}:{}",
+                                         ip[0], ip[1], ip[2], ip[3], port).unwrap();
+                            }
+                            NetworkEvent::ConnectionEstablished(link) => {
+                                if link == cur_link {
+                                    writeln!(console, "∙ \x1b[38;5;141m[{}]\x1b[0m Sending HTTP request", link).unwrap();
+                                    port.write_all(b"GET /?0qA HTTP/1.1\r\nHost: wttr.in\r\nConnection: close\r\nUser-Agent: Weather-Spy\r\n\r\n").unwrap();
+                                    port.send(link).unwrap();
+                                }
+                            }
+                            NetworkEvent::Data(link, data) => {
+                                // write!(debug, "{}", str::from_utf8(data).unwrap());
+                                if link == cur_link {
+                                    console.puts(str::from_utf8(data).unwrap_or("???"));
+                                }
+                            }
+                            NetworkEvent::ConnectionClosed(link) => {
+                                writeln!(console, "∙ \x1b[38;5;141m[{}]\x1b[0m \x1b[38;2;100;100;100m[closed]\x1b[0m", link).unwrap();
+                            }
+                            _ => { }
+                        }
+                    }, &mut debug).unwrap();
 
-                        tail.offset(residue)
+                    tail.offset(residue)
+                }
+                Err(nom::Err::Incomplete(_)) => {
+                    // Incomplete, ignored, just retry after a new receive
+                    0
+                }
+                Err(err) => {
+                    if tail.len() > 100 {
+                        writeln!(debug, "err: Error([too long ...])").unwrap();
+                    } else {
+                        writeln!(debug, "err: {:?}", err).unwrap();
                     }
-                    Err(nom::Err::Incomplete(_)) => {
-                        // Incomplete, ignored, just retry after a new receive
+                    // Erase unparseable data to next line, if line is complete
+                    if let Some(ofs) = tail.iter().position(|&x| x == b'\n') {
+                        ofs + 1
+                    } else {
+                        // If not, retry next time
                         0
                     }
-                    Err(err) => {
-                        writeln!(debug, "err: {:?}", err).unwrap();
-                        // Erase unparseable data to next line, if line is complete
-                        if let Some(ofs) = tail.iter().position(|&x| x == b'\n') {
-                            ofs + 1
-                        } else {
-                            // If not, retry next time
-                            0
-                        }
-                    }
-                };
-
-                if erase == 0 {
-                    // End of input or remainder unparseable
-                    break;
                 }
-                start += erase;
+            };
+
+            if erase == 0 {
+                // End of input or remainder unparseable
+                break;
             }
-            // Erase everything before new starting offset
-            for i in start..ofs {
-                serial_buf[i - start] = serial_buf[i];
-            }
-            ofs -= start;
+            start += erase;
+        }
+        // Erase everything before new starting offset
+        for i in start..ofs {
+            serial_buf[i - start] = serial_buf[i];
+        }
+        ofs -= start;
+
+        // If the buffer is full and we can't parse *anything*, clear it and start over
+        if ofs == serial_buf.len() {
+            writeln!(debug, "Error: buffer was unparseable, dropping buffer").unwrap();
+            ofs = 0;
         }
 
         /*
