@@ -17,7 +17,7 @@ use k210_shared::board::lcd_render::render_image;
 use k210_shared::board::ns2009::TouchScreen;
 use k210_shared::soc::fpioa;
 use k210_shared::soc::i2c::{I2CExt, I2C};
-use k210_shared::soc::pwm::{pwm_set, pwm_start, Channel};
+use k210_shared::soc::pwm::{TimerExt, PWM, Channel};
 use k210_shared::soc::sleep::usleep;
 use k210_shared::soc::spi::SPIExt;
 use k210_shared::soc::sysctl;
@@ -99,10 +99,11 @@ fn main() -> ! {
     });
 
     writeln!(stdout, "start PWM").unwrap();
+    let pwm = p.TIMER0.constrain_pwm();
     sysctl::clock_enable(sysctl::clock::TIMER0);
-    pwm_start(Channel::CH1);
-    pwm_start(Channel::CH2);
-    pwm_start(Channel::CH3);
+    pwm.start(Channel::CH1);
+    pwm.start(Channel::CH2);
+    pwm.start(Channel::CH3);
 
     let freq = 10000;
 
@@ -114,9 +115,9 @@ fn main() -> ! {
                 //writeln!(stdout, "{:?}", ev).unwrap();
                 let (r, g, b) = color_from_xy(x, y, clampf(ev.z as f32 / 1000.0));
 
-                pwm_set(Channel::CH1, freq, 1.0 - r * R_SCALE);
-                pwm_set(Channel::CH2, freq, 1.0 - g * G_SCALE);
-                pwm_set(Channel::CH3, freq, 1.0 - b * B_SCALE);
+                pwm.set(Channel::CH1, freq, 1.0 - r * R_SCALE);
+                pwm.set(Channel::CH2, freq, 1.0 - g * G_SCALE);
+                pwm.set(Channel::CH3, freq, 1.0 - b * B_SCALE);
             }
         }
 

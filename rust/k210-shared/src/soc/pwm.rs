@@ -1,6 +1,6 @@
 use k210_hal::pac;
-// TODO: generalize over other timers than TIMER0
-// use pac::{timer0,TIMER0,TIMER1,TIMER2};
+use core::ops::Deref;
+use pac::{timer0,TIMER0,TIMER1,TIMER2};
 
 use crate::soc::sysctl;
 
@@ -12,45 +12,84 @@ pub enum Channel {
     CH4,
 }
 
-/** Start a PWM channel */
-pub fn pwm_start(ch: Channel) {
-    unsafe {
-        let ptr = pac::TIMER0::ptr();
-        use pac::timer0::channel::control::MODEW;
+pub trait TimerExt: Deref<Target = timer0::RegisterBlock> + Sized {
+    #[doc(hidden)]
+    const CLK: sysctl::clock;
+    #[doc(hidden)]
+    const DIV: sysctl::threshold;
 
-        // set a deterministic value for load counts
-        (*ptr).channel[ch as usize].load_count.write(|w| w.bits(1));
-        (*ptr).load_count2[ch as usize].write(|w| w.bits(1));
-        // start channel
-        (*ptr).channel[ch as usize].control.write(
-            |w| w.interrupt().set_bit()
-                 .pwm_enable().set_bit()
-                 .mode().variant(MODEW::USER)
-                 .enable().set_bit());
-    }
+    /// Constrains TIMER peripheral for PWM use
+    /// A timer channel can either be used for PWM or as a normal timer (say, for interrupt
+    /// generation). Currently this has a larger granularity than needed and
+    /// constrains the entire peripheral for PWM use.
+    fn constrain_pwm(self) -> PWMImpl<Self>;
 }
 
-/** Stop a PWM channel */
-pub fn pwm_stop(ch: Channel) {
-    unsafe {
-        let ptr = pac::TIMER0::ptr();
+impl TimerExt for TIMER0 {
+    const CLK: sysctl::clock = sysctl::clock::TIMER0;
+    const DIV: sysctl::threshold = sysctl::threshold::TIMER0;
 
-        (*ptr).channel[ch as usize].control.write(
+    fn constrain_pwm(self) -> PWMImpl<Self> { PWMImpl::<Self> { timer: self } }
+}
+impl TimerExt for TIMER1 {
+    const CLK: sysctl::clock = sysctl::clock::TIMER1;
+    const DIV: sysctl::threshold = sysctl::threshold::TIMER1;
+
+    fn constrain_pwm(self) -> PWMImpl<Self> { PWMImpl::<Self> { timer: self } }
+}
+impl TimerExt for TIMER2 {
+    const CLK: sysctl::clock = sysctl::clock::TIMER2;
+    const DIV: sysctl::threshold = sysctl::threshold::TIMER2;
+
+    fn constrain_pwm(self) -> PWMImpl<Self> { PWMImpl::<Self> { timer: self } }
+}
+
+/** Trait for PWM control */
+pub trait PWM {
+    // TODO: make this per channel, and use the PWM trait from Rust embedded
+    fn start(&self, ch: Channel);
+    fn stop(&self, ch: Channel);
+    fn set(&self, ch: Channel, freq: u32, value: f32) -> u32;
+}
+
+pub struct PWMImpl<TIMER> {
+    timer: TIMER,
+}
+
+impl<TIMER: TimerExt> PWM for PWMImpl<TIMER> {
+    /** Start a PWM channel */
+    fn start(&self, ch: Channel) {
+        unsafe {
+            use pac::timer0::channel::control::MODEW;
+
+            // set a deterministic value for load counts
+            self.timer.channel[ch as usize].load_count.write(|w| w.bits(1));
+            self.timer.load_count2[ch as usize].write(|w| w.bits(1));
+            // start channel
+            self.timer.channel[ch as usize].control.write(
+                |w| w.interrupt().set_bit()
+                     .pwm_enable().set_bit()
+                     .mode().variant(MODEW::USER)
+                     .enable().set_bit());
+        }
+    }
+
+    /** Stop a PWM channel */
+    fn stop(&self, ch: Channel) {
+        self.timer.channel[ch as usize].control.write(
             |w| w.interrupt().set_bit());
     }
-}
 
-/** Set frequency and value for a PWM channel */
-pub fn pwm_set(ch: Channel, freq: u32, value: f32) -> u32 {
-    let clk_freq = sysctl::clock_get_freq(sysctl::clock::TIMER0);
-    let periods = clk_freq / freq;
-    let percent = (value * (periods as f32)) as u32;
-    unsafe {
-        let ptr = pac::TIMER0::ptr();
-        (*ptr).channel[ch as usize].load_count.write(|w| w.bits(periods - percent));
-        (*ptr).load_count2[ch as usize].write(|w| w.bits(percent));
+    /** Set frequency and value for a PWM channel */
+    fn set(&self, ch: Channel, freq: u32, value: f32) -> u32 {
+        let clk_freq = sysctl::clock_get_freq(TIMER::CLK);
+        let periods = clk_freq / freq;
+        let percent = (value * (periods as f32)) as u32;
+        unsafe {
+            self.timer.channel[ch as usize].load_count.write(|w| w.bits(periods - percent));
+            self.timer.load_count2[ch as usize].write(|w| w.bits(percent));
+        }
+        clk_freq / periods
     }
-    clk_freq / periods
 }
-
 
