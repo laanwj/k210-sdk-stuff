@@ -6,37 +6,34 @@ use k210_hal::pac::{I2C0,I2C1,I2C2,i2c0};
 
 use crate::soc::sysctl;
 
-/// Extension trait that constrains I2C peripherals
-pub trait I2CExt: Sized {
-    /// Constrains I2C peripheral so it plays nicely with the other abstractions
-    fn constrain(self) -> I2CImpl<Self>;
-}
-
-/// Trait for generalizing over I2C0 and I2C1 (I2C2 is slave-only and I2C3 is !!!special!!!)
-pub trait I2C012: Deref<Target = i2c0::RegisterBlock> {
+/// Trait for generalizing over I2C0-2
+pub trait I2CExt: Deref<Target = i2c0::RegisterBlock> + Sized {
     #[doc(hidden)]
     const CLK: sysctl::clock;
     #[doc(hidden)]
     const DIV: sysctl::threshold;
+
+    /// Constrains I2C peripheral so it plays nicely with the other abstractions
+    fn constrain(self) -> I2CImpl<Self>;
 }
 
-impl I2C012 for I2C0 {
+impl I2CExt for I2C0 {
     const CLK: sysctl::clock = sysctl::clock::I2C0;
     const DIV: sysctl::threshold = sysctl::threshold::I2C0;
+
+    fn constrain(self) -> I2CImpl<Self> { I2CImpl::<Self> { i2c: self } }
 }
-impl I2C012 for I2C1 {
+impl I2CExt for I2C1 {
     const CLK: sysctl::clock = sysctl::clock::I2C1;
     const DIV: sysctl::threshold = sysctl::threshold::I2C1;
+
+    fn constrain(self) -> I2CImpl<Self> { I2CImpl::<Self> { i2c: self } }
 }
-impl I2C012 for I2C2 {
+impl I2CExt for I2C2 {
     const CLK: sysctl::clock = sysctl::clock::I2C2;
     const DIV: sysctl::threshold = sysctl::threshold::I2C2;
-}
 
-impl<I2C: I2C012> I2CExt for I2C {
-    fn constrain(self) -> I2CImpl<I2C> {
-        I2CImpl::<I2C>::new(self)
-    }
+    fn constrain(self) -> I2CImpl<Self> { I2CImpl::<Self> { i2c: self } }
 }
 
 pub struct I2CImpl<IF> {
@@ -49,14 +46,9 @@ pub trait I2C {
     fn send_data(&self, send_buf: &[u8]) -> Result<(), ()>;
 }
 
-impl<IF: I2C012> I2CImpl<IF> {
-    pub fn new(i2c: IF) -> Self {
-        Self { i2c }
-    }
-}
-
-impl<IF: I2C012> I2C for I2CImpl<IF> {
+impl<IF: I2CExt> I2C for I2CImpl<IF> {
     fn init(&self, slave_address: u16, address_width: u32, i2c_clk: u32) {
+        // sets up a fixed clock divide by (3+1)*2=8
         sysctl::clock_enable(IF::CLK);
         sysctl::clock_set_threshold(IF::DIV, 3);
 
