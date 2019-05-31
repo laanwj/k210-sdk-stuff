@@ -161,7 +161,7 @@ fn main() -> ! {
             let tail = &serial_buf[start..ofs];
             let erase = match parse_response(tail) {
                 Ok((residue, resp)) => {
-                    sh.message(&resp, &mut |port, ev, _debug| {
+                    sh.message(&resp, |port, ev, _debug| {
                         match ev {
                             NetworkEvent::Ready => {
                                 writeln!(console, "∙ Connected to AP").unwrap();

@@ -118,7 +118,7 @@ where
     pub fn message<F>(
         &mut self,
         resp: &Response,
-        on_event: &mut F,
+        mut on_event: F,
         debug: &mut fmt::Write,
     ) -> Result<(), S::Error>
     where
