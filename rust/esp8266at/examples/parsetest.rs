@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
 
-use esp8266at::response::parse_response;
+use esp8266at::response::{parse,ParseResult};
 
 fn main() {
     let f = File::open("data/parses.txt").unwrap();
@@ -13,14 +13,16 @@ fn main() {
             let mut lb = l[2..].as_bytes().to_vec();
             lb.push(13);
             lb.push(10);
-            let res = parse_response(&lb);
+            let res = parse(&lb);
             match res {
-                Err(x) => {
+                ParseResult::Err => {
                     println!("failed command was: {}", l);
-                    println!("{:?}", x);
                 }
-                Ok((res, x)) => {
-                    if res.is_empty() {
+                ParseResult::Incomplete => {
+                    println!("incomplete command was: {}", l);
+                }
+                ParseResult::Ok(res, x) => {
+                    if res == lb.len() {
                         println!("{:?}", x);
                     } else {
                         println!("non-empty residue command was: {}", l);

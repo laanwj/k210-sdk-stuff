@@ -7,7 +7,7 @@
 use core::str;
 use embedded_hal::serial;
 use esp8266at::handler::{NetworkEvent, SerialNetworkHandler};
-use esp8266at::response::{parse_response, ConnectionType};
+use esp8266at::response::{parse, ConnectionType, ParseResult};
 use esp8266at::traits::{self, Write};
 use k210_hal::pac;
 use k210_hal::prelude::*;
@@ -21,7 +21,6 @@ use k210_shared::soc::sleep::usleep;
 use k210_shared::soc::spi::SPIExt;
 use k210_shared::soc::sysctl;
 use nb::block;
-use nom::Offset;
 use riscv::register::mcycle;
 use riscv_rt::entry;
 use k210_console::console::{Console, ScreenImage, DISP_HEIGHT, DISP_WIDTH};
@@ -159,8 +158,8 @@ fn main() -> ! {
         while start < ofs {
             // try parsing
             let tail = &serial_buf[start..ofs];
-            let erase = match parse_response(tail) {
-                Ok((residue, resp)) => {
+            let erase = match parse(tail) {
+                ParseResult::Ok(offset, resp) => {
                     sh.message(&resp, |port, ev, _debug| {
                         match ev {
                             NetworkEvent::Ready => {
@@ -195,17 +194,17 @@ fn main() -> ! {
                         }
                     }, &mut debug).unwrap();
 
-                    tail.offset(residue)
+                    offset
                 }
-                Err(nom::Err::Incomplete(_)) => {
+                ParseResult::Incomplete => {
                     // Incomplete, ignored, just retry after a new receive
                     0
                 }
-                Err(err) => {
+                ParseResult::Err => {
                     if tail.len() > 100 {
                         writeln!(debug, "err: Error([too long ...])").unwrap();
                     } else {
-                        writeln!(debug, "err: {:?}", err).unwrap();
+                        writeln!(debug, "err: {:?}", tail).unwrap();
                     }
                     // Erase unparseable data to next line, if line is complete
                     if let Some(ofs) = tail.iter().position(|&x| x == b'\n') {

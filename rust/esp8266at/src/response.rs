@@ -1,6 +1,6 @@
-use core::str;
 /** Parser for ESP8266 AT responses */
-use nom::{digit, hex_digit};
+use core::str;
+use nom::{Offset, digit, hex_digit};
 
 /** Connection type for CIPSTATUS etc */
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -71,6 +71,13 @@ pub enum Response<'a> {
     Data(u32, &'a [u8]),
     Echo(&'a [u8]),
     RecvPrompt,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ParseResult<'a> {
+    Ok(usize, Response<'a>),
+    Incomplete,
+    Err,
 }
 
 /* Decimal unsigned integer */
@@ -279,7 +286,7 @@ named!(ipd_data<&[u8],Response>,
 );
 
 /* Parse response from line */
-named!(pub parse_response<&[u8],Response>,
+named!(parse_response<&[u8],Response>,
     alt!(
           nl_terminated
         | ipd_data
@@ -287,6 +294,14 @@ named!(pub parse_response<&[u8],Response>,
         | tag!(b"\r\n") => { |_| Response::Empty }
     )
 );
+
+pub fn parse(response: &[u8]) -> ParseResult {
+    match parse_response(response) {
+        Ok((residue, resp)) => ParseResult::Ok(response.offset(residue), resp),
+        Err(nom::Err::Incomplete(_)) => ParseResult::Incomplete,
+        Err(_) => ParseResult::Err,
+    }
+}
 
 #[cfg(test)]
 mod tests {

@@ -1,10 +1,9 @@
 /** Example synchronous serial receive event loop (for std) */
-use nom::Offset;
 use std::fmt;
 use std::io;
 
 use crate::handler::{NetworkEvent, SerialNetworkHandler};
-use crate::response::parse_response;
+use crate::response::{parse, ParseResult};
 
 /** Mainloop handling serial input and dispatching network events */
 pub fn mainloop<P, F, X>(
@@ -34,24 +33,24 @@ where
                 while start < ofs {
                     // try parsing
                     let tail = &serial_buf[start..ofs];
-                    let erase = match parse_response(tail) {
-                        Ok((residue, resp)) => {
+                    let erase = match parse(tail) {
+                        ParseResult::Ok(offset, resp) => {
                             h.message(
                                 &resp,
-                                &mut |a, b, debug| {
+                                |a, b, debug| {
                                     running = f(a, b, debug);
                                 },
                                 debug,
                             )?;
 
-                            tail.offset(residue)
+                            offset
                         }
-                        Err(nom::Err::Incomplete(_)) => {
+                        ParseResult::Incomplete => {
                             // Incomplete, ignored, just retry after a new receive
                             0
                         }
-                        Err(err) => {
-                            writeln!(debug, "err: {:?}", err).unwrap();
+                        ParseResult::Err => {
+                            writeln!(debug, "err: {:?}", tail).unwrap();
                             // Erase unparseable data to next line, if line is complete
                             if let Some(ofs) = tail.iter().position(|&x| x == b'\n') {
                                 ofs + 1
