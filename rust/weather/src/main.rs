@@ -65,14 +65,14 @@ where
 fn io_init() {
     /* Init SPI IO map and function settings */
     fpioa::set_function(
-        io::LCD_RST.into(),
+        io::LCD_RST,
         fpioa::function::gpiohs(lcd::RST_GPIONUM),
     );
-    fpioa::set_io_pull(io::LCD_RST.into(), fpioa::pull::DOWN); // outputs must be pull-down
-    fpioa::set_function(io::LCD_DC.into(), fpioa::function::gpiohs(lcd::DCX_GPIONUM));
-    fpioa::set_io_pull(io::LCD_DC.into(), fpioa::pull::DOWN);
-    fpioa::set_function(io::LCD_CS.into(), fpioa::function::SPI0_SS3);
-    fpioa::set_function(io::LCD_WR.into(), fpioa::function::SPI0_SCLK);
+    fpioa::set_io_pull(io::LCD_RST, fpioa::pull::DOWN); // outputs must be pull-down
+    fpioa::set_function(io::LCD_DC, fpioa::function::gpiohs(lcd::DCX_GPIONUM));
+    fpioa::set_io_pull(io::LCD_DC, fpioa::pull::DOWN);
+    fpioa::set_function(io::LCD_CS, fpioa::function::SPI0_SS3);
+    fpioa::set_function(io::LCD_WR, fpioa::function::SPI0_SCLK);
 
     sysctl::set_spi0_dvp_data(true);
 
@@ -97,10 +97,10 @@ fn main() -> ! {
     // Configure UART1 (→WIFI)
     sysctl::clock_enable(sysctl::clock::UART1);
     sysctl::reset(sysctl::reset::UART1);
-    fpioa::set_function(io::WIFI_RX as u8, fpioa::function::UART1_TX);
-    fpioa::set_function(io::WIFI_TX as u8, fpioa::function::UART1_RX);
-    fpioa::set_function(io::WIFI_EN as u8, fpioa::function::GPIOHS8);
-    fpioa::set_io_pull(io::WIFI_EN as u8, fpioa::pull::DOWN);
+    fpioa::set_function(io::WIFI_RX, fpioa::function::UART1_TX);
+    fpioa::set_function(io::WIFI_TX, fpioa::function::UART1_RX);
+    fpioa::set_function(io::WIFI_EN, fpioa::function::GPIOHS8);
+    fpioa::set_io_pull(io::WIFI_EN, fpioa::pull::DOWN);
     gpiohs::set_pin(8, true);
     gpiohs::set_direction(8, gpio::direction::OUTPUT);
     let wifi_serial = p.UART1.constrain(DEFAULT_BAUD.bps(), &clocks);

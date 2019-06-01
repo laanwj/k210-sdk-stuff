@@ -31,25 +31,25 @@ const B_SCALE: f32 = 0.33;
 fn io_init() {
     /* Init SPI IO map and function settings */
     fpioa::set_function(
-        io::LCD_RST.into(),
+        io::LCD_RST,
         fpioa::function::gpiohs(lcd::RST_GPIONUM),
     );
-    fpioa::set_io_pull(io::LCD_RST.into(), fpioa::pull::DOWN); // outputs must be pull-down
-    fpioa::set_function(io::LCD_DC.into(), fpioa::function::gpiohs(lcd::DCX_GPIONUM));
-    fpioa::set_io_pull(io::LCD_DC.into(), fpioa::pull::DOWN);
-    fpioa::set_function(io::LCD_CS.into(), fpioa::function::SPI0_SS3);
-    fpioa::set_function(io::LCD_WR.into(), fpioa::function::SPI0_SCLK);
+    fpioa::set_io_pull(io::LCD_RST, fpioa::pull::DOWN); // outputs must be pull-down
+    fpioa::set_function(io::LCD_DC, fpioa::function::gpiohs(lcd::DCX_GPIONUM));
+    fpioa::set_io_pull(io::LCD_DC, fpioa::pull::DOWN);
+    fpioa::set_function(io::LCD_CS, fpioa::function::SPI0_SS3);
+    fpioa::set_function(io::LCD_WR, fpioa::function::SPI0_SCLK);
 
     /* Route PWM outputs of TIMER0 to RGB leds */
-    fpioa::set_function(io::LED_R as u8, fpioa::function::TIMER0_TOGGLE1);
-    fpioa::set_function(io::LED_G as u8, fpioa::function::TIMER0_TOGGLE2);
-    fpioa::set_function(io::LED_B as u8, fpioa::function::TIMER0_TOGGLE3);
+    fpioa::set_function(io::LED_R, fpioa::function::TIMER0_TOGGLE1);
+    fpioa::set_function(io::LED_G, fpioa::function::TIMER0_TOGGLE2);
+    fpioa::set_function(io::LED_B, fpioa::function::TIMER0_TOGGLE3);
 
     sysctl::set_spi0_dvp_data(true);
 
     /* I2C0 for touch-screen */
-    fpioa::set_function(io::I2C1_SCL.into(), fpioa::function::I2C0_SCLK);
-    fpioa::set_function(io::I2C1_SDA.into(), fpioa::function::I2C0_SDA);
+    fpioa::set_function(io::I2C1_SCL, fpioa::function::I2C0_SCLK);
+    fpioa::set_function(io::I2C1_SDA, fpioa::function::I2C0_SDA);
 
     /* Set DVP and SPI pins to 1.8V */
     sysctl::set_power_mode(sysctl::power_bank::BANK6, sysctl::io_power_mode::V18);

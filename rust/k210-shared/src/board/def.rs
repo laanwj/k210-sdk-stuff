@@ -31,7 +31,6 @@ pub const OV2640_ADDR: u8 = 0x60;
 
 /** I/O pins for FPIOA */
 #[derive(Copy, Clone)]
-#[repr(u32)]
 pub enum io {
     /** JTAG TCK */
     JTAG_TCK = 0,
@@ -131,8 +130,8 @@ pub enum io {
     DVP_PCLK = 47,
 }
 
-impl From<io> for u8 {
+impl From<io> for usize {
     fn from(io: io) -> Self {
-        io as u8
+        io as usize
     }
 }

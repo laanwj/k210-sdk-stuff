@@ -24,12 +24,12 @@ use crate::palette::PALETTE;
 /** Connect pins to internal functions */
 fn io_mux_init() {
     /* Init SPI IO map and function settings */
-    fpioa::set_function(io::LCD_RST.into(), fpioa::function::gpiohs(lcd::RST_GPIONUM));
-    fpioa::set_io_pull(io::LCD_RST.into(), fpioa::pull::DOWN); // outputs must be pull-down
-    fpioa::set_function(io::LCD_DC.into(), fpioa::function::gpiohs(lcd::DCX_GPIONUM));
-    fpioa::set_io_pull(io::LCD_DC.into(), fpioa::pull::DOWN);
-    fpioa::set_function(io::LCD_CS.into(), fpioa::function::SPI0_SS3);
-    fpioa::set_function(io::LCD_WR.into(), fpioa::function::SPI0_SCLK);
+    fpioa::set_function(io::LCD_RST, fpioa::function::gpiohs(lcd::RST_GPIONUM));
+    fpioa::set_io_pull(io::LCD_RST, fpioa::pull::DOWN); // outputs must be pull-down
+    fpioa::set_function(io::LCD_DC, fpioa::function::gpiohs(lcd::DCX_GPIONUM));
+    fpioa::set_io_pull(io::LCD_DC, fpioa::pull::DOWN);
+    fpioa::set_function(io::LCD_CS, fpioa::function::SPI0_SS3);
+    fpioa::set_function(io::LCD_WR, fpioa::function::SPI0_SCLK);
 
     sysctl::set_spi0_dvp_data(true);
 }

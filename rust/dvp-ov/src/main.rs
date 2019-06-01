@@ -24,22 +24,22 @@ pub type ScreenImage = [u32; DISP_WIDTH * DISP_HEIGHT / 2];
 /** Connect pins to internal functions */
 fn io_init() {
     /* Init DVP IO map and function settings */
-    fpioa::set_function(io::DVP_RST.into(), fpioa::function::CMOS_RST);
-    fpioa::set_function(io::DVP_PWDN.into(), fpioa::function::CMOS_PWDN);
-    fpioa::set_function(io::DVP_XCLK.into(), fpioa::function::CMOS_XCLK);
-    fpioa::set_function(io::DVP_VSYNC.into(), fpioa::function::CMOS_VSYNC);
-    fpioa::set_function(io::DVP_HSYNC.into(), fpioa::function::CMOS_HREF);
-    fpioa::set_function(io::DVP_PCLK.into(), fpioa::function::CMOS_PCLK);
-    fpioa::set_function(io::DVP_SCL.into(), fpioa::function::SCCB_SCLK);
-    fpioa::set_function(io::DVP_SDA.into(), fpioa::function::SCCB_SDA);
+    fpioa::set_function(io::DVP_RST, fpioa::function::CMOS_RST);
+    fpioa::set_function(io::DVP_PWDN, fpioa::function::CMOS_PWDN);
+    fpioa::set_function(io::DVP_XCLK, fpioa::function::CMOS_XCLK);
+    fpioa::set_function(io::DVP_VSYNC, fpioa::function::CMOS_VSYNC);
+    fpioa::set_function(io::DVP_HSYNC, fpioa::function::CMOS_HREF);
+    fpioa::set_function(io::DVP_PCLK, fpioa::function::CMOS_PCLK);
+    fpioa::set_function(io::DVP_SCL, fpioa::function::SCCB_SCLK);
+    fpioa::set_function(io::DVP_SDA, fpioa::function::SCCB_SDA);
 
     /* Init SPI IO map and function settings */
-    fpioa::set_function(io::LCD_RST.into(), fpioa::function::gpiohs(lcd::RST_GPIONUM));
-    fpioa::set_io_pull(io::LCD_RST.into(), fpioa::pull::DOWN); // outputs must be pull-down
-    fpioa::set_function(io::LCD_DC.into(), fpioa::function::gpiohs(lcd::DCX_GPIONUM));
-    fpioa::set_io_pull(io::LCD_DC.into(), fpioa::pull::DOWN);
-    fpioa::set_function(io::LCD_CS.into(), fpioa::function::SPI0_SS3);
-    fpioa::set_function(io::LCD_WR.into(), fpioa::function::SPI0_SCLK);
+    fpioa::set_function(io::LCD_RST, fpioa::function::gpiohs(lcd::RST_GPIONUM));
+    fpioa::set_io_pull(io::LCD_RST, fpioa::pull::DOWN); // outputs must be pull-down
+    fpioa::set_function(io::LCD_DC, fpioa::function::gpiohs(lcd::DCX_GPIONUM));
+    fpioa::set_io_pull(io::LCD_DC, fpioa::pull::DOWN);
+    fpioa::set_function(io::LCD_CS, fpioa::function::SPI0_SS3);
+    fpioa::set_function(io::LCD_WR, fpioa::function::SPI0_SCLK);
 
     sysctl::set_spi0_dvp_data(true);
 
