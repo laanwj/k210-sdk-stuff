@@ -10,7 +10,6 @@ use k210_hal::stdout::Stdout;
 use k210_shared::board::def::{io,DISP_WIDTH,DISP_HEIGHT};
 use k210_shared::board::lcd::{LCD,LCDHL,self};
 use k210_shared::board::lcd_colors;
-use k210_shared::board::lcd_render::render_image;
 use k210_shared::soc::fpioa;
 use k210_shared::soc::sleep::usleep;
 use k210_shared::soc::spi::SPIExt;
@@ -68,7 +67,7 @@ fn main() -> ! {
     let spi = p.SPI0.constrain();
     let mut lcd = LCD::new(spi);
     lcd.init();
-    lcd.set_direction(lcd::direction::YX_LRUD);
+    lcd.set_direction(lcd::direction::YX_RLDU);
     lcd.clear(lcd_colors::PURPLE);
 
     let mut dvp = p.DVP.constrain();

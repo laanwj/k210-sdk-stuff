@@ -115,7 +115,7 @@ fn main() -> ! {
     lcd.set_direction(lcd::direction::YX_LRUD);
     let mut console: Console = Console::new();
 
-    writeln!(console, "\x1b[48;2;128;192;255;38;5;0m WEATHER \x1b[0m \x1b[38;2;128;128;128m\x1b[0m").unwrap();
+    writeln!(console, "\x1b[48;2;128;192;255;38;5;0m TERMINAL \x1b[0m \x1b[38;2;128;128;128m\x1b[0m").unwrap();
 
     // Start off connection process state machine
     sh.start(false).unwrap();
@@ -164,8 +164,9 @@ fn main() -> ! {
                         match ev {
                             NetworkEvent::Ready => {
                                 writeln!(console, "∙ Connected to AP").unwrap();
-                                cur_link = port.connect(ConnectionType::TCP, b"wttr.in", 80).unwrap();
-                                writeln!(console, "∙ \x1b[38;5;141m[{}]\x1b[0m Opening TCP conn", cur_link).unwrap();
+                                //cur_link = port.connect(ConnectionType::TCP, b"wttr.in", 80).unwrap();
+                                //writeln!(console, "∙ \x1b[38;5;141m[{}]\x1b[0m Opening TCP conn", cur_link).unwrap();
+                                port.listen(33445).unwrap();
                             }
                             NetworkEvent::Error => {
                                 writeln!(console, "∙ Could not connect to AP").unwrap();
@@ -175,20 +176,21 @@ fn main() -> ! {
                                          ip[0], ip[1], ip[2], ip[3], port).unwrap();
                             }
                             NetworkEvent::ConnectionEstablished(link) => {
-                                if link == cur_link {
+                                /*if link == cur_link {
                                     writeln!(console, "∙ \x1b[38;5;141m[{}]\x1b[0m Sending HTTP request", link).unwrap();
                                     port.write_all(b"GET /?0qA HTTP/1.1\r\nHost: wttr.in\r\nConnection: close\r\nUser-Agent: Weather-Spy\r\n\r\n").unwrap();
                                     port.send(link).unwrap();
                                 }
+                                */
                             }
                             NetworkEvent::Data(link, data) => {
                                 // write!(debug, "{}", str::from_utf8(data).unwrap());
-                                if link == cur_link {
+                                //if link == cur_link {
                                     console.puts(str::from_utf8(data).unwrap_or("???"));
-                                }
+                                //}
                             }
                             NetworkEvent::ConnectionClosed(link) => {
-                                writeln!(console, "∙ \x1b[38;5;141m[{}]\x1b[0m \x1b[38;2;100;100;100m[closed]\x1b[0m", link).unwrap();
+                                //writeln!(console, "∙ \x1b[38;5;141m[{}]\x1b[0m \x1b[38;2;100;100;100m[closed]\x1b[0m", link).unwrap();
                             }
                             _ => { }
                         }
