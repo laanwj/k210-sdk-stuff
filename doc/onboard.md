@@ -30,7 +30,7 @@ Maix Go
 
 - MSA300 - Accelerometer (I2C, address 0x26)
 - STM32F103C8 - JTAG & UART, debug M1 without extra Jlink, this bypasses the CH340C on the module (USB to host, serial to K210)
-- OV2640 - Color CMOS UXGA (2.0 MegaPixel) CAMERA C HI (DVP)
+- OV2640 - Color CMOS UXGA (2.0 MegaPixel) CAMERA C HI (DVP, SCCB address 0x60)
 
 ### External
 

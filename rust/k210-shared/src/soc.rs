@@ -1,3 +1,4 @@
+pub mod dvp;
 pub mod fpioa;
 pub mod gpio;
 pub mod gpiohs;

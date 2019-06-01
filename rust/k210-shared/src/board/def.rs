@@ -26,6 +26,9 @@ pub const MSA300_ADDR_BITS: u32 = 7;
 /** I2C clock speed for MSA300 */
 pub const MSA300_CLK: u32 = 500000;
 
+/** DVP SCCB address for OV2640 */
+pub const OV2640_ADDR: u8 = 0x60;
+
 /** I/O pins for FPIOA */
 #[derive(Copy, Clone)]
 #[repr(u32)]
