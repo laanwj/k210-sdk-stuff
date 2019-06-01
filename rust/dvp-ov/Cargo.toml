@@ -1,0 +1,11 @@
+[package]
+name = "dvp-ov"
+version = "0.1.0"
+authors = ["W.J. van der Laan <laanwj@protonmail.com>"]
+edition = "2018"
+
+[dependencies]
+riscv-rt = "0.5.0"
+k210-hal = "0.1.0"
+riscv = "0.5"
+k210-shared = { path = "../k210-shared" }

@@ -7,6 +7,7 @@ members = [
     "uart-passthrough",
     "rgbcontrol",
     "weather",
+    "dvp-ov",
 ]
 
 [patch.crates-io]

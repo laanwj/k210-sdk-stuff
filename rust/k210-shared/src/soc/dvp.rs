@@ -36,7 +36,7 @@ pub struct DVP {
 }
 
 /** Borrow image_format enum from pac */
-pub type image_format = dvp::dvp_cfg::FORMATW;
+pub use dvp::dvp_cfg::FORMATW as image_format;
 
 impl DVP {
     /** Set SCCB clock to a safe and deterministic value (as low as possible) */
@@ -132,15 +132,15 @@ impl DVP {
     fn reset(&self) {
         // First power down
         self.dvp.cmos_cfg.modify(|_,w| w.power_down().set_bit());
-        usleep(200_000);
+        usleep(2000); // what do the actual timings here need to be?
         self.dvp.cmos_cfg.modify(|_,w| w.power_down().clear_bit());
-        usleep(200_000);
+        usleep(2000);
 
         // Second reset
         self.dvp.cmos_cfg.modify(|_,w| w.reset().clear_bit());
-        usleep(200_000);
+        usleep(2000);
         self.dvp.cmos_cfg.modify(|_,w| w.reset().set_bit());
-        usleep(200_000);
+        usleep(2000);
     }
 
     /** Initialize DVP peripheral */
@@ -220,8 +220,8 @@ impl DVP {
         }
     }
 
-    /** Set address for 16-bit R5G6B5 output */
-    pub fn set_display_addr(&self, addr: Option<*mut u16>) {
+    /** Set address for 16-bit R5G6B5 output packed into 32-bit units */
+    pub fn set_display_addr(&self, addr: Option<*mut u32>) {
         if let Some(addr) = addr {
             unsafe {
                 self.dvp.rgb_addr.write(|w| w.bits(((addr as usize) & 0xffffffff) as u32));

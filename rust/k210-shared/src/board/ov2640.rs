@@ -194,9 +194,9 @@ static CONFIG: &[(u8, u8)] = &[
     (0xe0, 0x00),
 ];
 
-pub fn ov2640_init(dvp: &DVP) {
+pub fn init(dvp: &DVP) {
     let (_manuf_id, _device_id) = read_id(dvp);
-    // TODO: do something with the IDs
+    // TODO: do something with the IDs (like check it against expected and fail if different?)
     // printf("manuf_id:0x%04x,device_id:0x%04x\n", v_manuf_id, v_device_id);
     for &(register, value) in CONFIG {
         dvp.sccb_send_data(OV2640_ADDR, register.into(), value.into());

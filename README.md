@@ -100,6 +100,8 @@ Projects
 =========
 
 This is a general random sandbox with silly projects for me to play around with the Maix Go, some are in C and some are in Rust.
+It turns out that this cheap board is great for playing around with Rust embedded in an environment that
+has a fair amount of memory and number of peripherals available by default!
 
 glyph_mapping
 -------------
@@ -184,6 +186,14 @@ Uses the ESP8285 WiFi chip of the Maix Go to fetch weather data from
 [wttr.in](https://wttr.in) and print it to the display using `k210-console`.
 
 [README](rust/weather/README.md)
+
+rust/dvp-ov
+-----------
+
+A straightforward passthrough test for video handling, based on `dvp_ov` in the
+SDK: read frames from the OV2640 image sensor and display them on the LCD.
+
+[README](rust/dvp-ov/README.md)
 
 ROM re'ing
 ===========
