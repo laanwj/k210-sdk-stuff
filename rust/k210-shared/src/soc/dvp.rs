@@ -5,6 +5,7 @@ use pac::dvp;
 use crate::soc::sleep::usleep;
 use crate::soc::sysctl;
 
+/** Extension trait for adding constrain() to DVP peripheral */
 pub trait DVPExt: Sized {
     /// Constrains DVP peripheral
     fn constrain(self) -> DVP;
@@ -14,13 +15,6 @@ impl DVPExt for pac::DVP {
     fn constrain(self) -> DVP { DVP { dvp: self, sccb_addr_len: sccb_addr_len::W8 } }
 }
 
-/** Output mode (RGB565 for display, or for planar for AI) */
-#[derive(Copy, Clone)]
-pub enum output_mode {
-    AI,
-    DISPLAY,
-}
-
 /** SCCB register address width */
 #[derive(Copy, Clone)]
 pub enum sccb_addr_len {
@@ -28,18 +22,20 @@ pub enum sccb_addr_len {
     W16,
 }
 
-/** Interrupt */
+/** Enumeration for different DVP interrupts */
 #[derive(Copy, Clone)]
 pub enum interrupt {
     frame_start,
     frame_finish,
 }
 
+/** DVP peripheral abstraction */
 pub struct DVP {
     dvp: pac::DVP,
     sccb_addr_len: sccb_addr_len,
 }
 
+/** Borrow image_format enum from pac */
 pub type image_format = dvp::dvp_cfg::FORMATW;
 
 impl DVP {
@@ -134,13 +130,13 @@ impl DVP {
 
     /** Reset DVP-connected device */
     fn reset(&self) {
-        /* First power down */
+        // First power down
         self.dvp.cmos_cfg.modify(|_,w| w.power_down().set_bit());
         usleep(200_000);
         self.dvp.cmos_cfg.modify(|_,w| w.power_down().clear_bit());
         usleep(200_000);
 
-        /* Second reset */
+        // Second reset
         self.dvp.cmos_cfg.modify(|_,w| w.reset().clear_bit());
         usleep(200_000);
         self.dvp.cmos_cfg.modify(|_,w| w.reset().set_bit());
@@ -183,29 +179,18 @@ impl DVP {
         self.dvp.dvp_cfg.modify(|_,w| w.format().variant(format));
     }
 
-    // Not sure it's consistent interface to have two separate functions here, but just going with
-    // the SDK for now... might even want to merge these into set_image_size, or force configuring
-    // the entire peripheral (register size, burst mode, image size) at once
-    /** Enable burst mode */
-    pub fn enable_burst(&self) {
-        self.dvp.dvp_cfg.modify(|_,w| w.burst_size_4beats().set_bit());
-        self.dvp.axi.modify(|_,w| w.gm_mlen().variant(dvp::axi::GM_MLENW::BYTE4));
-    }
-
-    /** Disable burst mode */
-    pub fn disable_burst(&self) {
-        self.dvp.dvp_cfg.modify(|_,w| w.burst_size_4beats().clear_bit());
-        self.dvp.axi.modify(|_,w| w.gm_mlen().variant(dvp::axi::GM_MLENW::BYTE1));
-    }
-
-    /** Set image size. If burst mode is enabled the maximum configurable size is
+    /** Set image size and burst mode. If burst mode is enabled the maximum configurable size is
      * 8160x1023, without burst mode it is 2040x1023.
      */
-    pub fn set_image_size(&self, width: u16, height: u16) {
+    pub fn set_image_size(&self, burst_mode: bool, width: u16, height: u16) {
         // Note: this uses state written in enable/disable_burst, so that needs to be configured before this
-        let burst_num = if self.dvp.dvp_cfg.read().burst_size_4beats().bit() {
+        let burst_num = if burst_mode {
+            self.dvp.dvp_cfg.modify(|_,w| w.burst_size_4beats().set_bit());
+            self.dvp.axi.modify(|_,w| w.gm_mlen().variant(dvp::axi::GM_MLENW::BYTE4));
             width / 8 / 4
         } else {
+            self.dvp.dvp_cfg.modify(|_,w| w.burst_size_4beats().clear_bit());
+            self.dvp.axi.modify(|_,w| w.gm_mlen().variant(dvp::axi::GM_MLENW::BYTE1));
             width / 8 / 1
         };
         assert!(burst_num < 256);
@@ -216,22 +201,34 @@ impl DVP {
         }
     }
 
-    /** Set address for planar RGB output */
-    pub fn set_ai_addr(&self, r_addr: *mut u8, g_addr: *mut u8, b_addr: *mut u8) {
-        // Makes use of the fact that
-        // a) physical memory is the same as virtual memory on the K210
-        // b) memory wraps around every 2^32
-        unsafe {
-            self.dvp.r_addr.write(|w| w.bits(((r_addr as usize) & 0xffffffff) as u32));
-            self.dvp.g_addr.write(|w| w.bits(((g_addr as usize) & 0xffffffff) as u32));
-            self.dvp.b_addr.write(|w| w.bits(((b_addr as usize) & 0xffffffff) as u32));
+    /** Set address for planar RGB output for KPU
+     * `Option<(r_addr, g_addr, b_addr)>`
+     */
+    pub fn set_ai_addr(&self, addr: Option<(*mut u8, *mut u8, *mut u8)>) {
+        if let Some((r_addr, g_addr, b_addr)) = addr {
+            // Makes use of the fact that
+            // a) physical memory is the same as virtual memory on the K210
+            // b) memory wraps around every 2^32
+            unsafe {
+                self.dvp.r_addr.write(|w| w.bits(((r_addr as usize) & 0xffffffff) as u32));
+                self.dvp.g_addr.write(|w| w.bits(((g_addr as usize) & 0xffffffff) as u32));
+                self.dvp.b_addr.write(|w| w.bits(((b_addr as usize) & 0xffffffff) as u32));
+            }
+            self.dvp.dvp_cfg.modify(|_,w| w.ai_output_enable().set_bit());
+        } else {
+            self.dvp.dvp_cfg.modify(|_,w| w.ai_output_enable().clear_bit());
         }
     }
 
     /** Set address for 16-bit R5G6B5 output */
-    pub fn set_display_addr(&self, addr: *mut u16) {
-        unsafe {
-            self.dvp.rgb_addr.write(|w| w.bits(((addr as usize) & 0xffffffff) as u32));
+    pub fn set_display_addr(&self, addr: Option<*mut u16>) {
+        if let Some(addr) = addr {
+            unsafe {
+                self.dvp.rgb_addr.write(|w| w.bits(((addr as usize) & 0xffffffff) as u32));
+            }
+            self.dvp.dvp_cfg.modify(|_,w| w.display_output_enable().set_bit());
+        } else {
+            self.dvp.dvp_cfg.modify(|_,w| w.display_output_enable().clear_bit());
         }
     }
 
@@ -315,29 +312,9 @@ impl DVP {
         }
     }
 
-    /** Enable automatic frame mode */
-    pub fn enable_auto(&self) {
-        self.dvp.dvp_cfg.modify(|_,w| w.auto_enable().set_bit());
+    /** Enable/disable automatic frame mode */
+    pub fn set_auto(&self, enable: bool) {
+        self.dvp.dvp_cfg.modify(|_,w| w.auto_enable().bit(enable));
     }
-
-    /** Disable automatic frame mode */
-    pub fn disable_auto(&self) {
-        self.dvp.dvp_cfg.modify(|_,w| w.auto_enable().clear_bit());
-    }
-
-    // The following function could be merged into setting the address?
-    // set_display_addr / set_ai_addr with an Option maybe?
-    /** Enable/disable an output */
-    pub fn set_output_enable(&self, index: output_mode, enable: bool) {
-        match index {
-            output_mode::AI => {
-                self.dvp.dvp_cfg.modify(|_,w| w.ai_output_enable().bit(enable));
-            }
-            output_mode::DISPLAY => {
-                self.dvp.dvp_cfg.modify(|_,w| w.display_output_enable().bit(enable));
-            }
-        }
-    }
-
 }
 
