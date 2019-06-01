@@ -183,7 +183,6 @@ impl DVP {
      * 8160x1023, without burst mode it is 2040x1023.
      */
     pub fn set_image_size(&self, burst_mode: bool, width: u16, height: u16) {
-        // Note: this uses state written in enable/disable_burst, so that needs to be configured before this
         let burst_num = if burst_mode {
             self.dvp.dvp_cfg.modify(|_,w| w.burst_size_4beats().set_bit());
             self.dvp.axi.modify(|_,w| w.gm_mlen().variant(dvp::axi::GM_MLENW::BYTE4));
