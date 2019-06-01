@@ -40,18 +40,27 @@ pub struct SPIImpl<IF> {
     spi: IF,
 }
 
+/** Borrow work mode from pac */
+pub use ctrlr0::WORK_MODEW as work_mode;
+/** Borrow frame format from pac */
+pub use ctrlr0::FRAME_FORMATW as frame_format;
+/** Borrow aitm from pac */
+pub use spi_ctrlr0::AITMW as aitm;
+/** Borrow tmod from pac */
+pub use ctrlr0::TMODW as tmod;
+
 pub trait SPI {
     fn configure(
         &self,
-        work_mode: ctrlr0::WORK_MODEW,
-        frame_format: ctrlr0::FRAME_FORMATW,
+        work_mode: work_mode,
+        frame_format: frame_format,
         data_bit_length: u8,
         endian: u32,
         instruction_length: u8,
         address_length: u8,
         wait_cycles: u8,
-        instruction_address_trans_mode: spi_ctrlr0::AITMW,
-        tmod: ctrlr0::TMODW,
+        instruction_address_trans_mode: aitm,
+        tmod: tmod,
     );
     fn set_clk_rate(&self, spi_clk: u32) -> u32;
     fn send_data<X: Into<u32> + Copy>(&self, chip_select: u32, tx: &[X]);
@@ -68,15 +77,15 @@ impl<IF: SPI01> SPI for SPIImpl<IF> {
     /// Configure SPI transaction
     fn configure(
         &self,
-        work_mode: ctrlr0::WORK_MODEW,
-        frame_format: ctrlr0::FRAME_FORMATW,
+        work_mode: work_mode,
+        frame_format: frame_format,
         data_bit_length: u8,
         endian: u32,
         instruction_length: u8,
         address_length: u8,
         wait_cycles: u8,
-        instruction_address_trans_mode: spi_ctrlr0::AITMW,
-        tmod: ctrlr0::TMODW,
+        instruction_address_trans_mode: aitm,
+        tmod: tmod,
     ) {
         assert!(data_bit_length >= 4 && data_bit_length <= 32);
         assert!(wait_cycles < (1 << 5));

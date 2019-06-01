@@ -1,12 +1,8 @@
 /** ST7789V LCD driver */
-use k210_hal::pac;
-use pac::spi0::ctrlr0;
-use pac::spi0::spi_ctrlr0;
-
 use crate::soc::gpio;
 use crate::soc::gpiohs;
 use crate::soc::sleep::usleep;
-use crate::soc::spi::SPI;
+use crate::soc::spi::{SPI,work_mode,frame_format,aitm,tmod};
 
 pub const SPI_SLAVE_SELECT: u32 = 3;
 pub const DCX_GPIONUM: u8 = 2;
@@ -176,15 +172,15 @@ impl<X: SPI> LCDLL for LCD<X> {
         self.set_rst(false);
         self.spi.set_clk_rate(10000000);
         self.spi.configure(
-            ctrlr0::WORK_MODEW::MODE0,
-            ctrlr0::FRAME_FORMATW::OCTAL,
+            work_mode::MODE0,
+            frame_format::OCTAL,
             8,
             0,
             8, /*instruction length*/
             0, /*address length*/
             0, /*wait cycles*/
-            spi_ctrlr0::AITMW::AS_FRAME_FORMAT,
-            ctrlr0::TMODW::TRANS,
+            aitm::AS_FRAME_FORMAT,
+            tmod::TRANS,
         );
         self.set_rst(true);
     }
@@ -192,15 +188,15 @@ impl<X: SPI> LCDLL for LCD<X> {
     fn write_command(&self, cmd: command) {
         self.set_dcx_control();
         self.spi.configure(
-            ctrlr0::WORK_MODEW::MODE0,
-            ctrlr0::FRAME_FORMATW::OCTAL,
+            work_mode::MODE0,
+            frame_format::OCTAL,
             8,
             0,
             8, /*instruction length*/
             0, /*address length*/
             0, /*wait cycles*/
-            spi_ctrlr0::AITMW::AS_FRAME_FORMAT,
-            ctrlr0::TMODW::TRANS,
+            aitm::AS_FRAME_FORMAT,
+            tmod::TRANS,
         );
         self.spi.send_data(SPI_SLAVE_SELECT, &[cmd as u8]);
     }
@@ -208,15 +204,15 @@ impl<X: SPI> LCDLL for LCD<X> {
     fn write_byte(&self, data_buf: &[u8]) {
         self.set_dcx_data();
         self.spi.configure(
-            ctrlr0::WORK_MODEW::MODE0,
-            ctrlr0::FRAME_FORMATW::OCTAL,
+            work_mode::MODE0,
+            frame_format::OCTAL,
             8,
             0,
             0, /*instruction length*/
             8, /*address length*/
             0, /*wait cycles*/
-            spi_ctrlr0::AITMW::AS_FRAME_FORMAT,
-            ctrlr0::TMODW::TRANS,
+            aitm::AS_FRAME_FORMAT,
+            tmod::TRANS,
         );
         self.spi.send_data(SPI_SLAVE_SELECT, data_buf);
     }
@@ -224,15 +220,15 @@ impl<X: SPI> LCDLL for LCD<X> {
     fn write_half(&self, data_buf: &[u16]) {
         self.set_dcx_data();
         self.spi.configure(
-            ctrlr0::WORK_MODEW::MODE0,
-            ctrlr0::FRAME_FORMATW::OCTAL,
+            work_mode::MODE0,
+            frame_format::OCTAL,
             16,
             0,
             0,  /*instruction length*/
             16, /*address length*/
             0,  /*wait cycles*/
-            spi_ctrlr0::AITMW::AS_FRAME_FORMAT,
-            ctrlr0::TMODW::TRANS,
+            aitm::AS_FRAME_FORMAT,
+            tmod::TRANS,
         );
         self.spi.send_data(SPI_SLAVE_SELECT, data_buf);
     }
@@ -240,15 +236,15 @@ impl<X: SPI> LCDLL for LCD<X> {
     fn write_word(&self, data_buf: &[u32]) {
         self.set_dcx_data();
         self.spi.configure(
-            ctrlr0::WORK_MODEW::MODE0,
-            ctrlr0::FRAME_FORMATW::OCTAL,
+            work_mode::MODE0,
+            frame_format::OCTAL,
             32,
             0,
             0,  /*instruction length*/
             32, /*address length*/
             0,  /*wait cycles*/
-            spi_ctrlr0::AITMW::AS_FRAME_FORMAT,
-            ctrlr0::TMODW::TRANS,
+            aitm::AS_FRAME_FORMAT,
+            tmod::TRANS,
         );
         self.spi.send_data(SPI_SLAVE_SELECT, data_buf);
     }
@@ -256,15 +252,15 @@ impl<X: SPI> LCDLL for LCD<X> {
     fn fill_data(&self, data: u32, length: usize) {
         self.set_dcx_data();
         self.spi.configure(
-            ctrlr0::WORK_MODEW::MODE0,
-            ctrlr0::FRAME_FORMATW::OCTAL,
+            work_mode::MODE0,
+            frame_format::OCTAL,
             32,
             0,
             0,  /*instruction length*/
             32, /*address length*/
             0,  /*wait cycles*/
-            spi_ctrlr0::AITMW::AS_FRAME_FORMAT,
-            ctrlr0::TMODW::TRANS,
+            aitm::AS_FRAME_FORMAT,
+            tmod::TRANS,
         );
         self.spi.fill_data(SPI_SLAVE_SELECT, data, length);
     }
