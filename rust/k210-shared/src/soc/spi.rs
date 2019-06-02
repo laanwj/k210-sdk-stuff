@@ -1,3 +1,4 @@
+//! SPI peripherals handling
 use core::cmp;
 use core::ops::Deref;
 use k210_hal::pac;

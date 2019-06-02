@@ -1,3 +1,4 @@
+//! I2C peripherals
 use core::cmp;
 use core::convert::TryInto;
 use core::ops::Deref;

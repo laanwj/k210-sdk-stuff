@@ -1,3 +1,4 @@
+//! Utilities for sleeping short timespans
 use crate::soc::sysctl;
 use riscv::register::mcycle;
 

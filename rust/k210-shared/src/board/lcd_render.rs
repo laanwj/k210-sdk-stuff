@@ -1,4 +1,4 @@
-/** Efficient(?) full-image rendering */
+//! Efficient(?) full-image rendering
 use crate::board::def::{DISP_HEIGHT, DISP_WIDTH};
 use crate::board::lcd::LCDHL;
 

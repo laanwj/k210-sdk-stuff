@@ -1,3 +1,4 @@
+//! SYSCTL peripheral
 use k210_hal::pac;
 
 use crate::soc::utils::set_bit;

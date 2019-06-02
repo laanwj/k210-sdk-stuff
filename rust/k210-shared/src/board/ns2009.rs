@@ -1,3 +1,4 @@
+//! NS2009 touch screen handling
 use core::result::Result;
 
 use crate::soc::i2c::I2C;

@@ -1,8 +1,12 @@
+//! GPIOHS peripheral
 use k210_hal::pac;
 
 use crate::soc::gpio;
 use crate::soc::utils::{set_bit,get_bit};
 
+// TODO embedded-hal::digital::v2::{InputPin, OutputPin}
+
+/** Set input/output direction for a GPIOHS pin */
 pub fn set_direction(pin: u8, direction: gpio::direction) {
     unsafe {
         let ptr = pac::GPIOHS::ptr();
@@ -15,6 +19,7 @@ pub fn set_direction(pin: u8, direction: gpio::direction) {
     }
 }
 
+/** Set output value for a GPIOHS pin */
 pub fn set_pin(pin: u8, value: bool) {
     unsafe {
         let ptr = pac::GPIOHS::ptr();
@@ -24,6 +29,7 @@ pub fn set_pin(pin: u8, value: bool) {
     }
 }
 
+/** Get input value for a GPIOHS pin */
 pub fn get_pin(pin: u8) -> bool {
     unsafe {
         let ptr = pac::GPIOHS::ptr();

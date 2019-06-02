@@ -1,4 +1,4 @@
-/** ST7789V LCD driver */
+//! ST7789V LCD driver
 use crate::soc::gpio;
 use crate::soc::gpiohs;
 use crate::soc::sleep::usleep;

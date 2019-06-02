@@ -1,3 +1,4 @@
+//! OV2640 camera handling
 use crate::soc::dvp::DVP;
 use crate::board::def::OV2640_ADDR;
 

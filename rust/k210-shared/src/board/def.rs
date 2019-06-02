@@ -1,4 +1,4 @@
-/** Global board definitions for Sipeed Maix Go */
+//! Global board definitions for Sipeed Maix Go
 
 /** Display width in pixels */
 pub const DISP_WIDTH: usize = 320;

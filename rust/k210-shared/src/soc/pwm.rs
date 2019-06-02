@@ -1,3 +1,4 @@
+//! TIMER peripherals (PWM handling)
 use k210_hal::pac;
 use core::ops::Deref;
 use pac::{timer0,TIMER0,TIMER1,TIMER2};

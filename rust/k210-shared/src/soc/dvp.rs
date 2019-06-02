@@ -1,3 +1,4 @@
+//! DVP peripheral
 use core::cmp;
 use k210_hal::pac;
 use pac::dvp;

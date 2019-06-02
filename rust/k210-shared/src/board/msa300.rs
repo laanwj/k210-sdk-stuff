@@ -1,4 +1,4 @@
-/** Support for MSA300 accelerometer */
+//! Support for MSA300 accelerometer
 /* MSA300 code based on 'accelerometer' demo by j.m.voogd@gmail.com */
 use crate::soc::i2c::I2C;
 

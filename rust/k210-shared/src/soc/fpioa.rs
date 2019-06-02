@@ -1,3 +1,4 @@
+//! FPIOA peripheral
 use k210_hal::pac;
 
 #[derive(Copy, Clone)]

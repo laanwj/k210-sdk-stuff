@@ -1,3 +1,4 @@
+//! Helper functions for LCD color handling
 use libm::F32Ext;
 
 /** Some convenient RGB565 colors */
