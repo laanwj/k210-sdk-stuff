@@ -195,6 +195,13 @@ SDK: read frames from the OV2640 image sensor and display them on the LCD.
 
 [README](rust/dvp-ov/README.md)
 
+rust/glyph-mapping
+------------------
+
+Rust port of the glyph mapping demo.
+
+[README](rust/glyph-mapping/README.md)
+
 ROM re'ing
 ===========
 

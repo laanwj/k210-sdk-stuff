@@ -4,6 +4,8 @@
 #![no_std]
 #![no_main]
 
+use k210_console::console::{Console, ScreenImage};
+use k210_console::cp437_8x8::GLYPH_BY_FILL;
 use k210_hal::pac;
 use k210_hal::prelude::*;
 use k210_hal::stdout::Stdout;
@@ -18,16 +20,24 @@ use riscv_rt::entry;
 use k210_shared::soc::dvp::{DVPExt,sccb_addr_len,image_format};
 use k210_shared::board::ov2640;
 
-/** 64-byte aligned screen RAM */
+/** 64-byte aligned planar RAM */
 #[repr(align(64))]
-struct ScreenRAM {
-    pub image: [u32; DISP_WIDTH * DISP_HEIGHT / 2],
+struct PlanarScreenRAM {
+    pub r: [u8; DISP_WIDTH * DISP_HEIGHT],
+    pub g: [u8; DISP_WIDTH * DISP_HEIGHT],
+    pub b: [u8; DISP_WIDTH * DISP_HEIGHT],
 }
-impl ScreenRAM {
-    fn as_mut_ptr(&mut self) -> *mut u32 { self.image.as_mut_ptr() }
+impl PlanarScreenRAM {
+    fn as_mut_ptrs(&mut self) -> (*mut u8, *mut u8, *mut u8) {
+        (self.r.as_mut_ptr(),self.g.as_mut_ptr(),self.b.as_mut_ptr())
+    }
 }
 
-static mut FRAME: ScreenRAM = ScreenRAM { image: [0; DISP_WIDTH * DISP_HEIGHT / 2] };
+static mut FRAME_AI: PlanarScreenRAM = PlanarScreenRAM {
+    r: [0; DISP_WIDTH * DISP_HEIGHT],
+    g: [0; DISP_WIDTH * DISP_HEIGHT],
+    b: [0; DISP_WIDTH * DISP_HEIGHT],
+};
 
 /** Connect pins to internal functions */
 fn io_init() {
@@ -74,34 +84,63 @@ fn main() -> ! {
     let spi = p.SPI0.constrain();
     let mut lcd = LCD::new(spi);
     lcd.init();
-    lcd.set_direction(lcd::direction::YX_RLDU);
+    lcd.set_direction(lcd::direction::YX_LRUD);
     lcd.clear(lcd_colors::PURPLE);
 
     let mut dvp = p.DVP.constrain();
     writeln!(stdout, "OV2640: init").unwrap();
     dvp.init(sccb_addr_len::W8);
-    writeln!(stdout, "OV2640: set xclk rate").unwrap();
     dvp.set_xclk_rate(24000000);
-    writeln!(stdout, "OV2640: set image format").unwrap();
     dvp.set_image_format(image_format::RGB);
-    writeln!(stdout, "OV2640: set image size").unwrap();
     dvp.set_image_size(true, 320, 240);
-    let (manuf_id, device_id) = ov2640::read_id(&dvp);
-    writeln!(stdout, "OV2640: manuf 0x{:04x} device 0x{:04x}", manuf_id, device_id).unwrap();
-    if manuf_id != 0x7fa2 || device_id != 0x2642 {
-        writeln!(stdout, "Warning: unknown chip").unwrap();
-    }
     ov2640::init(&dvp);
     writeln!(stdout, "OV2640: init done").unwrap();
 
-    writeln!(stdout, "OV2640: setting display out addr to {:?}", unsafe { FRAME.as_mut_ptr() } ).unwrap();
-    dvp.set_ai_addr(None);
-    dvp.set_display_addr(Some(unsafe { FRAME.as_mut_ptr() }));
+    // use planar output for convenient sampling
+    dvp.set_ai_addr(Some(unsafe { FRAME_AI.as_mut_ptrs() }));
+    dvp.set_display_addr(None);
     dvp.set_auto(false);
 
-    writeln!(stdout, "OV2640: starting frame loop").unwrap();
+    let mut image: ScreenImage = [0; DISP_WIDTH * DISP_HEIGHT / 2];
+    let mut console: Console = Console::new();
+    writeln!(stdout, "Starting frame loop").unwrap();
     loop {
         dvp.get_image();
-        lcd.draw_picture(0, 0, DISP_WIDTH as u16, DISP_HEIGHT as u16, unsafe { &FRAME.image } );
+
+        for y in 0..console.height() {
+            for x in 0..console.width() {
+                // compute average over cell: could use some kernel that emphasizes the center
+                // but this works fairly okay and is nice and fast
+                // /
+                // need to mirror x and y here so that characters are right side up
+                // compared to camera image
+                let mut r = 0;
+                let mut g = 0;
+                let mut b = 0;
+                for iy in 0..8 {
+                    for ix in 0..8 {
+                        let cx = 319 - (x * 8 + ix) as usize;
+                        let cy = 239 - (y * 8 + iy) as usize;
+                        let addr = (cy as usize)*320+(cx as usize);
+                        r += unsafe { FRAME_AI.r[addr] } as u32;
+                        g += unsafe { FRAME_AI.g[addr] } as u32;
+                        b += unsafe { FRAME_AI.b[addr] } as u32;
+                    }
+                }
+                r /= 8*8;
+                g /= 8*8;
+                b /= 8*8;
+                let i = (77*r + 150*g + 29*b) / 256;
+                console.put_raw(
+                    x, y,
+                    lcd_colors::rgb565(r as u8, g as u8, b as u8),
+                    0,
+                    GLYPH_BY_FILL[i as usize].into(),
+                );
+            }
+        }
+
+        console.render(&mut image);
+        lcd.draw_picture(0, 0, DISP_WIDTH as u16, DISP_HEIGHT as u16, &image);
     }
 }

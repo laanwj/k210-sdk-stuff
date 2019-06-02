@@ -200,8 +200,10 @@ impl DVP {
         }
     }
 
-    /** Set address for planar RGB output for KPU
-     * `Option<(r_addr, g_addr, b_addr)>`
+    /** Set address for planar R8G8B8 output `Option<(r_addr, g_addr, b_addr)>`.
+     * This format is meant for the KPU as input but it's also usable from normal memory,
+     * it's simply an alternative output format. Both `display_addr` and `ai_addr` can be active at
+     * the same time.
      */
     pub fn set_ai_addr(&self, addr: Option<(*mut u8, *mut u8, *mut u8)>) {
         if let Some((r_addr, g_addr, b_addr)) = addr {

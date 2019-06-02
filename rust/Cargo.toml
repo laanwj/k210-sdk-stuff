@@ -8,6 +8,7 @@ members = [
     "rgbcontrol",
     "weather",
     "dvp-ov",
+    "glyph-mapping",
 ]
 
 [patch.crates-io]
