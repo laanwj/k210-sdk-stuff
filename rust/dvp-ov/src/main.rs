@@ -18,7 +18,16 @@ use riscv_rt::entry;
 use k210_shared::soc::dvp::{DVPExt,sccb_addr_len,image_format};
 use k210_shared::board::ov2640;
 
-pub type ScreenImage = [u32; DISP_WIDTH * DISP_HEIGHT / 2];
+/** 64-byte aligned screen RAM */
+#[repr(align(64))]
+struct ScreenRAM {
+    pub image: [u32; DISP_WIDTH * DISP_HEIGHT / 2],
+}
+impl ScreenRAM {
+    fn as_mut_ptr(&mut self) -> *mut u32 { self.image.as_mut_ptr() }
+}
+
+static mut FRAME: ScreenRAM = ScreenRAM { image: [0; DISP_WIDTH * DISP_HEIGHT / 2] };
 
 /** Connect pins to internal functions */
 fn io_init() {
@@ -87,15 +96,14 @@ fn main() -> ! {
     ov2640::init(&dvp);
     writeln!(stdout, "OV2640: init done").unwrap();
 
-    let mut image: ScreenImage = [0; DISP_WIDTH * DISP_HEIGHT / 2];
-
+    writeln!(stdout, "OV2640: setting display out addr to {:?}", unsafe { FRAME.as_mut_ptr() } ).unwrap();
     dvp.set_ai_addr(None);
-    dvp.set_display_addr(Some(image.as_mut_ptr()));
+    dvp.set_display_addr(Some(unsafe { FRAME.as_mut_ptr() }));
     dvp.set_auto(false);
 
     writeln!(stdout, "OV2640: starting frame loop").unwrap();
     loop {
         dvp.get_image();
-        lcd.draw_picture(0, 0, DISP_WIDTH as u16, DISP_HEIGHT as u16, &image);
+        lcd.draw_picture(0, 0, DISP_WIDTH as u16, DISP_HEIGHT as u16, unsafe { &FRAME.image } );
     }
 }
