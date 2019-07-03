@@ -9,7 +9,7 @@ use embedded_hal::serial;
 use esp8266at::handler::{NetworkEvent, SerialNetworkHandler};
 use esp8266at::response::{parse, ConnectionType, ParseResult};
 use esp8266at::traits::{self, Write};
-use k210_hal::pac;
+use k210_hal::Peripherals;
 use k210_hal::prelude::*;
 use k210_hal::stdout::Stdout;
 use k210_shared::board::def::io;
@@ -82,27 +82,25 @@ fn io_init() {
 
 #[entry]
 fn main() -> ! {
-    let p = pac::Peripherals::take().unwrap();
+    let p = Peripherals::take().unwrap();
     let clocks = k210_hal::clock::Clocks::new();
 
     usleep(200000);
     io_init();
 
     // Configure UARTHS (→host)
-    let serial = p.UARTHS.constrain(DEFAULT_BAUD.bps(), &clocks);
+    let serial = p.UARTHS.configure((p.pins.pin5, p.pins.pin4), DEFAULT_BAUD.bps(), &clocks);
     let (mut tx, mut _rx) = serial.split();
     let mut debug = Stdout(&mut tx);
 
     // Configure UART1 (→WIFI)
     sysctl::clock_enable(sysctl::clock::UART1);
     sysctl::reset(sysctl::reset::UART1);
-    fpioa::set_function(io::WIFI_RX, fpioa::function::UART1_TX);
-    fpioa::set_function(io::WIFI_TX, fpioa::function::UART1_RX);
     fpioa::set_function(io::WIFI_EN, fpioa::function::GPIOHS8);
     fpioa::set_io_pull(io::WIFI_EN, fpioa::pull::DOWN);
     gpiohs::set_pin(8, true);
     gpiohs::set_direction(8, gpio::direction::OUTPUT);
-    let wifi_serial = p.UART1.constrain(DEFAULT_BAUD.bps(), &clocks);
+    let wifi_serial = p.UART1.configure((p.pins.pin7, p.pins.pin6), DEFAULT_BAUD.bps(), &clocks);
     let (mut wtx, mut wrx) = wifi_serial.split();
 
     let mut wa = WriteAdapter::new(&mut wtx);

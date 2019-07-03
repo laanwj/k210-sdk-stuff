@@ -1,5 +1,5 @@
 /** Panic handler: based on ARM panic-itm */
-use k210_hal::pac;
+use k210_hal::Peripherals;
 use k210_hal::prelude::*;
 use k210_hal::stdout::Stdout;
 use core::panic::PanicInfo;
@@ -10,9 +10,9 @@ use core::sync::atomic::{self, Ordering};
 fn panic(info: &PanicInfo) -> ! {
     // Stealing all peripherals, re-initializing the clocks and serial seems overkill here, but
     // also, can we really know the state?
-    let p = unsafe { pac::Peripherals::steal() };
+    let p = unsafe { Peripherals::steal() };
     let clocks = k210_hal::clock::Clocks::new();
-    let serial = p.UARTHS.constrain(115_200.bps(), &clocks);
+    let serial = p.UARTHS.configure((p.pins.pin5, p.pins.pin4), 115_200.bps(), &clocks);
     let (mut tx, _) = serial.split();
     let mut stdout = Stdout(&mut tx);
     writeln!(stdout, "{}", info).unwrap();

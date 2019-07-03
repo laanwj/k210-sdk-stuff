@@ -5,7 +5,7 @@
 #![no_main]
 
 use core::cmp::{min,max};
-use k210_hal::pac;
+use k210_hal::Peripherals;
 use k210_hal::prelude::*;
 use k210_hal::stdout::Stdout;
 use k210_shared::board::def::{
@@ -67,12 +67,12 @@ fn color_from_xy(x: u16, y: u16, v: f32) -> (f32, f32, f32) {
 
 #[entry]
 fn main() -> ! {
-    let p = pac::Peripherals::take().unwrap();
+    let p = Peripherals::take().unwrap();
     let clocks = k210_hal::clock::Clocks::new();
 
     usleep(200000);
 
-    let serial = p.UARTHS.constrain(115_200.bps(), &clocks);
+    let serial = p.UARTHS.configure((p.pins.pin5, p.pins.pin4), 115_200.bps(), &clocks);
     let (mut tx, _) = serial.split();
     let mut stdout = Stdout(&mut tx);
 

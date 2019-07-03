@@ -4,7 +4,7 @@
 #![no_std]
 #![no_main]
 
-use k210_hal::pac;
+use k210_hal::Peripherals;
 use k210_hal::prelude::*;
 use k210_hal::stdout::Stdout;
 use k210_shared::board::def::{io,DISP_WIDTH,DISP_HEIGHT};
@@ -58,13 +58,13 @@ fn io_init() {
 
 #[entry]
 fn main() -> ! {
-    let p = pac::Peripherals::take().unwrap();
+    let p = Peripherals::take().unwrap();
     let clocks = k210_hal::clock::Clocks::new();
 
     usleep(200000);
 
     // Configure UART
-    let serial = p.UARTHS.constrain(115_200.bps(), &clocks);
+    let serial = p.UARTHS.configure((p.pins.pin5, p.pins.pin4), 115_200.bps(), &clocks);
     let (mut tx, _) = serial.split();
 
     let mut stdout = Stdout(&mut tx);
