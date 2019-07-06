@@ -9,6 +9,7 @@ members = [
     "weather",
     "dvp-ov",
     "glyph-mapping",
+    "term-server",
 ]
 
 [patch.crates-io]

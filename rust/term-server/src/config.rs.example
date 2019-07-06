@@ -1,0 +1,8 @@
+/** Secrets */
+
+/** Access point name */
+pub const APNAME: &str = "<ap name>";
+
+/** Access point password */
+pub const APPASS: &str = "<ap password>";
+
