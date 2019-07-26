@@ -12,4 +12,4 @@ k210-hal = "0.1.0"
 riscv = "0.5"
 k210-shared = { path = "../k210-shared" }
 k210-console = { path = "../k210-console" }
-esp8266at = { path = "../esp8266at", default-features = false }
+esp8266at = { path = "../../util/esp8266at", default-features = false }
