@@ -119,10 +119,10 @@ where
         &mut self,
         resp: &Response,
         mut on_event: F,
-        debug: &mut fmt::Write,
+        debug: &mut dyn fmt::Write,
     ) -> Result<(), S::Error>
     where
-        F: FnMut(&mut Self, NetworkEvent, &mut fmt::Write),
+        F: FnMut(&mut Self, NetworkEvent, &mut dyn fmt::Write),
     {
         match resp {
             Response::Echo(data) => {
