@@ -123,12 +123,23 @@ fn main() -> ! {
     let mut ofs: usize = 0;
 
     let mut cur_link = 0;
+    let mut finished = false;
     loop {
         if console.dirty {
             let mut image: ScreenImage = [0; DISP_WIDTH * DISP_HEIGHT / 2];
             console.render(&mut image);
             lcd.draw_picture(0, 0, DISP_WIDTH as u16, DISP_HEIGHT as u16, &image);
             console.dirty = false;
+        }
+
+        // When finished, wait around a bit and re-do request
+        // do this after updating the console, to be sure the last result is visible before
+        // sleeping
+        if finished {
+            finished = false;
+            usleep(10 * 60 * 1_000_000);
+            cur_link = sh.connect(ConnectionType::TCP, b"wttr.in", 80).unwrap();
+            writeln!(console, "∙ \x1b[38;5;141m[{}]\x1b[0m Opening TCP conn", cur_link).unwrap();
         }
 
         // Receive into buffer
@@ -187,6 +198,7 @@ fn main() -> ! {
                             }
                             NetworkEvent::ConnectionClosed(link) => {
                                 writeln!(console, "∙ \x1b[38;5;141m[{}]\x1b[0m \x1b[38;2;100;100;100m[closed]\x1b[0m", link).unwrap();
+                                finished = true;
                             }
                             _ => { }
                         }
@@ -231,11 +243,5 @@ fn main() -> ! {
             writeln!(debug, "Error: buffer was unparseable, dropping buffer").unwrap();
             ofs = 0;
         }
-
-        /*
-        if let Ok(ch) = rx.read() {
-            let _res = block!(wtx.write(ch));
-        }
-        */
     }
 }
