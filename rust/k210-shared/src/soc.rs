@@ -1,3 +1,4 @@
+pub mod dmac;
 pub mod dvp;
 pub mod fpioa;
 pub mod gpio;

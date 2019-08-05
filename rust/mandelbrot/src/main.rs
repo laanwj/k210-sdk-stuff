@@ -12,11 +12,12 @@ use k210_hal::stdout::Stdout;
 use k210_shared::board::def::{io,DISP_WIDTH,DISP_HEIGHT};
 use k210_shared::board::lcd::{LCD,LCDHL,self};
 use k210_shared::board::lcd_colors;
-use k210_shared::board::lcd_render::render_image;
+use k210_shared::board::lcd_render::render_image_dma;
 use k210_shared::soc::fpioa;
 use k210_shared::soc::sleep::usleep;
 use k210_shared::soc::spi::SPIExt;
 use k210_shared::soc::sysctl;
+use k210_shared::soc::dmac::{DMACExt, dma_channel};
 use riscv_rt::entry;
 
 use crate::palette::PALETTE;
@@ -69,18 +70,24 @@ fn main() -> ! {
     io_mux_init();
     io_set_power();
 
+    writeln!(stdout, "Init DMAC").unwrap();
+    let dmac = p.DMAC.configure();
+    let chan = dma_channel::CHANNEL0;
+    writeln!(stdout, "DMAC: id 0x{:x} version 0x{:x} AXI ID 0x{:x}",
+             dmac.read_id(), dmac.read_version(), dmac.read_channel_id(chan)).unwrap();
+
     let spi = p.SPI0.constrain();
     let mut lcd = LCD::new(spi);
     lcd.init();
     lcd.set_direction(lcd::direction::YX_RLDU);
-    lcd.clear(lcd_colors::PURPLE);
+    lcd.clear_dma(&dmac, chan, lcd_colors::PURPLE);
 
     writeln!(stdout, "First frame").unwrap();
     let mut zoom = 5.0f32;
     let ofsx = 0.02997f32;
     let ofsy = 0.80386f32;
     loop {
-        render_image(&mut lcd, |x,y| {
+        render_image_dma(&dmac, chan, &mut lcd, |x,y| {
             let xx = 2.0 * (x as f32) / ((DISP_WIDTH-1) as f32) - 1.0;
             let yy = 2.0 * (y as f32) / ((DISP_HEIGHT-1) as f32) - 1.0;
             let i = mandelbrot(xx * zoom + ofsx, yy * zoom + ofsy, 20);

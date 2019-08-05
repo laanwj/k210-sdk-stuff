@@ -163,6 +163,18 @@ pub enum reset {
     RTC,
 }
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum dma_channel {
+    CHANNEL0 = 0,
+    CHANNEL1 = 1,
+    CHANNEL2 = 2,
+    CHANNEL3 = 3,
+    CHANNEL4 = 4,
+    CHANNEL5 = 5,
+}
+
+pub type dma_select = pac::sysctl::dma_sel0::DMA_SEL0W;
+
 fn clock_bus_en(clock: clock, en: bool) {
     /*
      * The timer is under APB0, to prevent apb0_clk_en1 and apb0_clk_en0
@@ -611,4 +623,21 @@ pub fn reset(reset: reset) {
     reset_ctl(reset, true);
     usleep(10);
     reset_ctl(reset, false);
+}
+
+/** Select DMA handshake for a channel */
+pub fn dma_select(channel: dma_channel, select: dma_select)
+{
+    unsafe {
+        use dma_channel::*;
+        let ptr = pac::SYSCTL::ptr();
+        match channel {
+            CHANNEL0 => (*ptr).dma_sel0.modify(|_,w| w.dma_sel0().variant(select)),
+            CHANNEL1 => (*ptr).dma_sel0.modify(|_,w| w.dma_sel1().variant(select)),
+            CHANNEL2 => (*ptr).dma_sel0.modify(|_,w| w.dma_sel2().variant(select)),
+            CHANNEL3 => (*ptr).dma_sel0.modify(|_,w| w.dma_sel3().variant(select)),
+            CHANNEL4 => (*ptr).dma_sel0.modify(|_,w| w.dma_sel4().variant(select)),
+            CHANNEL5 => (*ptr).dma_sel1.modify(|_,w| w.dma_sel5().variant(select)),
+        }
+    }
 }

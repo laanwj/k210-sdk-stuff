@@ -6,7 +6,8 @@ use pac::{SPI0,SPI1,spi0};
 use pac::spi0::ctrlr0;
 use pac::spi0::spi_ctrlr0;
 
-use crate::soc::sysctl;
+use crate::soc::sysctl::{dma_channel, self};
+use crate::soc::dmac::{DMAC, address_increment, burst_length, transfer_width};
 
 /// Extension trait that constrains SPI peripherals
 pub trait SPIExt: Sized {
@@ -20,15 +21,23 @@ pub trait SPI01: Deref<Target = spi0::RegisterBlock> {
     const CLK: sysctl::clock;
     #[doc(hidden)]
     const DIV: sysctl::threshold;
+    #[doc(hidden)]
+    const DMA_RX: sysctl::dma_select;
+    #[doc(hidden)]
+    const DMA_TX: sysctl::dma_select;
 }
 
 impl SPI01 for SPI0 {
     const CLK: sysctl::clock = sysctl::clock::SPI0;
     const DIV: sysctl::threshold = sysctl::threshold::SPI0;
+    const DMA_RX: sysctl::dma_select = sysctl::dma_select::SSI0_RX_REQ;
+    const DMA_TX: sysctl::dma_select = sysctl::dma_select::SSI0_TX_REQ;
 }
 impl SPI01 for SPI1 {
     const CLK: sysctl::clock = sysctl::clock::SPI1;
     const DIV: sysctl::threshold = sysctl::threshold::SPI1;
+    const DMA_RX: sysctl::dma_select = sysctl::dma_select::SSI1_RX_REQ;
+    const DMA_TX: sysctl::dma_select = sysctl::dma_select::SSI1_TX_REQ;
 }
 
 impl<SPI: SPI01> SPIExt for SPI {
@@ -65,7 +74,9 @@ pub trait SPI {
     );
     fn set_clk_rate(&self, spi_clk: u32) -> u32;
     fn send_data<X: Into<u32> + Copy>(&self, chip_select: u32, tx: &[X]);
+    fn send_data_dma(&self, dmac: &DMAC, channel_num: dma_channel, chip_select: u32, tx: &[u32]);
     fn fill_data(&self, chip_select: u32, value: u32, tx_len: usize);
+    fn fill_data_dma(&self, dmac: &DMAC, channel_num: dma_channel, chip_select: u32, value: u32, tx_len: usize);
 }
 
 impl<IF: SPI01> SPIImpl<IF> {
@@ -173,6 +184,31 @@ impl<IF: SPI01> SPI for SPIImpl<IF> {
         }
     }
 
+    /// Send 32-bit data using DMA.
+    /// If you want to use this function to send 8-bit or 16-bit data, you need to wrap each
+    /// data unit in a 32-bit word.
+    /// This is intentionally left to the caller: the difficulty here is to avoid the need for alloc/freeing()
+    /// buffers every time as the SDK does because this is highly undesirable!
+    fn send_data_dma(&self, dmac: &DMAC, channel_num: dma_channel, chip_select: u32, tx: &[u32]) {
+        unsafe {
+            self.spi.dmacr.write(|w| w.bits(0x2));    /*enable dma transmit*/
+            self.spi.ssienr.write(|w| w.bits(0x01));
+
+            sysctl::dma_select(channel_num, IF::DMA_TX);
+            dmac.set_single_mode(channel_num, tx.as_ptr() as u64, self.spi.dr.as_ptr() as u64,
+                                 address_increment::INCREMENT, address_increment::NOCHANGE,
+                                 burst_length::LENGTH_4, transfer_width::WIDTH_32, tx.len() as u32);
+            self.spi.ser.write(|w| w.bits(1 << chip_select));
+            dmac.wait_done(channel_num);
+
+            while (self.spi.sr.read().bits() & 0x05) != 0x04 {
+                // IDLE
+            }
+            self.spi.ser.write(|w| w.bits(0x00));
+            self.spi.ssienr.write(|w| w.bits(0x00));
+        }
+    }
+
     /// Send repeated data
     fn fill_data(&self, chip_select: u32, value: u32, mut tx_len: usize) {
         unsafe {
@@ -187,6 +223,29 @@ impl<IF: SPI01> SPI for SPIImpl<IF> {
                 }
                 tx_len -= fifo_len;
             }
+
+            while (self.spi.sr.read().bits() & 0x05) != 0x04 {
+                // IDLE
+            }
+            self.spi.ser.write(|w| w.bits(0x00));
+            self.spi.ssienr.write(|w| w.bits(0x00));
+        }
+    }
+
+    /// Send repeated data (using DMA)
+    fn fill_data_dma(&self, dmac: &DMAC, channel_num: dma_channel, chip_select: u32, value: u32, tx_len: usize) {
+        unsafe {
+            self.spi.dmacr.write(|w| w.bits(0x2));    /*enable dma transmit*/
+            self.spi.ssienr.write(|w| w.bits(0x01));
+
+            sysctl::dma_select(channel_num, IF::DMA_TX);
+            let val = [value];
+            // simple trick to repeating a value: don't increment the source address
+            dmac.set_single_mode(channel_num, val.as_ptr() as u64, self.spi.dr.as_ptr() as u64,
+                                 address_increment::NOCHANGE, address_increment::NOCHANGE,
+                                 burst_length::LENGTH_4, transfer_width::WIDTH_32, tx_len as u32);
+            self.spi.ser.write(|w| w.bits(1 << chip_select));
+            dmac.wait_done(channel_num);
 
             while (self.spi.sr.read().bits() & 0x05) != 0x04 {
                 // IDLE
