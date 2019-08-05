@@ -36,7 +36,7 @@ Maix Go
 
 (source: schematic)
 
-- ST7789V - 240RGB x 320 dot 262K Color with Frame Memory Single-Chip TFT Controller/Driver (SPI)
+- ST7789V - 240x320 262K Color Single-Chip TFT Controller/Driver with Frame Memory (SPI)
 - NS2009 - 4-Wire Touch Screen Controller (I2C, address 0x48)
 - TF card slot (SPI)
 
