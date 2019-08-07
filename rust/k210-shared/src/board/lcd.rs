@@ -5,7 +5,14 @@ use crate::soc::sleep::usleep;
 use crate::soc::spi::{SPI,work_mode,frame_format,aitm,tmod};
 use crate::soc::dmac::{DMAC,dma_channel};
 
-pub const SPI_SLAVE_SELECT: u32 = 3;
+// These are the values used in the Kendryte SDK but should not ideally be hardcoded here, but
+// defined in the main.rs and passed to the constructor
+// (they're arbitrarily configurable by setting
+//    fpioa::set_function(io::LCD_CS, fpioa::function::SPI0_SS[0-3]);
+//    fpioa::set_function(io::LCD_RST, fpioa::function::gpiohs(lcd::RST_GPIONUM));
+//    fpioa::set_function(io::LCD_DC, fpioa::function::gpiohs(lcd::DCX_GPIONUM));
+// )
+pub const SPI_CS: u32 = 3;
 pub const DCX_GPIONUM: u8 = 2;
 pub const RST_GPIONUM: u8 = 3;
 
@@ -110,6 +117,9 @@ pub const DIR_MASK: u8 = 0xE0;
 
 pub struct LCD<'a, SPI> {
     spi: SPI,
+    spi_cs: u32,
+    dcx_gpionum: u8,
+    rst_gpionum: u8,
     dmac: &'a DMAC,
     channel: dma_channel,
     pub width: u16,
@@ -141,6 +151,9 @@ impl<'a, X: SPI> LCD<'a, X> {
     pub fn new(spi: X, dmac: &'a DMAC, channel: dma_channel) -> Self {
         Self {
             spi,
+            spi_cs: SPI_CS,
+            dcx_gpionum: DCX_GPIONUM,
+            rst_gpionum: RST_GPIONUM,
             dmac,
             channel,
             width: 0,
@@ -149,25 +162,25 @@ impl<'a, X: SPI> LCD<'a, X> {
     }
 
     fn init_dcx(&self) {
-        gpiohs::set_direction(DCX_GPIONUM, gpio::direction::OUTPUT);
-        gpiohs::set_pin(DCX_GPIONUM, true);
+        gpiohs::set_direction(self.dcx_gpionum, gpio::direction::OUTPUT);
+        gpiohs::set_pin(self.dcx_gpionum, true);
     }
 
     fn set_dcx_control(&self) {
-        gpiohs::set_pin(DCX_GPIONUM, false);
+        gpiohs::set_pin(self.dcx_gpionum, false);
     }
 
     fn set_dcx_data(&self) {
-        gpiohs::set_pin(DCX_GPIONUM, true);
+        gpiohs::set_pin(self.dcx_gpionum, true);
     }
 
     fn init_rst(&self) {
-        gpiohs::set_direction(RST_GPIONUM, gpio::direction::OUTPUT);
-        gpiohs::set_pin(RST_GPIONUM, true);
+        gpiohs::set_direction(self.rst_gpionum, gpio::direction::OUTPUT);
+        gpiohs::set_pin(self.rst_gpionum, true);
     }
 
     fn set_rst(&self, val: bool) {
-        gpiohs::set_pin(RST_GPIONUM, val);
+        gpiohs::set_pin(self.rst_gpionum, val);
     }
 
     fn set_area(&self, x1: u16, y1: u16, x2: u16, y2: u16) {
@@ -225,7 +238,7 @@ impl<X: SPI> LCDLL for LCD<'_, X> {
             aitm::AS_FRAME_FORMAT,
             tmod::TRANS,
         );
-        self.spi.send_data_dma(self.dmac, self.channel, SPI_SLAVE_SELECT, &[cmd as u32]);
+        self.spi.send_data_dma(self.dmac, self.channel, self.spi_cs, &[cmd as u32]);
     }
 
     fn write_byte(&self, data_buf: &[u32]) {
@@ -241,7 +254,7 @@ impl<X: SPI> LCDLL for LCD<'_, X> {
             aitm::AS_FRAME_FORMAT,
             tmod::TRANS,
         );
-        self.spi.send_data_dma(self.dmac, self.channel, SPI_SLAVE_SELECT, data_buf);
+        self.spi.send_data_dma(self.dmac, self.channel, self.spi_cs, data_buf);
     }
 
     fn write_half(&self, data_buf: &[u32]) {
@@ -257,7 +270,7 @@ impl<X: SPI> LCDLL for LCD<'_, X> {
             aitm::AS_FRAME_FORMAT,
             tmod::TRANS,
         );
-        self.spi.send_data_dma(self.dmac, self.channel, SPI_SLAVE_SELECT, data_buf);
+        self.spi.send_data_dma(self.dmac, self.channel, self.spi_cs, data_buf);
     }
 
     fn write_word(&self, data_buf: &[u32]) {
@@ -273,7 +286,7 @@ impl<X: SPI> LCDLL for LCD<'_, X> {
             aitm::AS_FRAME_FORMAT,
             tmod::TRANS,
         );
-        self.spi.send_data_dma(self.dmac, self.channel, SPI_SLAVE_SELECT, data_buf);
+        self.spi.send_data_dma(self.dmac, self.channel, self.spi_cs, data_buf);
     }
 
     fn fill_data(&self, data: u32, length: usize) {
@@ -289,7 +302,7 @@ impl<X: SPI> LCDLL for LCD<'_, X> {
             aitm::AS_FRAME_FORMAT,
             tmod::TRANS,
         );
-        self.spi.fill_data_dma(self.dmac, self.channel, SPI_SLAVE_SELECT, data, length);
+        self.spi.fill_data_dma(self.dmac, self.channel, self.spi_cs, data, length);
     }
 }
 
