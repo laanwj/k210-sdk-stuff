@@ -1,0 +1,12 @@
+[package]
+name = "secp256k1-test"
+version = "0.1.0"
+authors = ["W.J. van der Laan <laanwj@protonmail.com>"]
+edition = "2018"
+
+[dependencies]
+riscv-rt = "0.6"
+k210-hal = "0.1.0"
+riscv = "0.5"
+k210-shared = { path = "../k210-shared" }
+secp256k1 = { version = "0.15", default-features = false, features = [] }

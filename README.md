@@ -202,6 +202,22 @@ Rust port of the glyph mapping demo.
 
 [README](rust/glyph-mapping/README.md)
 
+rust/term-server
+----------------
+
+Uses the ESP8285 WiFi chip of the Maix Go to listen for incoming connections,
+displaying the data on the terminal.
+
+[README](rust/term-server/README.md)
+
+rust/secp256k1-test
+-------------------
+
+Test for using the elliptic curve cryptography library `secp256k1`, written in C,
+from rust on a RISC-V device.
+
+[README](rust/secp256k1-test/README.md)
+
 ROM re'ing
 ===========
 
