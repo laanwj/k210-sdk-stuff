@@ -11,6 +11,7 @@ use k210_shared::board::def::{io,DISP_WIDTH,DISP_HEIGHT,NS2009_SLV_ADDR,NS2009_C
 use k210_shared::board::lcd::{LCD,LCDHL,self};
 use k210_shared::board::lcd_colors;
 use k210_shared::board::ns2009::TouchScreen;
+use k210_shared::soc::dmac::{DMACExt, dma_channel};
 use k210_shared::soc::fpioa;
 use k210_shared::soc::i2c::{I2C,I2CExt};
 use k210_shared::soc::sleep::usleep;
@@ -154,8 +155,9 @@ fn main() -> ! {
     io_mux_init();
     io_set_power();
 
+    let dmac = p.DMAC.configure();
     let spi = p.SPI0.constrain();
-    let mut lcd = LCD::new(spi);
+    let mut lcd = LCD::new(spi, &dmac, dma_channel::CHANNEL0);
     lcd.init();
     lcd.set_direction(lcd::direction::YX_LRUD);
     lcd.clear(lcd_colors::PURPLE);

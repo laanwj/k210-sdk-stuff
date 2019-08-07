@@ -14,6 +14,7 @@ use k210_hal::prelude::*;
 use k210_hal::stdout::Stdout;
 use k210_shared::board::def::io;
 use k210_shared::board::lcd::{self, LCD, LCDHL};
+use k210_shared::soc::dmac::{DMACExt, dma_channel};
 use k210_shared::soc::fpioa;
 use k210_shared::soc::gpio;
 use k210_shared::soc::gpiohs;
@@ -107,8 +108,9 @@ fn main() -> ! {
     let mut sh = SerialNetworkHandler::new(&mut wa, config::APNAME.as_bytes(), config::APPASS.as_bytes());
 
     // LCD ini
+    let dmac = p.DMAC.configure();
     let spi = p.SPI0.constrain();
-    let mut lcd = LCD::new(spi);
+    let mut lcd = LCD::new(spi, &dmac, dma_channel::CHANNEL0);
     lcd.init();
     lcd.set_direction(lcd::direction::YX_LRUD);
     let mut console: Console = Console::new();

@@ -10,6 +10,7 @@ use k210_hal::stdout::Stdout;
 use k210_shared::board::def::{io,DISP_WIDTH,DISP_HEIGHT};
 use k210_shared::board::lcd::{LCD,LCDHL,self};
 use k210_shared::board::lcd_colors;
+use k210_shared::soc::dmac::{DMACExt, dma_channel};
 use k210_shared::soc::fpioa;
 use k210_shared::soc::sleep::usleep;
 use k210_shared::soc::spi::SPIExt;
@@ -71,8 +72,9 @@ fn main() -> ! {
 
     io_init();
 
+    let dmac = p.DMAC.configure();
     let spi = p.SPI0.constrain();
-    let mut lcd = LCD::new(spi);
+    let mut lcd = LCD::new(spi, &dmac, dma_channel::CHANNEL0);
     lcd.init();
     lcd.set_direction(lcd::direction::YX_RLDU);
     lcd.clear(lcd_colors::PURPLE);

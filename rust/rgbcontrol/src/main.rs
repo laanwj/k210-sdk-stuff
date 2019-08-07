@@ -15,6 +15,7 @@ use k210_shared::board::lcd::{self, LCD, LCDHL};
 use k210_shared::board::lcd_colors::{clampf, hsv2rgb, rgbf565};
 use k210_shared::board::lcd_render::render_image;
 use k210_shared::board::ns2009::TouchScreen;
+use k210_shared::soc::dmac::{DMACExt, dma_channel};
 use k210_shared::soc::fpioa;
 use k210_shared::soc::i2c::{I2CExt, I2C};
 use k210_shared::soc::pwm::{TimerExt, PWM, Channel};
@@ -89,8 +90,9 @@ fn main() -> ! {
     };
 
     writeln!(stdout, "LCD init").unwrap();
+    let dmac = p.DMAC.configure();
     let spi = p.SPI0.constrain();
-    let mut lcd = LCD::new(spi);
+    let mut lcd = LCD::new(spi, &dmac, dma_channel::CHANNEL0);
     lcd.init();
     lcd.set_direction(lcd::direction::YX_LRUD);
     render_image(&mut lcd, |x, y| {

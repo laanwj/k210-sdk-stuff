@@ -108,8 +108,10 @@ pub enum direction {
 pub const DIR_XY_MASK: u8 = 0x20;
 pub const DIR_MASK: u8 = 0xE0;
 
-pub struct LCD<SPI> {
+pub struct LCD<'a, SPI> {
     spi: SPI,
+    dmac: &'a DMAC,
+    channel: dma_channel,
     pub width: u16,
     pub height: u16,
 }
@@ -118,12 +120,13 @@ pub struct LCD<SPI> {
 pub trait LCDLL {
     fn hard_init(&self);
     fn write_command(&self, cmd: command);
-    fn write_byte(&self, data_buf: &[u8]);
-    fn write_half(&self, data_buf: &[u16]);
+    /** Write bytes. These are provided as 32-bit units (ignoring the upper 24 bits) for efficient DMA */
+    fn write_byte(&self, data_buf: &[u32]);
+    /** Write halfs. These are provided as 32-bit units (ignoring the upper 16 bits) for efficient DMA */
+    fn write_half(&self, data_buf: &[u32]);
+    /** Write words. */
     fn write_word(&self, data_buf: &[u32]);
-    fn write_word_dma(&self, dmac: &DMAC, channel: dma_channel, data_buf: &[u32]);
     fn fill_data(&self, data: u32, length: usize);
-    fn fill_data_dma(&self, dmac: &DMAC, channel: dma_channel, data: u32, length: usize);
 }
 
 /** High-level interface */
@@ -131,15 +134,15 @@ pub trait LCDHL {
     fn init(&mut self);
     fn set_direction(&mut self, dir: direction);
     fn clear(&self, color: u16);
-    fn clear_dma(&self, dmac: &DMAC, channel_num: dma_channel, color: u16);
     fn draw_picture(&self, x1: u16, y1: u16, width: u16, height: u16, data: &[u32]);
-    fn draw_picture_dma(&self, dmac: &DMAC, channel_num: dma_channel, x1: u16, y1: u16, width: u16, height: u16, data: &[u32]);
 }
 
-impl<X: SPI> LCD<X> {
-    pub fn new(spi: X) -> Self {
+impl<'a, X: SPI> LCD<'a, X> {
+    pub fn new(spi: X, dmac: &'a DMAC, channel: dma_channel) -> Self {
         Self {
             spi,
+            dmac,
+            channel,
             width: 0,
             height: 0,
         }
@@ -170,18 +173,18 @@ impl<X: SPI> LCD<X> {
     fn set_area(&self, x1: u16, y1: u16, x2: u16, y2: u16) {
         self.write_command(command::HORIZONTAL_ADDRESS_SET);
         self.write_byte(&[
-            (x1 >> 8) as u8,
-            (x1 & 0xff) as u8,
-            (x2 >> 8) as u8,
-            (x2 & 0xff) as u8,
+            (x1 >> 8) as u32,
+            (x1 & 0xff) as u32,
+            (x2 >> 8) as u32,
+            (x2 & 0xff) as u32,
         ]);
 
         self.write_command(command::VERTICAL_ADDRESS_SET);
         self.write_byte(&[
-            (y1 >> 8) as u8,
-            (y1 & 0xff) as u8,
-            (y2 >> 8) as u8,
-            (y2 & 0xff) as u8,
+            (y1 >> 8) as u32,
+            (y1 & 0xff) as u32,
+            (y2 >> 8) as u32,
+            (y2 & 0xff) as u32,
         ]);
 
         self.write_command(command::MEMORY_WRITE);
@@ -189,7 +192,7 @@ impl<X: SPI> LCD<X> {
 }
 
 /** Low-level functions */
-impl<X: SPI> LCDLL for LCD<X> {
+impl<X: SPI> LCDLL for LCD<'_, X> {
     fn hard_init(&self) {
         self.init_dcx();
         self.init_rst();
@@ -222,10 +225,10 @@ impl<X: SPI> LCDLL for LCD<X> {
             aitm::AS_FRAME_FORMAT,
             tmod::TRANS,
         );
-        self.spi.send_data(SPI_SLAVE_SELECT, &[cmd as u8]);
+        self.spi.send_data_dma(self.dmac, self.channel, SPI_SLAVE_SELECT, &[cmd as u32]);
     }
 
-    fn write_byte(&self, data_buf: &[u8]) {
+    fn write_byte(&self, data_buf: &[u32]) {
         self.set_dcx_data();
         self.spi.configure(
             work_mode::MODE0,
@@ -238,10 +241,10 @@ impl<X: SPI> LCDLL for LCD<X> {
             aitm::AS_FRAME_FORMAT,
             tmod::TRANS,
         );
-        self.spi.send_data(SPI_SLAVE_SELECT, data_buf);
+        self.spi.send_data_dma(self.dmac, self.channel, SPI_SLAVE_SELECT, data_buf);
     }
 
-    fn write_half(&self, data_buf: &[u16]) {
+    fn write_half(&self, data_buf: &[u32]) {
         self.set_dcx_data();
         self.spi.configure(
             work_mode::MODE0,
@@ -254,7 +257,7 @@ impl<X: SPI> LCDLL for LCD<X> {
             aitm::AS_FRAME_FORMAT,
             tmod::TRANS,
         );
-        self.spi.send_data(SPI_SLAVE_SELECT, data_buf);
+        self.spi.send_data_dma(self.dmac, self.channel, SPI_SLAVE_SELECT, data_buf);
     }
 
     fn write_word(&self, data_buf: &[u32]) {
@@ -270,23 +273,7 @@ impl<X: SPI> LCDLL for LCD<X> {
             aitm::AS_FRAME_FORMAT,
             tmod::TRANS,
         );
-        self.spi.send_data(SPI_SLAVE_SELECT, data_buf);
-    }
-
-    fn write_word_dma(&self, dmac: &DMAC, channel: dma_channel, data_buf: &[u32]) {
-        self.set_dcx_data();
-        self.spi.configure(
-            work_mode::MODE0,
-            frame_format::OCTAL,
-            32,
-            0,
-            0,  /*instruction length*/
-            32, /*address length*/
-            0,  /*wait cycles*/
-            aitm::AS_FRAME_FORMAT,
-            tmod::TRANS,
-        );
-        self.spi.send_data_dma(dmac, channel, SPI_SLAVE_SELECT, data_buf);
+        self.spi.send_data_dma(self.dmac, self.channel, SPI_SLAVE_SELECT, data_buf);
     }
 
     fn fill_data(&self, data: u32, length: usize) {
@@ -302,28 +289,12 @@ impl<X: SPI> LCDLL for LCD<X> {
             aitm::AS_FRAME_FORMAT,
             tmod::TRANS,
         );
-        self.spi.fill_data(SPI_SLAVE_SELECT, data, length);
-    }
-
-    fn fill_data_dma(&self, dmac: &DMAC, channel: dma_channel, data: u32, length: usize) {
-        self.set_dcx_data();
-        self.spi.configure(
-            work_mode::MODE0,
-            frame_format::OCTAL,
-            32,
-            0,
-            0,  /*instruction length*/
-            32, /*address length*/
-            0,  /*wait cycles*/
-            aitm::AS_FRAME_FORMAT,
-            tmod::TRANS,
-        );
-        self.spi.fill_data_dma(dmac, channel, SPI_SLAVE_SELECT, data, length);
+        self.spi.fill_data_dma(self.dmac, self.channel, SPI_SLAVE_SELECT, data, length);
     }
 }
 
 /* High-level functions */
-impl<X: SPI> LCDHL for LCD<X> {
+impl<X: SPI> LCDHL for LCD<'_, X> {
     fn init(&mut self) {
         self.hard_init();
         /*soft reset*/
@@ -351,7 +322,7 @@ impl<X: SPI> LCDHL for LCD<X> {
         }
 
         self.write_command(command::MEMORY_ACCESS_CTL);
-        self.write_byte(&[dir as u8]);
+        self.write_byte(&[dir as u32]);
     }
 
     fn clear(&self, color: u16) {
@@ -361,22 +332,9 @@ impl<X: SPI> LCDHL for LCD<X> {
         self.fill_data(data, (LCD_X_MAX as usize) * (LCD_Y_MAX as usize) / 2);
     }
 
-    fn clear_dma(&self, dmac: &DMAC, channel_num: dma_channel, color: u16) {
-        let data = ((color as u32) << 16) | (color as u32);
-
-        self.set_area(0, 0, self.width - 1, self.height - 1);
-        self.fill_data_dma(dmac, channel_num, data, (LCD_X_MAX as usize) * (LCD_Y_MAX as usize) / 2);
-    }
-
     fn draw_picture(&self, x1: u16, y1: u16, width: u16, height: u16, data: &[u32]) {
         self.set_area(x1, y1, x1 + width - 1, y1 + height - 1);
         assert!(data.len() == (width as usize) * (height as usize) / 2);
         self.write_word(data);
-    }
-
-    fn draw_picture_dma(&self, dmac: &DMAC, channel_num: dma_channel, x1: u16, y1: u16, width: u16, height: u16, data: &[u32]) {
-        self.set_area(x1, y1, x1 + width - 1, y1 + height - 1);
-        assert!(data.len() == (width as usize) * (height as usize) / 2);
-        self.write_word_dma(dmac, channel_num, data);
     }
 }
