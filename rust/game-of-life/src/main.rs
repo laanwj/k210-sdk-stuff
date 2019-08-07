@@ -194,7 +194,7 @@ fn main() -> ! {
             let r = (ev.z / 300) + 1;
             for yi in y-r..y+r+1 {
                 for xi in x-r..x+r+1 {
-                    if (xi as usize) < DISP_WIDTH && (yi as usize) < DISP_HEIGHT {
+                    if (xi as usize) < GRID_WIDTH && (yi as usize) < GRID_HEIGHT {
                         universe.toggle(xi as usize, yi as usize);
                     }
                 }
