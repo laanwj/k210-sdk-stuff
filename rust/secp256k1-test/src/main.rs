@@ -32,7 +32,11 @@ fn main() -> ! {
     let mut stdout = Stdout(&mut tx);
 
     let bufsize = unsafe { core::mem::size_of_val(&SECP256K1_BUF) };
-    writeln!(stdout, "testing {} / {}", Secp256k1::preallocate_size(), bufsize).unwrap();
+    writeln!(stdout, "testing {}(sign {} + verify {}) / {}",
+             Secp256k1::preallocate_size(),
+             Secp256k1::preallocate_signing_size(),
+             Secp256k1::preallocate_verification_size(),
+             bufsize).unwrap();
     assert!(Secp256k1::preallocate_size() < bufsize);
 
     let buf = unsafe { slice::from_raw_parts_mut(SECP256K1_BUF.as_mut_ptr() as *mut u8, bufsize) };
