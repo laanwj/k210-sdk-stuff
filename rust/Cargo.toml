@@ -14,8 +14,9 @@ members = [
 ]
 
 [patch.crates-io]
-riscv-rt = { git = "https://github.com/laanwj/riscv-rt.git", rev = "235390d95cc03fd7db6d58f426e1d53de7c136c9" }
 k210-hal = { git = "https://github.com/riscv-rust/k210-hal.git", rev = "b83e843c19a2f0bc4eb7f56322ae844818709298" }
 
-cc = { git = "https://github.com/laanwj/cc-rs.git", rev = "97b648e1d2597363d6baea7190469d45c857c8f6" }
+# cc-rs needs new release with PR #428 #429 #430 (will be 1.0.39, probably)
+cc = { git = "https://github.com/alexcrichton/cc-rs.git", rev = "13e04b1ec0ba8530c01f32ffafaeb70e6ad1c875" }
+# rust-secp256k1 needs to merge PR, and do a new release with it (will be 0.15.1)
 secp256k1 = { git = "https://github.com/laanwj/rust-secp256k1.git", rev = "dfc66c40f9dc82131b5ff9a445124599040d2a5a" }
