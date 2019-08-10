@@ -73,6 +73,7 @@ pub trait SPI {
         tmod: tmod,
     );
     fn set_clk_rate(&self, spi_clk: u32) -> u32;
+    fn recv_data<X: TruncU32>(&self, chip_select: u32, rx: &mut [X]);
     fn send_data<X: Into<u32> + Copy>(&self, chip_select: u32, tx: &[X]);
     fn send_data_dma(&self, dmac: &DMAC, channel_num: dma_channel, chip_select: u32, tx: &[u32]);
     fn fill_data(&self, chip_select: u32, value: u32, tx_len: usize);
@@ -84,6 +85,14 @@ impl<IF: SPI01> SPIImpl<IF> {
         Self { spi }
     }
 }
+
+/** Trait for trunction of a SPI frame from u32 register to other unsigned integer types. */
+pub trait TruncU32 {
+    fn trunc(val: u32)-> Self;
+}
+impl TruncU32 for u32 { fn  trunc(val: u32) -> u32 { return val; } }
+impl TruncU32 for u16 { fn  trunc(val: u32) -> u16 { return (val & 0xffff) as u16; } }
+impl TruncU32 for u8 { fn  trunc(val: u32) -> u8 { return (val & 0xff) as u8; } }
 
 impl<IF: SPI01> SPI for SPIImpl<IF> {
     /// Configure SPI transaction
@@ -155,6 +164,35 @@ impl<IF: SPI01> SPI for SPIImpl<IF> {
             self.spi.baudr.write(|w| w.bits(spi_baudr));
         }
         clock_freq / spi_baudr
+    }
+
+    /// Receive arbitrary data
+    // make sure to set tmod to tmod::RECV
+    fn recv_data<X: TruncU32>(&self, chip_select: u32, rx: &mut [X]) {
+        if rx.len() == 0 {
+            return;
+        }
+        unsafe {
+            self.spi.ctrlr1.write(|w| w.bits((rx.len() - 1) as u32));
+            self.spi.ssienr.write(|w| w.bits(0x01));
+            self.spi.dr[0].write(|w| w.bits(0xffffffff));
+            self.spi.ser.write(|w| w.bits(1 << chip_select));
+
+            let mut i = 0;
+            let mut rx_len = rx.len();
+            while rx_len != 0 {
+                let fifo_len = self.spi.rxflr.read().bits() as usize;
+                let fifo_len = cmp::min(fifo_len, rx_len);
+                for _ in 0..fifo_len {
+                    rx[i] = X::trunc(self.spi.dr[0].read().bits());
+                    i += 1;
+                }
+                rx_len -= fifo_len;
+            }
+
+            self.spi.ser.write(|w| w.bits(0x00));
+            self.spi.ssienr.write(|w| w.bits(0x00));
+        }
     }
 
     /// Send arbitrary data

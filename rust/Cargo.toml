@@ -11,6 +11,7 @@ members = [
     "glyph-mapping",
     "term-server",
     "secp256k1-test",
+    "sdtest",
 ]
 
 [patch.crates-io]
