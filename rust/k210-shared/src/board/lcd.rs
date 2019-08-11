@@ -214,8 +214,8 @@ impl<X: SPI> LCDLL for LCD<'_, X> {
         self.spi.configure(
             work_mode::MODE0,
             frame_format::OCTAL,
-            8,
-            0,
+            8, /*data bits*/
+            0, /*endian*/
             8, /*instruction length*/
             0, /*address length*/
             0, /*wait cycles*/
@@ -230,8 +230,8 @@ impl<X: SPI> LCDLL for LCD<'_, X> {
         self.spi.configure(
             work_mode::MODE0,
             frame_format::OCTAL,
-            8,
-            0,
+            8, /*data bits*/
+            0, /*endian*/
             8, /*instruction length*/
             0, /*address length*/
             0, /*wait cycles*/
@@ -246,8 +246,8 @@ impl<X: SPI> LCDLL for LCD<'_, X> {
         self.spi.configure(
             work_mode::MODE0,
             frame_format::OCTAL,
-            8,
-            0,
+            8, /*data bits*/
+            0, /*endian*/
             0, /*instruction length*/
             8, /*address length*/
             0, /*wait cycles*/
@@ -262,8 +262,8 @@ impl<X: SPI> LCDLL for LCD<'_, X> {
         self.spi.configure(
             work_mode::MODE0,
             frame_format::OCTAL,
-            16,
-            0,
+            16, /*data bits*/
+            0,  /*endian*/
             0,  /*instruction length*/
             16, /*address length*/
             0,  /*wait cycles*/
@@ -278,8 +278,8 @@ impl<X: SPI> LCDLL for LCD<'_, X> {
         self.spi.configure(
             work_mode::MODE0,
             frame_format::OCTAL,
-            32,
-            0,
+            32, /*data bits*/
+            0,  /*endian*/
             0,  /*instruction length*/
             32, /*address length*/
             0,  /*wait cycles*/
@@ -294,8 +294,8 @@ impl<X: SPI> LCDLL for LCD<'_, X> {
         self.spi.configure(
             work_mode::MODE0,
             frame_format::OCTAL,
-            32,
-            0,
+            32, /*data bits*/
+            0,  /*endian*/
             0,  /*instruction length*/
             32, /*address length*/
             0,  /*wait cycles*/
