@@ -210,7 +210,7 @@ impl<X: SPI> LCDLL for LCD<'_, X> {
         self.init_dcx();
         self.init_rst();
         self.set_rst(false);
-        self.spi.set_clk_rate(10000000);
+        self.spi.set_clk_rate(18000000);
         self.spi.configure(
             work_mode::MODE0,
             frame_format::OCTAL,
