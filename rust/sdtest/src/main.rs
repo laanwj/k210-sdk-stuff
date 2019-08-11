@@ -4,6 +4,7 @@
 #![no_std]
 #![no_main]
 
+use core::convert::TryInto;
 use k210_hal::prelude::*;
 use k210_hal::stdout::Stdout;
 use k210_hal::Peripherals;
@@ -82,9 +83,9 @@ fn main() -> ! {
     writeln!(stdout, "number of sectors on card: {}", num_sectors).unwrap();
 
     assert!(num_sectors > 0);
-    let sector = num_sectors - 10;
+    let sector: u32 = (num_sectors - 10).try_into().unwrap();
     let mut buffer = [0u8; 512];
-    sd.read_sector(&mut buffer, sector as u32).unwrap();
+    sd.read_sector(&mut buffer, sector).unwrap();
     writeln!(stdout, "sector {} succesfully read", sector).unwrap();
 
     hexdump(&mut stdout, &buffer, 0);
@@ -94,7 +95,7 @@ fn main() -> ! {
     let msg = b"Well! I've often seen a cat without a grin', thought Alice, 'but a grin without a cat! It's the most curious thing I ever saw in my life!'";
     let mut buffer = [0u8; 512];
     (&mut buffer[0..msg.len()]).copy_from_slice(msg);
-    sd.write_sector(&mut buffer, sector as u32).unwrap();
+    sd.write_sector(&mut buffer, sector).unwrap();
     writeln!(stdout, "sector {} succesfully written", sector).unwrap();
     */
 

@@ -21,10 +21,6 @@ use k210_shared::soc::sysctl;
 use libm::F32Ext;
 use riscv_rt::entry;
 
-pub const BLK_SIZE: usize = 8;
-pub const GRID_WIDTH: usize = DISP_WIDTH / BLK_SIZE;
-pub const GRID_HEIGHT: usize = DISP_HEIGHT / BLK_SIZE;
-
 /** Connect pins to internal functions */
 fn io_mux_init() {
     /* Init SPI IO map and function settings */
@@ -95,7 +91,7 @@ fn main() -> ! {
         let r = (1.5*mag) as i32;
         let rr = r * r;
         render_image(&mut lcd, |x,y| {
-            if sample_cirle(x as i32, y as i32, cx, cy, r, rr) {
+            if sample_cirle(i32::from(x), i32::from(y), cx, cy, r, rr) {
                 0xffff
             } else {
                 0

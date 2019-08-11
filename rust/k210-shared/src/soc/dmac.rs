@@ -74,7 +74,7 @@ impl DMAC {
 
     /** Get AXI ID for channel */
     pub fn read_channel_id(&self, channel_num: dma_channel) -> u64 {
-        return self.dmac.channel[channel_num as usize].axi_id.read().bits();
+        return self.dmac.channel[channel_num.idx()].axi_id.read().bits();
     }
 
     /** Enable DMAC peripheral. */
@@ -90,7 +90,7 @@ impl DMAC {
     }
 
     pub fn src_transaction_complete_int_enable(&self, channel_num: dma_channel) {
-        self.dmac.channel[channel_num as usize].intstatus_en.modify(
+        self.dmac.channel[channel_num.idx()].intstatus_en.modify(
             |_,w| w.src_transcomp().set_bit());
     }
 
@@ -176,7 +176,7 @@ impl DMAC {
     pub fn set_list_master_select(&self, channel_num: dma_channel, sd_sel: src_dst_select, mst_num: master_number) -> Result<(),()> {
         if !self.check_channel_busy(channel_num) {
             use src_dst_select::*;
-            self.dmac.channel[channel_num as usize].ctl.modify(|_,w| {
+            self.dmac.channel[channel_num.idx()].ctl.modify(|_,w| {
                 let w = if sd_sel == SRC || sd_sel == SRC_DST {
                     w.sms().variant(mst_num)
                 } else {
@@ -219,7 +219,7 @@ impl DMAC {
 
     fn enable_channel_interrupt(&self, channel_num: dma_channel) {
         unsafe {
-            let ch = &self.dmac.channel[channel_num as usize];
+            let ch = &self.dmac.channel[channel_num.idx()];
             ch.intclear.write(|w| w.bits(0xffffffff));
             ch.intstatus_en.write(|w| w.bits(0x2));
         }
@@ -227,14 +227,14 @@ impl DMAC {
 
     pub fn disable_channel_interrupt(&self, channel_num: dma_channel) {
         unsafe {
-            self.dmac.channel[channel_num as usize].intstatus_en.write(
+            self.dmac.channel[channel_num.idx()].intstatus_en.write(
                 |w| w.bits(0x0));
         }
     }
 
     fn channel_interrupt_clear(&self, channel_num: dma_channel) {
         unsafe {
-            self.dmac.channel[channel_num as usize].intclear.write(
+            self.dmac.channel[channel_num.idx()].intclear.write(
                 |w| w.bits(0xffffffff));
         }
     }
@@ -246,7 +246,7 @@ impl DMAC {
                                trans_width: transfer_width,
                                block_size: u32) {
         unsafe {
-            let ch = &self.dmac.channel[channel_num as usize];
+            let ch = &self.dmac.channel[channel_num.idx()];
             let src_is_mem = is_memory(src);
             let dest_is_mem = is_memory(dest);
             let flow_control = match (src_is_mem, dest_is_mem) {

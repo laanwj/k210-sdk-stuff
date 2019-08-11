@@ -1,5 +1,7 @@
 //! SD card slot access on Maix Go
 // TODO: actually use the DMA channel that is claimed…
+use core::convert::TryInto;
+
 use crate::soc::dmac::{dma_channel, DMAC};
 use crate::soc::gpio;
 use crate::soc::gpiohs;
@@ -226,7 +228,7 @@ impl<'a, X: SPI> SDCard<'a, X> {
     fn end_cmd(&self) {
         /* SD chip select high */
         self.CS_HIGH();
-        /* Send the Cmd bytes */
+        /* Send the cmd byte */
         self.write_data(&[0xff]);
     }
 
@@ -319,7 +321,7 @@ impl<'a, X: SPI> SDCard<'a, X> {
             /* Byte 3 */
             MaxBusClkFrec: csd_tab[3],
             /* Byte 4, 5 */
-            CardComdClasses: ((csd_tab[4] as u16) << 4) | (((csd_tab[5] as u16) & 0xF0) >> 4),
+            CardComdClasses: (u16::from(csd_tab[4]) << 4) | ((u16::from(csd_tab[5]) & 0xF0) >> 4),
             /* Byte 5 */
             RdBlockLen: csd_tab[5] & 0x0F,
             /* Byte 6 */
@@ -330,9 +332,9 @@ impl<'a, X: SPI> SDCard<'a, X> {
             Reserved2: 0,
             // DeviceSize: (csd_tab[6] & 0x03) << 10,
             /* Byte 7, 8, 9 */
-            DeviceSize: (((csd_tab[7] as u32) & 0x3F) << 16)
-                | ((csd_tab[8] as u32) << 8)
-                | (csd_tab[9] as u32),
+            DeviceSize: ((u32::from(csd_tab[7]) & 0x3F) << 16)
+                | (u32::from(csd_tab[8]) << 8)
+                | u32::from(csd_tab[9]),
             /* Byte 10 */
             EraseGrSize: (csd_tab[10] & 0x40) >> 6,
             /* Byte 10, 11 */
@@ -393,24 +395,24 @@ impl<'a, X: SPI> SDCard<'a, X> {
             /* Byte 0 */
             ManufacturerID: cid_tab[0],
             /* Byte 1, 2 */
-            OEM_AppliID: ((cid_tab[1] as u16) << 8) | (cid_tab[2] as u16),
+            OEM_AppliID: (u16::from(cid_tab[1]) << 8) | u16::from(cid_tab[2]),
             /* Byte 3, 4, 5, 6 */
-            ProdName1: ((cid_tab[3] as u32) << 24)
-                | ((cid_tab[4] as u32) << 16)
-                | ((cid_tab[5] as u32) << 8)
-                | (cid_tab[6] as u32),
+            ProdName1: (u32::from(cid_tab[3]) << 24)
+                | (u32::from(cid_tab[4]) << 16)
+                | (u32::from(cid_tab[5]) << 8)
+                | u32::from(cid_tab[6]),
             /* Byte 7 */
             ProdName2: cid_tab[7],
             /* Byte 8 */
             ProdRev: cid_tab[8],
             /* Byte 9, 10, 11, 12 */
-            ProdSN: ((cid_tab[9] as u32) << 24)
-                | ((cid_tab[10] as u32) << 16)
-                | ((cid_tab[11] as u32) << 8)
-                | (cid_tab[12] as u32),
+            ProdSN: (u32::from(cid_tab[9]) << 24)
+                | (u32::from(cid_tab[10]) << 16)
+                | (u32::from(cid_tab[11]) << 8)
+                | u32::from(cid_tab[12]),
             /* Byte 13, 14 */
             Reserved1: (cid_tab[13] & 0xF0) >> 4,
-            ManufactDate: (((cid_tab[13] as u16) & 0x0F) << 8) | (cid_tab[14] as u16),
+            ManufactDate: ((u16::from(cid_tab[13]) & 0x0F) << 8) | u16::from(cid_tab[14]),
             /* Byte 15 */
             CID_CRC: (cid_tab[15] & 0xFE) >> 1,
             Reserved2: 1,
@@ -432,9 +434,8 @@ impl<'a, X: SPI> SDCard<'a, X> {
             CardCapacity: 0,
             CardBlockSize: 0,
         };
-        info.CardCapacity = ((info.SD_csd.DeviceSize as u64) + 1) * 1024;
-        info.CardBlockSize = 1 << (info.SD_csd.RdBlockLen as u64);
-        info.CardCapacity *= info.CardBlockSize as u64;
+        info.CardBlockSize = 1 << u64::from(info.SD_csd.RdBlockLen);
+        info.CardCapacity = (u64::from(info.SD_csd.DeviceSize) + 1) * 1024 * info.CardBlockSize;
 
         Ok(info)
     }
@@ -586,7 +587,11 @@ impl<'a, X: SPI> SDCard<'a, X> {
             self.send_cmd(CMD::CMD24, sector, 0);
         } else {
             frame[1] = SD_START_DATA_MULTIPLE_BLOCK_WRITE;
-            self.send_cmd(CMD::ACMD23, (data_buf.len() / SEC_LEN) as u32, 0);
+            self.send_cmd(
+                CMD::ACMD23,
+                (data_buf.len() / SEC_LEN).try_into().unwrap(),
+                0,
+            );
             self.get_response();
             self.end_cmd();
             self.send_cmd(CMD::CMD25, sector, 0);
@@ -613,5 +618,4 @@ impl<'a, X: SPI> SDCard<'a, X> {
         self.end_cmd();
         Ok(())
     }
-
 }

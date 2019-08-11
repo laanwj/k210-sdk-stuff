@@ -24,7 +24,7 @@ use k210_shared::soc::sysctl;
 use nb::block;
 use riscv::register::mcycle;
 use riscv_rt::entry;
-use k210_console::console::{Console, ScreenImage, DISP_HEIGHT, DISP_WIDTH};
+use k210_console::console::{Console, ScreenImage, DISP_HEIGHT, DISP_WIDTH, DISP_PIXELS};
 
 mod config;
 
@@ -128,9 +128,9 @@ fn main() -> ! {
     let mut finished = false;
     loop {
         if console.dirty {
-            let mut image: ScreenImage = [0; DISP_WIDTH * DISP_HEIGHT / 2];
+            let mut image: ScreenImage = [0; DISP_PIXELS / 2];
             console.render(&mut image);
-            lcd.draw_picture(0, 0, DISP_WIDTH as u16, DISP_HEIGHT as u16, &image);
+            lcd.draw_picture(0, 0, DISP_WIDTH, DISP_HEIGHT, &image);
             console.dirty = false;
         }
 

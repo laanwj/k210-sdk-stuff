@@ -1,5 +1,6 @@
 //! SPI peripherals handling
 use core::cmp;
+use core::convert::TryInto;
 use core::ops::Deref;
 use k210_hal::pac;
 use pac::{SPI0,SPI1,spi0};
@@ -173,7 +174,7 @@ impl<IF: SPI01> SPI for SPIImpl<IF> {
             return;
         }
         unsafe {
-            self.spi.ctrlr1.write(|w| w.bits((rx.len() - 1) as u32));
+            self.spi.ctrlr1.write(|w| w.bits((rx.len() - 1).try_into().unwrap()));
             self.spi.ssienr.write(|w| w.bits(0x01));
             self.spi.dr[0].write(|w| w.bits(0xffffffff));
             self.spi.ser.write(|w| w.bits(1 << chip_select));
@@ -281,7 +282,7 @@ impl<IF: SPI01> SPI for SPIImpl<IF> {
             // simple trick to repeating a value: don't increment the source address
             dmac.set_single_mode(channel_num, val.as_ptr() as u64, self.spi.dr.as_ptr() as u64,
                                  address_increment::NOCHANGE, address_increment::NOCHANGE,
-                                 burst_length::LENGTH_4, transfer_width::WIDTH_32, tx_len as u32);
+                                 burst_length::LENGTH_4, transfer_width::WIDTH_32, tx_len.try_into().unwrap());
             self.spi.ser.write(|w| w.bits(1 << chip_select));
             dmac.wait_done(channel_num);
 

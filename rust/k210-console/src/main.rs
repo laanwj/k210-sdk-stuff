@@ -19,7 +19,7 @@ use k210_shared::soc::spi::SPIExt;
 use k210_shared::soc::sysctl;
 use riscv_rt::entry;
 
-use k210_console::console::{Color, Console, ScreenImage, DISP_HEIGHT, DISP_WIDTH};
+use k210_console::console::{Color, Console, ScreenImage, DISP_HEIGHT, DISP_WIDTH, DISP_PIXELS};
 use k210_console::cp437;
 use k210_console::palette_xterm256::PALETTE;
 
@@ -122,7 +122,7 @@ fn main() -> ! {
     lcd.set_direction(lcd::direction::YX_LRUD);
     lcd.clear(lcd_colors::PURPLE);
 
-    let mut image: ScreenImage = [0; DISP_WIDTH * DISP_HEIGHT / 2];
+    let mut image: ScreenImage = [0; DISP_PIXELS / 2];
     let mut console: Console = Console::new();
 
     /* Make a border */
@@ -196,7 +196,7 @@ fn main() -> ! {
         }
 
         console.render(&mut image);
-        lcd.draw_picture(0, 0, DISP_WIDTH as u16, DISP_HEIGHT as u16, &image);
+        lcd.draw_picture(0, 0, DISP_WIDTH, DISP_HEIGHT, &image);
 
         // writeln!(stdout, "test {}", frame).unwrap();
         usleep(100_000);

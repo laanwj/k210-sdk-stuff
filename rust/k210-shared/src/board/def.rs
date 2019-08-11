@@ -1,9 +1,11 @@
 //! Global board definitions for Sipeed Maix Go
 
 /** Display width in pixels */
-pub const DISP_WIDTH: usize = 320;
+pub const DISP_WIDTH: u16 = 320;
 /** Display height in pixels */
-pub const DISP_HEIGHT: usize = 240;
+pub const DISP_HEIGHT: u16 = 240;
+/** Number of pixels in display */
+pub const DISP_PIXELS: usize = (DISP_WIDTH as usize) * (DISP_HEIGHT as usize);
 
 /** I2C address of NS2009 (touch screen sensor) */
 pub const NS2009_SLV_ADDR: u16 = 0x48;

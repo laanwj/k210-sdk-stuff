@@ -12,6 +12,9 @@ pub enum Channel {
     CH3,
     CH4,
 }
+impl Channel {
+    pub fn idx(self) -> usize { self as usize }
+}
 
 pub trait TimerExt: Deref<Target = timer0::RegisterBlock> + Sized {
     #[doc(hidden)]
@@ -64,10 +67,10 @@ impl<TIMER: TimerExt> PWM for PWMImpl<TIMER> {
             use pac::timer0::channel::control::MODEW;
 
             // set a deterministic value for load counts
-            self.timer.channel[ch as usize].load_count.write(|w| w.bits(1));
-            self.timer.load_count2[ch as usize].write(|w| w.bits(1));
+            self.timer.channel[ch.idx()].load_count.write(|w| w.bits(1));
+            self.timer.load_count2[ch.idx()].write(|w| w.bits(1));
             // start channel
-            self.timer.channel[ch as usize].control.write(
+            self.timer.channel[ch.idx()].control.write(
                 |w| w.interrupt().set_bit()
                      .pwm_enable().set_bit()
                      .mode().variant(MODEW::USER)
@@ -77,7 +80,7 @@ impl<TIMER: TimerExt> PWM for PWMImpl<TIMER> {
 
     /** Stop a PWM channel */
     fn stop(&self, ch: Channel) {
-        self.timer.channel[ch as usize].control.write(
+        self.timer.channel[ch.idx()].control.write(
             |w| w.interrupt().set_bit());
     }
 
@@ -87,8 +90,8 @@ impl<TIMER: TimerExt> PWM for PWMImpl<TIMER> {
         let periods = clk_freq / freq;
         let percent = (value * (periods as f32)) as u32;
         unsafe {
-            self.timer.channel[ch as usize].load_count.write(|w| w.bits(periods - percent));
-            self.timer.load_count2[ch as usize].write(|w| w.bits(percent));
+            self.timer.channel[ch.idx()].load_count.write(|w| w.bits(periods - percent));
+            self.timer.load_count2[ch.idx()].write(|w| w.bits(percent));
         }
         clk_freq / periods
     }

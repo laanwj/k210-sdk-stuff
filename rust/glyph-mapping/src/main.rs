@@ -9,7 +9,7 @@ use k210_console::cp437_8x8::GLYPH_BY_FILL;
 use k210_hal::Peripherals;
 use k210_hal::prelude::*;
 use k210_hal::stdout::Stdout;
-use k210_shared::board::def::{io,DISP_WIDTH,DISP_HEIGHT};
+use k210_shared::board::def::{io,DISP_WIDTH,DISP_HEIGHT,DISP_PIXELS};
 use k210_shared::board::lcd::{LCD,LCDHL,self};
 use k210_shared::board::lcd_colors;
 use k210_shared::soc::dmac::{DMACExt, dma_channel};
@@ -24,9 +24,9 @@ use k210_shared::board::ov2640;
 /** 64-byte aligned planar RAM */
 #[repr(align(64))]
 struct PlanarScreenRAM {
-    pub r: [u8; DISP_WIDTH * DISP_HEIGHT],
-    pub g: [u8; DISP_WIDTH * DISP_HEIGHT],
-    pub b: [u8; DISP_WIDTH * DISP_HEIGHT],
+    pub r: [u8; DISP_PIXELS],
+    pub g: [u8; DISP_PIXELS],
+    pub b: [u8; DISP_PIXELS],
 }
 impl PlanarScreenRAM {
     fn as_mut_ptrs(&mut self) -> (*mut u8, *mut u8, *mut u8) {
@@ -35,9 +35,9 @@ impl PlanarScreenRAM {
 }
 
 static mut FRAME_AI: PlanarScreenRAM = PlanarScreenRAM {
-    r: [0; DISP_WIDTH * DISP_HEIGHT],
-    g: [0; DISP_WIDTH * DISP_HEIGHT],
-    b: [0; DISP_WIDTH * DISP_HEIGHT],
+    r: [0; DISP_PIXELS],
+    g: [0; DISP_PIXELS],
+    b: [0; DISP_PIXELS],
 };
 
 /** Connect pins to internal functions */
@@ -103,7 +103,7 @@ fn main() -> ! {
     dvp.set_display_addr(None);
     dvp.set_auto(false);
 
-    let mut image: ScreenImage = [0; DISP_WIDTH * DISP_HEIGHT / 2];
+    let mut image: ScreenImage = [0; DISP_PIXELS / 2];
     let mut console: Console = Console::new();
     writeln!(stdout, "Starting frame loop").unwrap();
     loop {
@@ -121,9 +121,9 @@ fn main() -> ! {
                 let mut b = 0;
                 for iy in 0..8 {
                     for ix in 0..8 {
-                        let cx = 319 - (x * 8 + ix) as usize;
-                        let cy = 239 - (y * 8 + iy) as usize;
-                        let addr = (cy as usize)*320+(cx as usize);
+                        let cx = 319 - (usize::from(x) * 8 + ix);
+                        let cy = 239 - (usize::from(y) * 8 + iy);
+                        let addr = cy * 320 + cx;
                         r += unsafe { FRAME_AI.r[addr] } as u32;
                         g += unsafe { FRAME_AI.g[addr] } as u32;
                         b += unsafe { FRAME_AI.b[addr] } as u32;
@@ -143,6 +143,6 @@ fn main() -> ! {
         }
 
         console.render(&mut image);
-        lcd.draw_picture(0, 0, DISP_WIDTH as u16, DISP_HEIGHT as u16, &image);
+        lcd.draw_picture(0, 0, DISP_WIDTH, DISP_HEIGHT, &image);
     }
 }

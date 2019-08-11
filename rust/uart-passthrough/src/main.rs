@@ -53,7 +53,7 @@ fn main() -> ! {
                 0x23 => { // Set baudrate
                     let mut d = [0u8; 4];
                     d.iter_mut().for_each(|x| { *x = block!(rx.read()).unwrap() });
-                    rate = (d[0] as u32) | ((d[1] as u32) << 8) | ((d[2] as u32) << 16) | ((d[3] as u32) << 24);
+                    rate = u32::from(d[0]) | (u32::from(d[1]) << 8) | (u32::from(d[2]) << 16) | (u32::from(d[3]) << 24);
 
                     // re-configure UARTHS at new rate
                     let (userial, pins) = Serial::join(tx, rx).free();

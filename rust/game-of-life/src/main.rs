@@ -7,7 +7,7 @@
 use k210_hal::Peripherals;
 use k210_hal::prelude::*;
 use k210_hal::stdout::Stdout;
-use k210_shared::board::def::{io,DISP_WIDTH,DISP_HEIGHT,NS2009_SLV_ADDR,NS2009_CAL,NS2009_ADDR_BITS,NS2009_CLK};
+use k210_shared::board::def::{io,DISP_WIDTH,DISP_HEIGHT,DISP_PIXELS,NS2009_SLV_ADDR,NS2009_CAL,NS2009_ADDR_BITS,NS2009_CLK};
 use k210_shared::board::lcd::{LCD,LCDHL,self};
 use k210_shared::board::lcd_colors;
 use k210_shared::board::ns2009::TouchScreen;
@@ -20,14 +20,14 @@ use k210_shared::soc::sysctl;
 use riscv_rt::entry;
 
 pub const BLK_SIZE: usize = 8;
-pub const GRID_WIDTH: usize = DISP_WIDTH / BLK_SIZE;
-pub const GRID_HEIGHT: usize = DISP_HEIGHT / BLK_SIZE;
+pub const GRID_WIDTH: usize = (DISP_WIDTH as usize) / BLK_SIZE;
+pub const GRID_HEIGHT: usize = (DISP_HEIGHT as usize) / BLK_SIZE;
 
 /** Array for representing an image of the entire screen.
  * This is an array of DISP_WIDTH / 2 × DISP_HEIGHT, each two horizontally consecutive
  * pixels are encoded in a u32 with `(a << 16)|b`.
  */
-pub type ScreenImage = [u32; DISP_WIDTH * DISP_HEIGHT / 2];
+pub type ScreenImage = [u32; DISP_PIXELS / 2];
 
 /** Universe abstraction */
 struct Universe {
@@ -71,14 +71,14 @@ impl Universe {
                 let xp = if x == 0 { GRID_WIDTH-1 } else { x-1 };
                 let xn = if x == GRID_WIDTH-1 { 0 } else { x+1 };
 
-                let count = self.state[self.cur][ypi + xp] as u32 +
-                            self.state[self.cur][ypi + x] as u32 +
-                            self.state[self.cur][ypi + xn] as u32 +
-                            self.state[self.cur][yi + xp] as u32 +
-                            self.state[self.cur][yi + xn] as u32 +
-                            self.state[self.cur][yni + xp] as u32 +
-                            self.state[self.cur][yni + x] as u32 +
-                            self.state[self.cur][yni + xn] as u32;
+                let count = u32::from(self.state[self.cur][ypi + xp]) +
+                            u32::from(self.state[self.cur][ypi + x]) +
+                            u32::from(self.state[self.cur][ypi + xn]) +
+                            u32::from(self.state[self.cur][yi + xp]) +
+                            u32::from(self.state[self.cur][yi + xn]) +
+                            u32::from(self.state[self.cur][yni + xp]) +
+                            u32::from(self.state[self.cur][yni + x]) +
+                            u32::from(self.state[self.cur][yni + xn]);
 
                 self.state[1-self.cur][yi + x] = match (self.state[self.cur][yi + x], count) {
                     // Rule 1: Any live cell with fewer than two live neighbours
@@ -162,7 +162,7 @@ fn main() -> ! {
     lcd.set_direction(lcd::direction::YX_LRUD);
     lcd.clear(lcd_colors::PURPLE);
 
-    let mut image: ScreenImage = [0; DISP_WIDTH * DISP_HEIGHT / 2];
+    let mut image: ScreenImage = [0; DISP_PIXELS / 2];
 
     writeln!(stdout, "NS2009 init").unwrap();
     let i2c = p.I2C0.constrain();
@@ -194,8 +194,9 @@ fn main() -> ! {
             let r = (ev.z / 300) + 1;
             for yi in y-r..y+r+1 {
                 for xi in x-r..x+r+1 {
-                    if (xi as usize) < GRID_WIDTH && (yi as usize) < GRID_HEIGHT {
-                        universe.toggle(xi as usize, yi as usize);
+                    let (xu, yu) = (xi as usize, yi as usize);
+                    if xu < GRID_WIDTH && yu < GRID_HEIGHT {
+                        universe.toggle(xu, yu);
                     }
                 }
             }
@@ -205,13 +206,13 @@ fn main() -> ! {
                 let state = universe.get(x, y);
                 for yi in 0..BLK_SIZE {
                     for xi in 0..BLK_SIZE/2 {
-                        let idx = (y * BLK_SIZE + yi) * DISP_WIDTH/2 + x * BLK_SIZE/2 + xi;
+                        let idx = (y * BLK_SIZE + yi) * usize::from(DISP_WIDTH)/2 + x * BLK_SIZE/2 + xi;
                         image[idx] = if state { BLOCK_SPRITE[yi][xi] } else { 0 };
                     }
                 }
             }
         }
-        lcd.draw_picture(0, 0, DISP_WIDTH as u16, DISP_HEIGHT as u16, &image);
+        lcd.draw_picture(0, 0, DISP_WIDTH, DISP_HEIGHT, &image);
 
         universe.iterate();
     }

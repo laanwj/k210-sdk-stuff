@@ -35,7 +35,7 @@ static FROM: [char; 256] = [
 ];
 
 pub fn from(ch: u8) -> char {
-    FROM[ch as usize]
+    FROM[usize::from(ch)]
 }
 
 pub fn to(ch: char) -> u8 {

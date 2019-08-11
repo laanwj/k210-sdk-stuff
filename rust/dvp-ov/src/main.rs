@@ -7,7 +7,7 @@
 use k210_hal::Peripherals;
 use k210_hal::prelude::*;
 use k210_hal::stdout::Stdout;
-use k210_shared::board::def::{io,DISP_WIDTH,DISP_HEIGHT};
+use k210_shared::board::def::{io,DISP_WIDTH,DISP_HEIGHT,DISP_PIXELS};
 use k210_shared::board::lcd::{LCD,LCDHL,self};
 use k210_shared::board::lcd_colors;
 use k210_shared::soc::dmac::{DMACExt, dma_channel};
@@ -22,13 +22,13 @@ use k210_shared::board::ov2640;
 /** 64-byte aligned screen RAM */
 #[repr(align(64))]
 struct ScreenRAM {
-    pub image: [u32; DISP_WIDTH * DISP_HEIGHT / 2],
+    pub image: [u32; DISP_PIXELS / 2],
 }
 impl ScreenRAM {
     fn as_mut_ptr(&mut self) -> *mut u32 { self.image.as_mut_ptr() }
 }
 
-static mut FRAME: ScreenRAM = ScreenRAM { image: [0; DISP_WIDTH * DISP_HEIGHT / 2] };
+static mut FRAME: ScreenRAM = ScreenRAM { image: [0; DISP_PIXELS / 2] };
 
 /** Connect pins to internal functions */
 fn io_init() {
@@ -104,6 +104,6 @@ fn main() -> ! {
     writeln!(stdout, "OV2640: starting frame loop").unwrap();
     loop {
         dvp.get_image();
-        lcd.draw_picture(0, 0, DISP_WIDTH as u16, DISP_HEIGHT as u16, unsafe { &FRAME.image } );
+        lcd.draw_picture(0, 0, DISP_WIDTH, DISP_HEIGHT, unsafe { &FRAME.image } );
     }
 }

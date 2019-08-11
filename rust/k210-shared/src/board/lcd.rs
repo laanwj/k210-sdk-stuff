@@ -186,18 +186,18 @@ impl<'a, X: SPI> LCD<'a, X> {
     fn set_area(&self, x1: u16, y1: u16, x2: u16, y2: u16) {
         self.write_command(command::HORIZONTAL_ADDRESS_SET);
         self.write_byte(&[
-            (x1 >> 8) as u32,
-            (x1 & 0xff) as u32,
-            (x2 >> 8) as u32,
-            (x2 & 0xff) as u32,
+            (x1 >> 8).into(),
+            (x1 & 0xff).into(),
+            (x2 >> 8).into(),
+            (x2 & 0xff).into(),
         ]);
 
         self.write_command(command::VERTICAL_ADDRESS_SET);
         self.write_byte(&[
-            (y1 >> 8) as u32,
-            (y1 & 0xff) as u32,
-            (y2 >> 8) as u32,
-            (y2 & 0xff) as u32,
+            (y1 >> 8).into(),
+            (y1 & 0xff).into(),
+            (y2 >> 8).into(),
+            (y2 & 0xff).into(),
         ]);
 
         self.write_command(command::MEMORY_WRITE);
@@ -339,10 +339,10 @@ impl<X: SPI> LCDHL for LCD<'_, X> {
     }
 
     fn clear(&self, color: u16) {
-        let data = ((color as u32) << 16) | (color as u32);
+        let data = (u32::from(color) << 16) | u32::from(color);
 
         self.set_area(0, 0, self.width - 1, self.height - 1);
-        self.fill_data(data, (LCD_X_MAX as usize) * (LCD_Y_MAX as usize) / 2);
+        self.fill_data(data, usize::from(LCD_X_MAX) * usize::from(LCD_Y_MAX) / 2);
     }
 
     fn draw_picture(&self, x1: u16, y1: u16, width: u16, height: u16, data: &[u32]) {

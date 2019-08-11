@@ -210,9 +210,9 @@ pub fn read_id(dvp: &DVP) -> (u16, u16) {
     dvp.sccb_send_data(OV2640_ADDR, 0xFF, 0x01);
     // 0x1C MIDH - Manufacturer ID Byte – High (Read only = 0x7F)
     // 0x1D MIDL - Manufacturer ID Byte – Low (Read only = 0xA2)
-    let manuf_id = ((dvp.sccb_receive_data(OV2640_ADDR, 0x1C) as u16) << 8) | (dvp.sccb_receive_data(OV2640_ADDR, 0x1D) as u16);
+    let manuf_id = (u16::from(dvp.sccb_receive_data(OV2640_ADDR, 0x1C)) << 8) | u16::from(dvp.sccb_receive_data(OV2640_ADDR, 0x1D));
     // 0x0A PIDH - Product ID Number MSB (Read only)
     // 0x0B PIDL - Product ID Number LSB (Read only)
-    let device_id = ((dvp.sccb_receive_data(OV2640_ADDR, 0x0A) as u16) << 8) | (dvp.sccb_receive_data(OV2640_ADDR, 0x0B) as u16);
+    let device_id = (u16::from(dvp.sccb_receive_data(OV2640_ADDR, 0x0A)) << 8) | u16::from(dvp.sccb_receive_data(OV2640_ADDR, 0x0B));
     (manuf_id, device_id)
 }

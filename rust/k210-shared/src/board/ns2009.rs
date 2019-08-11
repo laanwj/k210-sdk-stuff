@@ -29,7 +29,7 @@ pub fn read<IF: I2C>(i2c: &IF, cmd: command) -> Result<u16, ()>
 {
     let mut buf = [0u8; 2];
     if i2c.recv_data(&[cmd as u8], &mut buf).is_ok() {
-        Ok(((buf[0] as u16) << 4) | ((buf[1] as u16) >> 4))
+        Ok((u16::from(buf[0]) << 4) | (u16::from(buf[1]) >> 4))
     } else {
         Err(())
     }

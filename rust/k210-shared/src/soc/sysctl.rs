@@ -1,6 +1,8 @@
 //! SYSCTL peripheral
 use k210_hal::pac;
 
+use core::convert::TryInto;
+
 use crate::soc::utils::set_bit;
 use crate::soc::sleep::usleep;
 
@@ -171,6 +173,10 @@ pub enum dma_channel {
     CHANNEL3 = 3,
     CHANNEL4 = 4,
     CHANNEL5 = 5,
+}
+
+impl dma_channel {
+    pub fn idx(self) -> usize { self as usize }
 }
 
 pub type dma_select = pac::sysctl::dma_sel0::DMA_SEL0W;
@@ -388,7 +394,6 @@ pub fn clock_get_threshold(which: threshold) -> u32 {
 }
 
 pub fn set_power_mode(power_bank: power_bank, mode: io_power_mode) {
-    let power_bank = power_bank as u32;
     unsafe {
         (*pac::SYSCTL::ptr()).power_sel.modify(|r, w| {
             w.bits(set_bit(
@@ -459,7 +464,7 @@ pub fn pll_get_freq(pll: pll) -> u32 {
      * FOUT = FIN / NR * NF / OD
      * (rewritten as integer expression)
      */
-    (((freq_in as u64) * (nf as u64)) / ((nr as u64) * (od as u64))) as u32
+    ((u64::from(freq_in) * u64::from(nf)) / (u64::from(nr) * u64::from(od))).try_into().unwrap()
 }
 
 pub fn clock_source_get_freq(source: clock_source) -> u32 {

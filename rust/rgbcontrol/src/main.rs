@@ -112,8 +112,8 @@ fn main() -> ! {
     loop {
         if let Some(ev) = ts.poll() {
             if ev.z > 0 {
-                let x = max(min(ev.x, DISP_WIDTH as i32 - 1), 0) as u16;
-                let y = max(min(ev.y, DISP_HEIGHT as i32 - 1), 0) as u16;
+                let x = max(min(ev.x, i32::from(DISP_WIDTH) - 1), 0) as u16;
+                let y = max(min(ev.y, i32::from(DISP_HEIGHT) - 1), 0) as u16;
                 //writeln!(stdout, "{:?}", ev).unwrap();
                 let (r, g, b) = color_from_xy(x, y, clampf(ev.z as f32 / 1000.0));
 
