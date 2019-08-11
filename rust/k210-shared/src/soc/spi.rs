@@ -179,16 +179,13 @@ impl<IF: SPI01> SPI for SPIImpl<IF> {
             self.spi.dr[0].write(|w| w.bits(0xffffffff));
             self.spi.ser.write(|w| w.bits(1 << chip_select));
 
-            let mut i = 0;
-            let mut rx_len = rx.len();
-            while rx_len != 0 {
-                let fifo_len = self.spi.rxflr.read().bits() as usize;
-                let fifo_len = cmp::min(fifo_len, rx_len);
-                for _ in 0..fifo_len {
-                    rx[i] = X::trunc(self.spi.dr[0].read().bits());
-                    i += 1;
+            let mut fifo_len = 0;
+            for val in rx.iter_mut() {
+                while fifo_len == 0 {
+                    fifo_len = self.spi.rxflr.read().bits();
                 }
-                rx_len -= fifo_len;
+                *val = X::trunc(self.spi.dr[0].read().bits());
+                fifo_len -= 1;
             }
 
             self.spi.ser.write(|w| w.bits(0x00));
@@ -202,17 +199,13 @@ impl<IF: SPI01> SPI for SPIImpl<IF> {
             self.spi.ser.write(|w| w.bits(1 << chip_select));
             self.spi.ssienr.write(|w| w.bits(0x01));
 
-            // TODO: write this using iterators / slices
-            let mut i = 0;
-            let mut tx_len = tx.len();
-            while tx_len != 0 {
-                let fifo_len = (32 - self.spi.txflr.read().bits()) as usize;
-                let fifo_len = cmp::min(fifo_len, tx_len);
-                for _ in 0..fifo_len {
-                    self.spi.dr[0].write(|f| f.bits(tx[i].into()));
-                    i += 1;
+            let mut fifo_len = 0;
+            for &val in tx {
+                while fifo_len == 0 {
+                    fifo_len = 32 - self.spi.txflr.read().bits();
                 }
-                tx_len -= fifo_len;
+                self.spi.dr[0].write(|f| f.bits(val.into()));
+                fifo_len -= 1;
             }
 
             while (self.spi.sr.read().bits() & 0x05) != 0x04 {
