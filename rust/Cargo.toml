@@ -12,6 +12,7 @@ members = [
     "term-server",
     "secp256k1-test",
     "sdtest",
+    "sdlcd",
 ]
 
 [patch.crates-io]
