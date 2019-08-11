@@ -52,30 +52,6 @@ fn io_init() {
     sysctl::set_power_mode(sysctl::power_bank::BANK7, sysctl::io_power_mode::V18);
 }
 
-fn ch(i: u8) -> char {
-    if i >= 0x20 && i < 0x80 {
-        i.into()
-    } else {
-        '.'
-    }
-}
-
-fn hexdump<T: core::fmt::Write>(stdout: &mut T, buffer: &[u8], base: usize) {
-    for (i, chunk) in buffer.chunks_exact(16).enumerate() {
-        writeln!(stdout, "{:08x}: {:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}",
-            base + i * 16,
-            chunk[0], chunk[1], chunk[2], chunk[3],
-            chunk[4], chunk[5], chunk[6], chunk[7],
-            chunk[8], chunk[9], chunk[10], chunk[11],
-            chunk[12], chunk[13], chunk[14], chunk[15],
-            ch(chunk[0]), ch(chunk[1]), ch(chunk[2]), ch(chunk[3]),
-            ch(chunk[4]), ch(chunk[5]), ch(chunk[6]), ch(chunk[7]),
-            ch(chunk[8]), ch(chunk[9]), ch(chunk[10]), ch(chunk[11]),
-            ch(chunk[12]), ch(chunk[13]), ch(chunk[14]), ch(chunk[15]),
-            ).unwrap();
-    }
-}
-
 #[entry]
 fn main() -> ! {
     let p = Peripherals::take().unwrap();
