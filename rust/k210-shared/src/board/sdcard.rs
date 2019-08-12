@@ -1,5 +1,4 @@
 //! SD card slot access (in SPI mode) on Maix Go
-// TODO: actually use the DMA channel that is claimed…
 use core::convert::TryInto;
 
 use crate::soc::dmac::{dma_channel, DMAC};
@@ -189,6 +188,22 @@ impl<'a, X: SPI> SDCard<'a, X> {
         self.spi.send_data(self.spi_cs, data);
     }
 
+    fn write_data_dma(&self, data: &[u32]) {
+        self.spi.configure(
+            work_mode::MODE0,
+            frame_format::STANDARD,
+            8, /* data bits */
+            0, /* endian */
+            0, /*instruction length*/
+            0, /*address length*/
+            0, /*wait cycles*/
+            aitm::STANDARD,
+            tmod::TRANS,
+        );
+        self.spi
+            .send_data_dma(self.dmac, self.channel, self.spi_cs, data);
+    }
+
     fn read_data(&self, data: &mut [u8]) {
         self.spi.configure(
             work_mode::MODE0,
@@ -202,6 +217,22 @@ impl<'a, X: SPI> SDCard<'a, X> {
             tmod::RECV,
         );
         self.spi.recv_data(self.spi_cs, data);
+    }
+
+    fn read_data_dma(&self, data: &mut [u32]) {
+        self.spi.configure(
+            work_mode::MODE0,
+            frame_format::STANDARD,
+            8, /* data bits */
+            0, /* endian */
+            0, /*instruction length*/
+            0, /*address length*/
+            0, /*wait cycles*/
+            aitm::STANDARD,
+            tmod::RECV,
+        );
+        self.spi
+            .recv_data_dma(self.dmac, self.channel, self.spi_cs, data);
     }
 
     /*
@@ -554,13 +585,18 @@ impl<'a, X: SPI> SDCard<'a, X> {
             return Err(());
         }
         let mut error = false;
+        let mut dma_chunk = [0u32; SEC_LEN];
         for chunk in data_buf.chunks_mut(SEC_LEN) {
             if self.get_response() != SD_START_DATA_SINGLE_BLOCK_READ {
                 error = true;
                 break;
             }
             /* Read the SD block data : read NumByteToRead data */
-            self.read_data(chunk);
+            self.read_data_dma(&mut dma_chunk);
+            /* Place the data received as u32 units from DMA into the u8 target buffer */
+            for (a, b) in chunk.iter_mut().zip(dma_chunk.iter()) {
+                *a = (b & 0xff) as u8;
+            }
             /* Get CRC bytes (not really needed by us, but required by SD) */
             let mut frame = [0u8; 2];
             self.read_data(&mut frame);
@@ -610,11 +646,15 @@ impl<'a, X: SPI> SDCard<'a, X> {
             self.end_cmd();
             return Err(());
         }
+        let mut dma_chunk = [0u32; SEC_LEN];
         for chunk in data_buf.chunks(SEC_LEN) {
             /* Send the data token to signify the start of the data */
             self.write_data(&frame);
             /* Write the block data to SD : write count data by block */
-            self.write_data(chunk);
+            for (a, &b) in dma_chunk.iter_mut().zip(chunk.iter()) {
+                *a = b.into();
+            }
+            self.write_data_dma(&mut dma_chunk);
             /* Put dummy CRC bytes */
             self.write_data(&[0xff, 0xff]);
             /* Read data response */
