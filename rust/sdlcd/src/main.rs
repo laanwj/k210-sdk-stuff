@@ -1,4 +1,6 @@
-/*! Stream raw data from SD card to LCD, bascially a test for using both SPI0 and SPI1 */
+/*! Stream raw data from SD card to LCD, bascially a test for using both SPI0 and SPI1 
+ * at the same time
+ */
 #![allow(dead_code)]
 #![allow(non_snake_case)]
 #![allow(non_camel_case_types)]
@@ -9,8 +11,8 @@ use core::convert::TryInto;
 use k210_hal::prelude::*;
 use k210_hal::stdout::Stdout;
 use k210_hal::Peripherals;
-use k210_shared::board::def::{io,DISP_WIDTH,DISP_HEIGHT,DISP_PIXELS};
-use k210_shared::board::lcd::{LCD,LCDHL,self};
+use k210_shared::board::def::{io, DISP_HEIGHT, DISP_PIXELS, DISP_WIDTH};
+use k210_shared::board::lcd::{self, LCD, LCDHL};
 use k210_shared::board::lcd_colors;
 use k210_shared::board::sdcard;
 use k210_shared::soc::dmac::{dma_channel, DMACExt};
@@ -22,7 +24,7 @@ use riscv_rt::entry;
 
 /** GPIOHS GPIO number to use for controlling the SD card CS pin */
 const SD_CS_GPIONUM: u8 = 7;
-/** CS value passed to SPI controller, this is a dummy value as SPI0_CS3 is not mapping to anything
+/** CS value passed to SPI controller, this is a dummy value as SPI0_CS3 is not mapped to anything
  * in the FPIOA */
 const SD_CS: u32 = 3;
 
@@ -90,14 +92,17 @@ fn main() -> ! {
     let mut image: ScreenImage = [0; DISP_PIXELS / 2];
     let mut buffer = [0u8; DISP_PIXELS * 2];
     while sector < num_sectors {
-        sd.read_sector(&mut buffer, sector.try_into().unwrap()).unwrap();
+        /* Read raw image */
+        sd.read_sector(&mut buffer, sector.try_into().unwrap())
+            .unwrap();
         writeln!(stdout, "sector {} succesfully read", sector).unwrap();
         let mut i = buffer.iter();
+        /* Combine into u32s, reordering 16-bit halves */
         for x in image.iter_mut() {
-            *x = (u32::from(*i.next().unwrap()) << 0) |
-                 (u32::from(*i.next().unwrap()) << 8) | 
-                 (u32::from(*i.next().unwrap()) << 16) | 
-                 (u32::from(*i.next().unwrap()) << 24);
+            *x = (u32::from(*i.next().unwrap()) << 16)
+                | (u32::from(*i.next().unwrap()) << 24)
+                | (u32::from(*i.next().unwrap()) << 0)
+                | (u32::from(*i.next().unwrap()) << 8);
         }
         lcd.draw_picture(0, 0, DISP_WIDTH, DISP_HEIGHT, &image);
 

@@ -1,4 +1,4 @@
-//! SD card slot access on Maix Go
+//! SD card slot access (in SPI mode) on Maix Go
 // TODO: actually use the DMA channel that is claimed…
 use core::convert::TryInto;
 
@@ -34,7 +34,7 @@ pub const SEC_LEN: usize = 512;
 /** SD commands */
 #[repr(u8)]
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
-enum CMD {
+pub enum CMD {
     /** Software reset */
     CMD0 = 0,
     /** Check voltage range (SDC V2) */
@@ -65,6 +65,13 @@ enum CMD {
     CMD58 = 58,
     /** Enable/disable CRC check */
     CMD59 = 59,
+}
+
+#[derive(Debug, Copy, Clone)]
+pub enum InitError {
+    CMDFailed(CMD, u8),
+    CardCapacityStatusNotSet([u8; 4]),
+    CannotGetCardInfo,
 }
 
 /**
@@ -441,15 +448,18 @@ impl<'a, X: SPI> SDCard<'a, X> {
     }
 
     /*
-     * Initializes the SD/SD communication.
+     * Initializes the SD/SD communication in SPI mode.
      * @param  None
      * @retval The SD Response info if succeeeded, otherwise Err
      */
-    pub fn init(&self) -> Result<SD_CardInfo, ()> {
+    pub fn init(&self) -> Result<SD_CardInfo, InitError> {
         /* Initialize SD_SPI */
         self.lowlevel_init();
         /* SD chip select high */
         self.CS_HIGH();
+        /* NOTE: this reset doesn't always seem to work if the SD access was broken off in the
+         * middle of an operation: CMDFailed(CMD0, 127). */
+
         /* Send dummy byte 0xFF, 10 times with CS high */
         /* Rise CS and MOSI for 80 clocks cycles */
         /* Send dummy byte 0xFF */
@@ -457,15 +467,15 @@ impl<'a, X: SPI> SDCard<'a, X> {
         /*------------Put SD in SPI mode--------------*/
         /* SD initialized and set to SPI mode properly */
 
+        /* Send software reset */
         self.send_cmd(CMD::CMD0, 0, 0x95);
         let result = self.get_response();
         self.end_cmd();
         if result != 0x01 {
-            // printf("SD_CMD0 is %X\n", result);
-            // TODO: better erroring
-            return Err(());
+            return Err(InitError::CMDFailed(CMD::CMD0, result));
         }
 
+        /* Check voltage range */
         self.send_cmd(CMD::CMD8, 0x01AA, 0x87);
         /* 0x01 or 0x05 */
         let result = self.get_response();
@@ -473,17 +483,18 @@ impl<'a, X: SPI> SDCard<'a, X> {
         self.read_data(&mut frame);
         self.end_cmd();
         if result != 0x01 {
-            //printf("SD_CMD8 is %X\n", result);
-            return Err(());
+            return Err(InitError::CMDFailed(CMD::CMD8, result));
         }
         let mut index = 255;
         while index != 0 {
+            /* <ACMD> */
             self.send_cmd(CMD::CMD55, 0, 0);
             let result = self.get_response();
             self.end_cmd();
             if result != 0x01 {
-                return Err(());
+                return Err(InitError::CMDFailed(CMD::CMD55, result));
             }
+            /* Initiate SDC initialization process */
             self.send_cmd(CMD::ACMD41, 0x40000000, 0);
             let result = self.get_response();
             self.end_cmd();
@@ -493,12 +504,12 @@ impl<'a, X: SPI> SDCard<'a, X> {
             index -= 1;
         }
         if index == 0 {
-            //printf("SD_CMD55 is %X\n", result);
-            return Err(());
+            return Err(InitError::CMDFailed(CMD::ACMD41, result));
         }
         index = 255;
         let mut frame = [0u8; 4];
         while index != 0 {
+            /* Read OCR */
             self.send_cmd(CMD::CMD58, 0, 1);
             let result = self.get_response();
             self.read_data(&mut frame);
@@ -509,20 +520,19 @@ impl<'a, X: SPI> SDCard<'a, X> {
             index -= 1;
         }
         if index == 0 {
-            // printf("SD_CMD58 is %X\n", result);
-            return Err(());
+            return Err(InitError::CMDFailed(CMD::CMD58, result));
         }
         if (frame[0] & 0x40) == 0 {
-            return Err(());
+            return Err(InitError::CardCapacityStatusNotSet(frame));
         }
         self.HIGH_SPEED_ENABLE();
         self.get_cardinfo()
+            .map_err(|_| InitError::CannotGetCardInfo)
     }
 
     /*
      * Reads a block of data from the SD.
-     * @param  data_buf: pointer to the buffer that receives the data read from the
-     *                  SD.
+     * @param  data_buf: slice that receives the data read from the SD.
      * @param  sector: SD's internal address to read from.
      * @retval The SD Response:
      *         - `Err(())`: Sequence failed
@@ -572,8 +582,7 @@ impl<'a, X: SPI> SDCard<'a, X> {
 
     /*
      * Writes a block to the SD
-     * @param  data_buf: pointer to the buffer containing the data to be written on
-     *                  the SD.
+     * @param  data_buf: slice containing the data to be written to the SD.
      * @param  sector: address to write on.
      * @retval The SD Response:
      *         - `Err(())`: Sequence failed
