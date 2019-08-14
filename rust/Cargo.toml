@@ -13,6 +13,7 @@ members = [
     "secp256k1-test",
     "sdtest",
     "sdlcd",
+    "interrupt",
 ]
 
 [patch.crates-io]
