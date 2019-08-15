@@ -19,6 +19,3 @@ members = [
 [patch.crates-io]
 k210-hal = { git = "https://github.com/riscv-rust/k210-hal.git", rev = "b83e843c19a2f0bc4eb7f56322ae844818709298" }
 k210-pac = { git = "https://github.com/riscv-rust/k210-pac.git", rev = "91b421e17729b549566271a66ba19ce6fc205178" }
-
-# cc-rs needs new release with PR #428 #429 #430 (will be 1.0.39, probably)
-cc = { git = "https://github.com/alexcrichton/cc-rs.git", rev = "13e04b1ec0ba8530c01f32ffafaeb70e6ad1c875" }
