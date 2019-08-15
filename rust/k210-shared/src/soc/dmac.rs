@@ -1,7 +1,7 @@
 //! DMAC peripheral
 use k210_hal::pac;
-use pac::dmac::channel::cfg::{TT_FCW,HS_SEL_SRCW};
-use pac::dmac::channel::ctl::{SMSW};
+use pac::dmac::channel::cfg::{TT_FC_A,HS_SEL_SRC_A};
+use pac::dmac::channel::ctl::{SMS_A};
 
 use crate::soc::sysctl;
 
@@ -39,10 +39,10 @@ pub enum src_dst_select {
 }
 
 pub use crate::soc::sysctl::dma_channel;
-pub type master_number = pac::dmac::channel::ctl::SMSW;
-pub type address_increment = pac::dmac::channel::ctl::SINCW;
-pub type burst_length = pac::dmac::channel::ctl::SRC_MSIZEW;
-pub type transfer_width = pac::dmac::channel::ctl::SRC_TR_WIDTHW;
+pub type master_number = pac::dmac::channel::ctl::SMS_A;
+pub type address_increment = pac::dmac::channel::ctl::SINC_A;
+pub type burst_length = pac::dmac::channel::ctl::SRC_MSIZE_A;
+pub type transfer_width = pac::dmac::channel::ctl::SRC_TR_WIDTH_A;
 
 /** Return whether a specific address considered considered memory or peripheral */
 fn is_memory(address: u64) -> bool {
@@ -250,10 +250,10 @@ impl DMAC {
             let src_is_mem = is_memory(src);
             let dest_is_mem = is_memory(dest);
             let flow_control = match (src_is_mem, dest_is_mem) {
-                (false, false) => TT_FCW::PRF2PRF_DMA,
-                (true, false) => TT_FCW::MEM2PRF_DMA,
-                (false, true) => TT_FCW::PRF2MEM_DMA,
-                (true, true) => TT_FCW::MEM2MEM_DMA,
+                (false, false) => TT_FC_A::PRF2PRF_DMA,
+                (true, false) => TT_FC_A::MEM2PRF_DMA,
+                (false, true) => TT_FC_A::PRF2MEM_DMA,
+                (true, true) => TT_FC_A::MEM2MEM_DMA,
             };
 
             /*
@@ -262,8 +262,8 @@ impl DMAC {
              */
             ch.cfg.modify(|_,w|
                 w.tt_fc().variant(flow_control)
-                 .hs_sel_src().variant(if src_is_mem { HS_SEL_SRCW::SOFTWARE } else { HS_SEL_SRCW::HARDWARE } )
-                 .hs_sel_dst().variant(if dest_is_mem { HS_SEL_SRCW::SOFTWARE } else { HS_SEL_SRCW::HARDWARE } )
+                 .hs_sel_src().variant(if src_is_mem { HS_SEL_SRC_A::SOFTWARE } else { HS_SEL_SRC_A::HARDWARE } )
+                 .hs_sel_dst().variant(if dest_is_mem { HS_SEL_SRC_A::SOFTWARE } else { HS_SEL_SRC_A::HARDWARE } )
                  // Note: from SVD: "Assign a hardware handshaking interface to source of channel",
                  // these are set using sysctl::dma_select; this configuration seems to indicate
                  // that in principle, it's possible to use a different source and destination
@@ -279,8 +279,8 @@ impl DMAC {
             ch.dar.write(|w| w.bits(dest));
 
             ch.ctl.modify(|_,w|
-                w.sms().variant(SMSW::AXI_MASTER_1)
-                 .dms().variant(SMSW::AXI_MASTER_2)
+                w.sms().variant(SMS_A::AXI_MASTER_1)
+                 .dms().variant(SMS_A::AXI_MASTER_2)
                 /* master select */
                  .sinc().variant(src_inc)
                  .dinc().variant(dest_inc)

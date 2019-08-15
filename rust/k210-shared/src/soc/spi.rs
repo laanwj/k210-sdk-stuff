@@ -52,13 +52,13 @@ pub struct SPIImpl<IF> {
 }
 
 /** Borrow work mode from pac */
-pub use ctrlr0::WORK_MODEW as work_mode;
+pub use ctrlr0::WORK_MODE_A as work_mode;
 /** Borrow frame format from pac */
-pub use ctrlr0::FRAME_FORMATW as frame_format;
+pub use ctrlr0::FRAME_FORMAT_A as frame_format;
 /** Borrow aitm from pac */
-pub use spi_ctrlr0::AITMW as aitm;
+pub use spi_ctrlr0::AITM_A as aitm;
 /** Borrow tmod from pac */
-pub use ctrlr0::TMODW as tmod;
+pub use ctrlr0::TMOD_A as tmod;
 
 pub trait SPI {
     fn configure(

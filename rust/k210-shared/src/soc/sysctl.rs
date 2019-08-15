@@ -179,7 +179,7 @@ impl dma_channel {
     pub fn idx(self) -> usize { self as usize }
 }
 
-pub type dma_select = pac::sysctl::dma_sel0::DMA_SEL0W;
+pub type dma_select = pac::sysctl::dma_sel0::DMA_SEL0_A;
 
 fn clock_bus_en(clock: clock, en: bool) {
     /*

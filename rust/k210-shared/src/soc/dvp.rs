@@ -37,7 +37,7 @@ pub struct DVP {
 }
 
 /** Borrow image_format enum from pac */
-pub use dvp::dvp_cfg::FORMATW as image_format;
+pub use dvp::dvp_cfg::FORMAT_A as image_format;
 
 impl DVP {
     /** Set SCCB clock to a safe and deterministic value (as low as possible) */
@@ -82,7 +82,7 @@ impl DVP {
 
     /** Set a register value through SCCB */
     pub fn sccb_send_data(&self, dev_addr: u8, reg_addr: u16, reg_data: u8) {
-        use dvp::sccb_cfg::BYTE_NUMW::*;
+        use dvp::sccb_cfg::BYTE_NUM_A::*;
         unsafe {
             match self.sccb_addr_len {
                 sccb_addr_len::W8 => {
@@ -106,7 +106,7 @@ impl DVP {
     /** Receive register value through SCCB */
     pub fn sccb_receive_data(&self, dev_addr: u8, reg_addr: u16) -> u8 {
         // Write read request
-        use dvp::sccb_cfg::BYTE_NUMW::*;
+        use dvp::sccb_cfg::BYTE_NUM_A::*;
         unsafe {
             match self.sccb_addr_len {
                 sccb_addr_len::W8 => {
@@ -186,11 +186,11 @@ impl DVP {
     pub fn set_image_size(&self, burst_mode: bool, width: u16, height: u16) {
         let burst_num = if burst_mode {
             self.dvp.dvp_cfg.modify(|_,w| w.burst_size_4beats().set_bit());
-            self.dvp.axi.modify(|_,w| w.gm_mlen().variant(dvp::axi::GM_MLENW::BYTE4));
+            self.dvp.axi.modify(|_,w| w.gm_mlen().variant(dvp::axi::GM_MLEN_A::BYTE4));
             width / 8 / 4
         } else {
             self.dvp.dvp_cfg.modify(|_,w| w.burst_size_4beats().clear_bit());
-            self.dvp.axi.modify(|_,w| w.gm_mlen().variant(dvp::axi::GM_MLENW::BYTE1));
+            self.dvp.axi.modify(|_,w| w.gm_mlen().variant(dvp::axi::GM_MLEN_A::BYTE1));
             width / 8 / 1
         };
         assert!(burst_num < 256);

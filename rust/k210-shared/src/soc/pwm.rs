@@ -64,7 +64,7 @@ impl<TIMER: TimerExt> PWM for PWMImpl<TIMER> {
     /** Start a PWM channel */
     fn start(&self, ch: Channel) {
         unsafe {
-            use pac::timer0::channel::control::MODEW;
+            use pac::timer0::channel::control::MODE_A;
 
             // set a deterministic value for load counts
             self.timer.channel[ch.idx()].load_count.write(|w| w.bits(1));
@@ -73,7 +73,7 @@ impl<TIMER: TimerExt> PWM for PWMImpl<TIMER> {
             self.timer.channel[ch.idx()].control.write(
                 |w| w.interrupt().set_bit()
                      .pwm_enable().set_bit()
-                     .mode().variant(MODEW::USER)
+                     .mode().variant(MODE_A::USER)
                      .enable().set_bit());
         }
     }

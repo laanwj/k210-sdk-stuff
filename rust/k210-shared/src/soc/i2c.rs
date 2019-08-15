@@ -58,10 +58,10 @@ impl<IF: I2CExt> I2C for I2CImpl<IF> {
         let v_period_clk_cnt: u16 = v_period_clk_cnt.try_into().unwrap();
         let v_period_clk_cnt = cmp::max(v_period_clk_cnt, 1);
 
-        use i2c0::con::{ADDR_SLAVE_WIDTHW,SPEEDW};
+        use i2c0::con::{ADDR_SLAVE_WIDTH_A,SPEED_A};
         let v_width = match address_width {
-            7 => ADDR_SLAVE_WIDTHW::B7,
-            10 => ADDR_SLAVE_WIDTHW::B10,
+            7 => ADDR_SLAVE_WIDTH_A::B7,
+            10 => ADDR_SLAVE_WIDTH_A::B10,
             _ => panic!("unsupported address width"),
         };
         unsafe {
@@ -70,7 +70,7 @@ impl<IF: I2CExt> I2C for I2CImpl<IF> {
                                  .slave_disable().bit(true)
                                  .restart_en().bit(true)
                                  .addr_slave_width().variant(v_width)
-                                 .speed().variant(SPEEDW::FAST));
+                                 .speed().variant(SPEED_A::FAST));
             self.i2c.ss_scl_hcnt.write(|w| w.count().bits(v_period_clk_cnt));
             self.i2c.ss_scl_lcnt.write(|w| w.count().bits(v_period_clk_cnt));
             self.i2c.tar.write(|w| w.address().bits(slave_address));
