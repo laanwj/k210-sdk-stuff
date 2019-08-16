@@ -18,4 +18,4 @@ members = [
 
 [patch.crates-io]
 k210-hal = { git = "https://github.com/riscv-rust/k210-hal.git", rev = "b83e843c19a2f0bc4eb7f56322ae844818709298" }
-k210-pac = { git = "https://github.com/riscv-rust/k210-pac.git", rev = "91b421e17729b549566271a66ba19ce6fc205178" }
+k210-pac = { git = "https://github.com/riscv-rust/k210-pac.git", rev = "dc1acb925b0ee45b7c5fefb6897dc8cf3c32838d" }

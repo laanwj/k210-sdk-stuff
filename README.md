@@ -1,6 +1,8 @@
 Maix Go / K210 stuff
 =====================
 
+Some demo projects (mostly in rust) for the Maix Go.
+
 Building the C projects
 -----------------------
 
@@ -52,7 +54,7 @@ Running ELF
 -----------
 
 There is no need anymore to convert to raw binary, as ELF executables can be executed directly on
-the device (no flashing) using a recent checkout of [kflash](https://github.com/kendryte/kflash.py)
+the device (without flashing) using a recent checkout of [kflash](https://github.com/kendryte/kflash.py)
 
 ```bash
 kflash.py -t -s -p /dev/ttyUSB1 -B goE "${ELF_NAME}"
@@ -64,7 +66,8 @@ and run code on the device through JTAG and OpenOCD, but I have never got this t
 
 Currently, rust generates ELF executables based at address `0xffffffff80000000`
 instead of the expected `0x80000000`, to work around lack of medany memory
-model support in LLVM. To make this work with kflash I had to patch the
+model support in LLVM (this has ben fixed but hasn't reached stable yet at the
+time of writing). To make this work with kflash I had to patch the
 following:
 
 ```patch

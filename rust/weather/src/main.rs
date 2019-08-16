@@ -5,7 +5,6 @@
 #![no_main]
 
 use core::str;
-use embedded_hal::serial;
 use esp8266at::handler::{NetworkEvent, SerialNetworkHandler};
 use esp8266at::response::{parse, ConnectionType, ParseResult};
 use esp8266at::traits::{self, Write};
@@ -21,42 +20,27 @@ use k210_shared::soc::gpiohs;
 use k210_shared::soc::sleep::usleep;
 use k210_shared::soc::spi::SPIExt;
 use k210_shared::soc::sysctl;
-use nb::block;
-use riscv::register::mcycle;
 use riscv_rt::entry;
 use k210_console::console::{Console, ScreenImage, DISP_HEIGHT, DISP_WIDTH, DISP_PIXELS};
+use buffered_uart;
 
 mod config;
 
 const DEFAULT_BAUD: u32 = 115_200;
 const TIMEOUT: usize = 390_000_000 * 40 / 115200;
 
-struct WriteAdapter<'a, TX>
-where
-    TX: serial::Write<u8>,
-{
-    tx: &'a mut TX,
-}
-impl<'a, TX> WriteAdapter<'a, TX>
-where
-    TX: serial::Write<u8>,
-    TX::Error: core::fmt::Debug,
-{
-    fn new(tx: &'a mut TX) -> Self {
-        Self { tx }
+struct WriteAdapter;
+
+impl WriteAdapter {
+    fn new() -> Self {
+        Self { }
     }
 }
-impl<'a, TX> traits::Write for WriteAdapter<'a, TX>
-where
-    TX: serial::Write<u8>,
-    TX::Error: core::fmt::Debug,
-{
-    type Error = TX::Error;
+impl traits::Write for WriteAdapter {
+    type Error = ();
 
     fn write_all(&mut self, buf: &[u8]) -> Result<(), Self::Error> {
-        for ch in buf {
-            block!(self.tx.write(*ch))?;
-        }
+        buffered_uart::send(buf);
         Ok(())
     }
 }
@@ -97,17 +81,18 @@ fn main() -> ! {
     // Configure UART1 (→WIFI)
     sysctl::clock_enable(sysctl::clock::UART1);
     sysctl::reset(sysctl::reset::UART1);
+    fpioa::set_function(io::WIFI_RX, fpioa::function::UART1_TX);
+    fpioa::set_function(io::WIFI_TX, fpioa::function::UART1_RX);
     fpioa::set_function(io::WIFI_EN, fpioa::function::GPIOHS8);
     fpioa::set_io_pull(io::WIFI_EN, fpioa::pull::DOWN);
     gpiohs::set_pin(8, true);
     gpiohs::set_direction(8, gpio::direction::OUTPUT);
-    let wifi_serial = p.UART1.configure((p.pins.pin7, p.pins.pin6), DEFAULT_BAUD.bps(), &clocks);
-    let (mut wtx, mut wrx) = wifi_serial.split();
 
-    let mut wa = WriteAdapter::new(&mut wtx);
+    buffered_uart::init();
+    let mut wa = WriteAdapter::new();
     let mut sh = SerialNetworkHandler::new(&mut wa, config::APNAME.as_bytes(), config::APPASS.as_bytes());
 
-    // LCD ini
+    // LCD init
     let dmac = p.DMAC.configure();
     let spi = p.SPI0.constrain();
     let mut lcd = LCD::new(spi, &dmac, dma_channel::CHANNEL0);
@@ -145,21 +130,7 @@ fn main() -> ! {
         }
 
         // Receive into buffer
-        let mut lastrecv = mcycle::read();
-        while ofs < serial_buf.len() {
-            // Read until we stop receiving for a certain duration
-            // This is a hack around the fact that in the time that the parser runs,
-            // more than one FIFO full of characters can be received so characters could be
-            // lost. The right way would be to receive in an interrupt handler, but,
-            // we don't have that yet.
-            if let Ok(ch) = wrx.read() {
-                serial_buf[ofs] = ch;
-                ofs += 1;
-                lastrecv = mcycle::read();
-            } else if (mcycle::read().wrapping_sub(lastrecv)) >= TIMEOUT {
-                break;
-            }
-        }
+        ofs += buffered_uart::recv(&mut serial_buf[ofs..]);
         //writeln!(debug, "ofs: {} received {} chars {:?}", ofs0, ofs - ofs0,
         //         &serial_buf[ofs0..ofs]).unwrap();
 
