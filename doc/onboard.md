@@ -28,7 +28,7 @@ Maix Go
 
 ### On-board
 
-- MSA300 - Accelerometer (I2C, address 0x26)
+- MSA300 - Accelerometer (I2C, address 0x26\*)
 - STM32F103C8 - JTAG & UART, debug M1 without extra Jlink, this bypasses the CH340C on the module (USB to host, serial to K210)
 - OV2640 - Color CMOS UXGA (2.0 MegaPixel) CAMERA C HI (DVP, SCCB address 0x60)
 
@@ -37,6 +37,8 @@ Maix Go
 (source: schematic)
 
 - ST7789V - 240x320 262K Color Single-Chip TFT Controller/Driver with Frame Memory (SPI)
-- NS2009 - 4-Wire Touch Screen Controller (I2C, address 0x48)
+- NS2009 - 4-Wire Touch Screen Controller (I2C, address 0x48\*)
 - TF card slot (SPI)
 
+\* Note regarding I2C addresses: the I2C peripheral automatically adds a LSB for read/write to the address,
+  so 0x26 is and 0x4c and 0x4d, and 0x48 is 0x90 and 0x91.
