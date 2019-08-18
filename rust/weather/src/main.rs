@@ -27,7 +27,6 @@ use buffered_uart;
 mod config;
 
 const DEFAULT_BAUD: u32 = 115_200;
-const TIMEOUT: usize = 390_000_000 * 40 / 115200;
 
 struct WriteAdapter;
 
@@ -106,7 +105,7 @@ fn main() -> ! {
     sh.start(false).unwrap();
     writeln!(console, "∙ Connecting to AP").unwrap();
 
-    let mut serial_buf = [0u8; 8192];
+    let mut serial_buf = [0u8; 3000]; // needs to accomodate one whole response which is 2*TCP MSS(=2920)+some
     let mut ofs: usize = 0;
 
     let mut cur_link = 0;

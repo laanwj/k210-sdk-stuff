@@ -10,9 +10,10 @@ use core::sync::atomic::{AtomicUsize, Ordering};
 use k210_hal::pac;
 use k210_shared::soc::sysctl;
 use pac::interrupt::Interrupt;
+use riscv::asm;
 use riscv::register::{mcause, mhartid, mie, mip, mstatus};
 
-const UART_BUFSIZE: usize = 4096;
+const UART_BUFSIZE: usize = 8192;
 /** UART ring buffer */
 struct UartInstance {
     buf: [u8; UART_BUFSIZE],
@@ -57,11 +58,16 @@ fn interrupt_uart1() {
             UART_INTERRUPT_RECEIVE | UART_INTERRUPT_CHARACTER_TIMEOUT => {
                 // Read recv FIFO into receive ringbuffer
                 let mut head = irecv.head.load(Ordering::SeqCst);
+                let tail = irecv.head.load(Ordering::SeqCst);
                 while ((*uart).lsr.read().bits() & 1) != 0 {
                     irecv.buf[head] = ((*uart).rbr_dll_thr.read().bits() & 0xff) as u8;
                     head += 1;
                     if head == UART_BUFSIZE {
                         head = 0;
+                    }
+                    // TODO: signal overflows in a less catastropic way ?
+                    if head == tail {
+                        panic!("UART recv buffer overflow");
                     }
                 }
                 irecv.head.store(head, Ordering::SeqCst);
@@ -193,7 +199,7 @@ fn uart_enable_intr(recv: bool) {
     }
 }
 
-/** Send data to UART */
+/** Send data to UART (blocking) */
 pub fn send(s: &[u8]) {
     let uart = pac::UART1::ptr();
     for &c in s {
@@ -205,10 +211,13 @@ pub fn send(s: &[u8]) {
 }
 
 /** Receive data from UART (non-blocking, returns number of bytes received) */
-pub fn recv(s: &mut [u8]) -> usize {
+pub fn recv_nb(s: &mut [u8]) -> usize {
     let irecv = unsafe { &mut UART1_INSTANCE_RECV };
     let head = irecv.head.load(Ordering::SeqCst);
     let mut tail = irecv.tail.load(Ordering::SeqCst);
+    if head == tail { // Early-out without tail.store if ring buffer empty
+        return 0;
+    }
     let mut ptr = 0;
     while ptr < s.len() && tail != head {
         s[ptr] = irecv.buf[tail];
@@ -220,6 +229,21 @@ pub fn recv(s: &mut [u8]) -> usize {
     }
     irecv.tail.store(tail, Ordering::SeqCst);
     ptr
+}
+
+/** Receive data from UART (blocks for at least one byte if the buffer can hold one, returns number
+ * of bytes received) */
+pub fn recv(s: &mut [u8]) -> usize {
+    if s.len() == 0 {
+        return 0;
+    }
+    loop {
+        let n = recv_nb(s);
+        if n != 0 {
+            return n;
+        }
+        unsafe { asm::wfi(); }
+    }
 }
 
 /** Initialize interrupts and buffered UART handling */

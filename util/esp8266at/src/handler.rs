@@ -128,8 +128,8 @@ where
             Response::Echo(data) => {
                 writeln!(debug, "→ {}", str::from_utf8(data).unwrap_or("???")).unwrap();
             }
-            Response::Data(link, _) => {
-                writeln!(debug, "← Data({}, [...])", link).unwrap();
+            Response::Data(link, d) => {
+                writeln!(debug, "← Data({}, [...] {})", link, d.len()).unwrap();
             }
             _ => {
                 writeln!(debug, "← {:?}", resp).unwrap();
