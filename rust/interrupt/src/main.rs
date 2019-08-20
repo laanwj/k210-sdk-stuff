@@ -44,6 +44,9 @@ fn my_trap_handler() {
 #[entry]
 fn main() -> ! {
     let p = Peripherals::take().unwrap();
+    sysctl::pll_set_freq(sysctl::pll::PLL0, 800_000_000).unwrap();
+    sysctl::pll_set_freq(sysctl::pll::PLL1, 300_000_000).unwrap();
+    sysctl::pll_set_freq(sysctl::pll::PLL2, 45_158_400).unwrap();
     let clocks = k210_hal::clock::Clocks::new();
 
     usleep(200000);

@@ -2,20 +2,25 @@
 use k210_hal::pac;
 
 use core::convert::TryInto;
+use libm::F64Ext;
 
 use crate::soc::utils::set_bit;
 use crate::soc::sleep::usleep;
 
 const SYSCTRL_CLOCK_FREQ_IN0: u32 = 26000000;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum pll {
+    /** PLL0 can usually be selected as alternative to IN0, for example the CPU
+     * clock speed. It can be used as source for PLL2. */
     PLL0,
+    /** PLL1 is used for the KPU clock, and can be used as source for PLL2. */
     PLL1,
+    /** PLL2 is used for I2S clocks. */
     PLL2,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum clock_source {
     IN0,
     PLL0,
@@ -24,7 +29,7 @@ pub enum clock_source {
     ACLK,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum clock {
     PLL0,
     PLL1,
@@ -69,7 +74,7 @@ pub enum clock {
     IN0,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum threshold {
     ACLK,
     APB0,
@@ -100,7 +105,7 @@ pub enum threshold {
     WDT1,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum clock_select {
     PLL0_BYPASS,
     PLL1_BYPASS,
@@ -114,13 +119,13 @@ pub enum clock_select {
     SPI3_SAMPLE,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum io_power_mode {
     V33,
     V18,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum power_bank {
     BANK0 = 0,
     BANK1,
@@ -132,7 +137,7 @@ pub enum power_bank {
     BANK7,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum reset {
     SOC,
     ROM,
@@ -305,6 +310,7 @@ pub fn sysctl_clock_disable(clock: clock) {
 
 /// Set clock divider
 pub fn clock_set_threshold(which: threshold, threshold: u32) {
+    // TODO: this should take a multiplier directly, not a peripheral specific value
     unsafe {
         let ptr = pac::SYSCTL::ptr();
         match which {
@@ -351,6 +357,7 @@ pub fn clock_set_threshold(which: threshold, threshold: u32) {
 /// Get clock divider
 pub fn clock_get_threshold(which: threshold) -> u32 {
     unsafe {
+        // TODO: this should return a multiplier directly, not a peripheral specific value
         let ptr = pac::SYSCTL::ptr();
         match which {
             /* 2 bit wide */
@@ -416,6 +423,26 @@ pub fn set_spi0_dvp_data(status: bool) {
     }
 }
 
+/** Map PLL2 cksel value to clock source */
+fn pll2_cksel_to_source(bits: u8) -> clock_source {
+    match bits {
+        0 => clock_source::IN0,
+        1 => clock_source::PLL0,
+        2 => clock_source::PLL1,
+        _ => panic!("invalid value for PLL2 ckin_sel"),
+    }
+}
+
+/** Map clock source to PLL2 cksel value */
+fn pll2_source_to_cksel(source: clock_source) -> u8 {
+    match source {
+        clock_source::IN0 => 0,
+        clock_source::PLL0 => 1,
+        clock_source::PLL1 => 2,
+        _ => panic!("unsupported clock source for PLL2"),
+    }
+}
+
 pub fn pll_get_freq(pll: pll) -> u32 {
     let freq_in;
     let nr;
@@ -432,7 +459,6 @@ pub fn pll_get_freq(pll: pll) -> u32 {
                 od = val.clkod().bits() + 1;
             }
         }
-
         pll::PLL1 => {
             freq_in = clock_source_get_freq(clock_source::IN0);
             unsafe {
@@ -444,12 +470,7 @@ pub fn pll_get_freq(pll: pll) -> u32 {
         }
         pll::PLL2 => {
             /* Get input freq accrording to select register. */
-            freq_in = clock_source_get_freq(match clock_get_clock_select(clock_select::PLL2) {
-                0 => clock_source::IN0,
-                1 => clock_source::PLL0,
-                2 => clock_source::PLL1,
-                _ => panic!("unknown PLL2 source"),
-            });
+            freq_in = clock_source_get_freq(pll2_cksel_to_source(clock_get_clock_select(clock_select::PLL2)));
             unsafe {
                 let val = (*pac::SYSCTL::ptr()).pll2.read();
                 nr = val.clkr().bits() + 1;
@@ -480,6 +501,8 @@ pub fn clock_source_get_freq(source: clock_source) -> u32 {
 pub fn clock_set_clock_select(which: clock_select, select: u8) {
     unsafe {
         let ptr = pac::SYSCTL::ptr();
+        // Seems that PLL2 is the only one that takes a non-boolean clock select
+        // TODO:  take a clock_source directly when we know the meanings of these bits
         match which {
             clock_select::PLL0_BYPASS => (*ptr).pll0.modify(|_, w| w.bypass().bit(select != 0)),
             clock_select::PLL1_BYPASS => (*ptr).pll1.modify(|_, w| w.bypass().bit(select != 0)),
@@ -498,6 +521,14 @@ pub fn clock_set_clock_select(which: clock_select, select: u8) {
 pub fn clock_get_clock_select(which: clock_select) -> u8 {
     unsafe {
         let ptr = pac::SYSCTL::ptr();
+        // Seems that PLL2 is the only one that has a non-boolean clock select
+        // TODO: return a clock_source directly when we know the meanings of these bits
+        //   meaning seems to be usually:
+        //     0  IN0
+        //     1  PLL0
+        //     (2  PLL1)
+        //   it's likely different for _BYPASS, which, I suspect, wires the PLL output to the
+        //   input (IN0 for PLL0 and PLL1, selectable for PLL2)
         match which {
             clock_select::PLL0_BYPASS => (*ptr).pll0.read().bypass().bit().into(),
             clock_select::PLL1_BYPASS => (*ptr).pll1.read().bypass().bit().into(),
@@ -645,4 +676,343 @@ pub fn dma_select(channel: dma_channel, select: dma_select)
             CHANNEL5 => (*ptr).dma_sel1.modify(|_,w| w.dma_sel5().variant(select)),
         }
     }
+}
+
+/** Return whether the selected PLL has achieved lock */
+fn pll_is_lock(pll: pll) -> bool {
+    let ptr = pac::SYSCTL::ptr();
+    let pll_lock = unsafe { (*ptr).pll_lock.read() };
+    match pll {
+        pll::PLL0 => pll_lock.pll_lock0().bits() == 3,
+        pll::PLL1 => (pll_lock.pll_lock1().bits() & 1) == 1,
+        pll::PLL2 => (pll_lock.pll_lock2().bits() & 1) == 1,
+    }
+}
+
+/** Clear PLL slip, this is done repeatedly until lock is achieved */
+fn pll_clear_slip(pll: pll) -> bool {
+    let ptr = pac::SYSCTL::ptr();
+    unsafe {
+        (*ptr).pll_lock.modify(|_,w|
+            match pll {
+                pll::PLL0 => w.pll_slip_clear0().set_bit(),
+                pll::PLL1 => w.pll_slip_clear1().set_bit(),
+                pll::PLL2 => w.pll_slip_clear2().set_bit(),
+            }
+        );
+    }
+    pll_is_lock(pll)
+}
+
+/* constants for PLL frequency computation */
+const VCO_MIN: f64 = 3.5e+08;
+const VCO_MAX: f64 = 1.75e+09;
+const REF_MIN: f64 = 1.36719e+07;
+const REF_MAX: f64 = 1.75e+09;
+const NR_MIN: i32 = 1;
+const NR_MAX: i32 = 16;
+const NF_MIN: i32 = 1;
+const NF_MAX: i32 = 64;
+const NO_MIN: i32 = 1;
+const NO_MAX: i32 = 16;
+const NB_MIN: i32 = 1;
+const NB_MAX: i32 = 64;
+const MAX_VCO: bool = true;
+const REF_RNG: bool = true;
+
+fn pll_source_set_freq(pll: pll, source: clock_source, freq: u32) -> Result<u32,()> {
+    use pll::*;
+    /* PLL0 and 1 can only source from IN0 */
+    if (pll == PLL0 || pll == PLL1) && source != clock_source::IN0 {
+        return Err(());
+    }
+    let freq_in = clock_source_get_freq(source);
+    if freq_in == 0 {
+        return Err(());
+    }
+
+    /*
+     * Calculate PLL registers' value by finding closest matching parameters
+     * NOTE: this uses floating point math ... this is horrible :-(
+     * TODO: implement this without fp ops
+     */
+    /* Parameters to be exported from the loop */
+    struct Params {
+        nrx: i32,
+        no: i32,
+        nb: i32,
+        nfx: i64,
+        fvco: f64,
+    };
+    let fin: f64 = freq_in.into();
+    let fout: f64 = freq.into();
+    let val: f64 = fout / fin;
+    let terr: f64 = 0.5 / ((NF_MAX / 2) as f64);
+    // NOTE: removed the handling that the Kendryte SDK has for terr<=0.0, as this is impossible
+    // given that NF_MAX is a positive integer constant
+    let mut merr: f64 = terr;
+
+    let mut found: Option<Params> = None;
+    for nfi in (val as i32)..NF_MAX {
+        let nr: i32 = ((nfi as f64) / val) as i32;
+        if nr == 0 {
+            continue;
+        }
+        if REF_RNG && (nr < NR_MIN) {
+            continue;
+        }
+        if fin / (nr as f64) > REF_MAX {
+            continue;
+        }
+        let mut nrx: i32 = nr;
+        let mut nf: i32 = nfi;
+        let mut nfx: i64 = nfi.into();
+        let nval: f64 = (nfx as f64) / (nr as f64);
+        if nf == 0 {
+            nf = 1;
+        }
+        let err: f64 = 1.0 - nval / val;
+
+        if (err.abs() < merr * (1.0 + 1e-6)) || (err.abs() < 1e-16) {
+            let mut not: i32 = (VCO_MAX / fout).floor() as i32;
+            let mut no: i32 = if not > NO_MAX { NO_MAX } else { not };
+            while no > NO_MIN {
+                if (REF_RNG) && ((nr / no) < NR_MIN) {
+                    no -= 1;
+                    continue;
+                }
+                if (nr % no) == 0 {
+                    break;
+                }
+                no -= 1;
+            }
+            if (nr % no) != 0 {
+                continue;
+            }
+            let mut nor: i32 = (if not > NO_MAX { NO_MAX } else { not } ) / no;
+            let mut nore: i32 = NF_MAX / nf;
+            if nor > nore {
+                nor = nore;
+            }
+            let noe: i32 = (VCO_MIN / fout).ceil() as i32;
+            if !MAX_VCO {
+                nore = (noe - 1) / no + 1;
+                nor = nore;
+                not = 0; /* force next if to fail */
+            }
+            if (((no * nor) < (not >> 1)) || ((no * nor) < noe)) && ((no * nor) < (NF_MAX / nf)) {
+                no = NF_MAX / nf;
+                if no > NO_MAX {
+                    no = NO_MAX;
+                }
+                if no > not {
+                    no = not;
+                }
+                nfx *= no as i64;
+                nf *= no;
+                if (no > 1) && !found.is_none() {
+                    continue;
+                }
+                /* wait for larger nf in later iterations */
+            } else {
+                nrx /= no;
+                nfx *= nor as i64;
+                nf *= nor;
+                no *= nor;
+                if no > NO_MAX {
+                    continue;
+                }
+                if (nor > 1) && !found.is_none() {
+                    continue;
+                }
+                /* wait for larger nf in later iterations */
+            }
+
+            let mut nb: i32 = nfx as i32;
+            if nb < NB_MIN {
+                nb = NB_MIN;
+            }
+            if nb > NB_MAX {
+                continue;
+            }
+
+            let fvco: f64 = fin / (nrx as f64) * (nfx as f64);
+            if fvco < VCO_MIN {
+                continue;
+            }
+            if fvco > VCO_MAX {
+                continue;
+            }
+            if nf < NF_MIN {
+                continue;
+            }
+            if REF_RNG && (fin / (nrx as f64) < REF_MIN) {
+                continue;
+            }
+            if REF_RNG && (nrx > NR_MAX) {
+                continue;
+            }
+            if let Some(found) = &found {
+                // check that this reduces error compared to minimum error value, or is an improvement
+                // in x_no
+                if !((err.abs() < merr * (1.0 - 1e-6))
+                     || (MAX_VCO && (no > found.no))
+                     ) {
+                    continue;
+                }
+                if nrx > found.nrx {
+                    continue;
+                }
+            }
+
+            found = Some(Params {
+                nrx,
+                no,
+                nb,
+                nfx,
+                fvco,
+            });
+            merr = err.abs();
+        }
+    }
+    if let Some(found) = found {
+        if merr >= terr * (1.0 - 1e-6) {
+            return Err(());
+        }
+
+        let ptr = pac::SYSCTL::ptr();
+        unsafe {
+            let clkr: u8 = (found.nrx - 1).try_into().unwrap();
+            let clkf: u8 = (found.nfx - 1).try_into().unwrap();
+            let clkod: u8 = (found.no - 1).try_into().unwrap();
+            let bwadj: u8 = (found.nb - 1).try_into().unwrap();
+            match pll {
+                PLL0 => {
+                    (*ptr).pll0.modify(|_,w|
+                        w.clkr().bits(clkr)
+                         .clkf().bits(clkf)
+                         .clkod().bits(clkod)
+                         .bwadj().bits(bwadj)
+                    );
+                }
+                PLL1 => {
+                    (*ptr).pll1.modify(|_,w|
+                        w.clkr().bits(clkr)
+                         .clkf().bits(clkf)
+                         .clkod().bits(clkod)
+                         .bwadj().bits(bwadj)
+                    );
+                }
+                PLL2 => {
+                    (*ptr).pll2.modify(|_,w|
+                        w.ckin_sel().bits(pll2_source_to_cksel(source))
+                         .clkr().bits(clkr)
+                         .clkf().bits(clkf)
+                         .clkod().bits(clkod)
+                         .bwadj().bits(bwadj)
+                     );
+                }
+            }
+        }
+        Ok(pll_get_freq(pll))
+    } else {
+        Err(())
+    }
+}
+
+/**
+ * @brief       Init PLL freqency
+ * @param[in]   pll            The PLL id
+ * @param[in]   pll_freq       The desired frequency in Hz
+
+ */
+pub fn pll_set_freq(pll: pll, freq: u32) -> Result<u32,()> {
+    assert!(freq != 0);
+    let ptr = pac::SYSCTL::ptr();
+    use pll::*;
+
+    /* 1. Change CPU CLK to XTAL */
+    if pll == PLL0 {
+        clock_set_clock_select(clock_select::ACLK, 0 /* clock_source::IN0 */);
+    }
+
+    /* 2. Disable PLL output */
+    unsafe {
+        match pll {
+            PLL0 => (*ptr).pll0.modify(|_,w| w.out_en().clear_bit()),
+            PLL1 => (*ptr).pll1.modify(|_,w| w.out_en().clear_bit()),
+            PLL2 => (*ptr).pll2.modify(|_,w| w.out_en().clear_bit()),
+        };
+    }
+
+    /* 3. Turn off PLL */
+    unsafe {
+        match pll {
+            PLL0 => (*ptr).pll0.modify(|_,w| w.pwrd().clear_bit()),
+            PLL1 => (*ptr).pll1.modify(|_,w| w.pwrd().clear_bit()),
+            PLL2 => (*ptr).pll2.modify(|_,w| w.pwrd().clear_bit()),
+        };
+    }
+
+    /* 4. Set PLL to new value */
+    let result = if pll == PLL2 {
+        pll_source_set_freq(pll, pll2_cksel_to_source(clock_get_clock_select(clock_select::PLL2)), freq)
+    } else {
+        pll_source_set_freq(pll, clock_source::IN0, freq)
+    };
+
+    /* 5. Power on PLL */
+    unsafe {
+        match pll {
+            PLL0 => (*ptr).pll0.modify(|_,w| w.pwrd().set_bit()),
+            PLL1 => (*ptr).pll1.modify(|_,w| w.pwrd().set_bit()),
+            PLL2 => (*ptr).pll2.modify(|_,w| w.pwrd().set_bit()),
+        };
+    }
+
+    /* wait >100ns */
+    usleep(1);
+
+    /* 6. Reset PLL then Release Reset*/
+    unsafe {
+        match pll {
+            PLL0 => (*ptr).pll0.modify(|_,w| w.reset().clear_bit()),
+            PLL1 => (*ptr).pll1.modify(|_,w| w.reset().clear_bit()),
+            PLL2 => (*ptr).pll2.modify(|_,w| w.reset().clear_bit()),
+        };
+        match pll {
+            PLL0 => (*ptr).pll0.modify(|_,w| w.reset().set_bit()),
+            PLL1 => (*ptr).pll1.modify(|_,w| w.reset().set_bit()),
+            PLL2 => (*ptr).pll2.modify(|_,w| w.reset().set_bit()),
+        };
+    }
+    /* wait >100ns */
+    usleep(1);
+    unsafe {
+        match pll {
+            PLL0 => (*ptr).pll0.modify(|_,w| w.reset().clear_bit()),
+            PLL1 => (*ptr).pll1.modify(|_,w| w.reset().clear_bit()),
+            PLL2 => (*ptr).pll2.modify(|_,w| w.reset().clear_bit()),
+        };
+    }
+
+    /* 7. Get lock status, wait PLL stable */
+    while !pll_is_lock(pll) {
+        pll_clear_slip(pll);
+    }
+
+    /* 8. Enable PLL output */
+    unsafe {
+        match pll {
+            PLL0 => (*ptr).pll0.modify(|_,w| w.out_en().set_bit()),
+            PLL1 => (*ptr).pll1.modify(|_,w| w.out_en().set_bit()),
+            PLL2 => (*ptr).pll2.modify(|_,w| w.out_en().set_bit()),
+        };
+    }
+
+    /* 9. Change CPU CLK to PLL */
+    if pll == PLL0 {
+        clock_set_clock_select(clock_select::ACLK, 1 /*clock_source::PLL0*/);
+    }
+    result
 }
