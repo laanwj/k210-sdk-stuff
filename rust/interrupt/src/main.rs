@@ -10,6 +10,7 @@ use k210_hal::prelude::*;
 use k210_hal::stdout::Stdout;
 use riscv_rt::entry;
 use k210_shared::soc::sleep::usleep;
+use k210_shared::soc::sysctl;
 use core::ptr;
 use riscv::register::{mie,mstatus,mhartid,mvendorid,marchid,mimpid,mcause};
 use core::sync::atomic::{AtomicBool,Ordering};

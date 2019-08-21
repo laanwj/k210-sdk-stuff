@@ -11,6 +11,7 @@ use k210_hal::prelude::*;
 use k210_hal::stdout::Stdout;
 use riscv_rt::entry;
 use k210_shared::soc::sleep::usleep;
+use k210_shared::soc::sysctl;
 use secp256k1::{Secp256k1, Message, SecretKey, PublicKey};
 use core::slice;
 

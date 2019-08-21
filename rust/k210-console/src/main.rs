@@ -75,6 +75,12 @@ fn main() -> ! {
     .unwrap();
     writeln!(
         stdout,
+        "  KPU {}",
+        sysctl::clock_get_freq(sysctl::clock::AI),
+    )
+    .unwrap();
+    writeln!(
+        stdout,
         "  APB0 {} (HAL assumes {})",
         sysctl::clock_get_freq(sysctl::clock::APB0),
         clocks.apb0().0,

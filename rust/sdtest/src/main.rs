@@ -12,6 +12,7 @@ use k210_shared::board::def::io;
 use k210_shared::board::sdcard;
 use k210_shared::soc::dmac::{dma_channel, DMACExt};
 use k210_shared::soc::fpioa;
+use k210_shared::soc::sysctl;
 use k210_shared::soc::sleep::usleep;
 use k210_shared::soc::spi::SPIExt;
 use riscv_rt::entry;
