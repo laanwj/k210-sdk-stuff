@@ -2,6 +2,7 @@ use core::convert::TryInto;
 use libm::F64Ext;
 
 /** PLL configuration */
+#[derive(Debug, PartialEq, Eq)]
 pub struct Params {
     pub clkr: u8,
     pub clkf: u8,
@@ -44,7 +45,7 @@ pub fn compute_params(freq_in: u32, freq_out: u32) -> Option<Params> {
     // Parameters to be exported from the loop
     let mut found: Option<Params> = None;
     for nfi in (val as i32)..NF_MAX {
-        let nr: i32 = ((nfi as f64) / val) as i32;
+        let nr: i32 = ((nfi as f64) / val).round() as i32;
         if nr == 0 {
             continue;
         }
@@ -171,4 +172,18 @@ pub fn compute_params(freq_in: u32, freq_out: u32) -> Option<Params> {
     }
 }
 
-// TODO: add tests
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_ompute_params() {
+        /* check against output of C implementation */
+        assert_eq!(compute_params(26_000_000, 1_500_000_000), Some(Params { clkr: 0, clkf: 57, clkod: 0, bwadj: 57 }));
+        assert_eq!(compute_params(26_000_000, 1_000_000_000), Some(Params { clkr: 0, clkf: 37, clkod: 0, bwadj: 37 }));
+        assert_eq!(compute_params(26_000_000, 800_000_000), Some(Params { clkr: 0, clkf: 61, clkod: 1, bwadj: 61 }));
+        assert_eq!(compute_params(26_000_000, 700_000_000), Some(Params { clkr: 0, clkf: 53, clkod: 1, bwadj: 53 }));
+        assert_eq!(compute_params(26_000_000, 300_000_000), Some(Params { clkr: 0, clkf: 45, clkod: 3, bwadj: 45 }));
+        assert_eq!(compute_params(26_000_000, 45_158_400), Some(Params { clkr: 0, clkf: 25, clkod: 14, bwadj: 25 }));
+    }
+}

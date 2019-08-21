@@ -4,6 +4,7 @@
 #![no_std]
 
 pub mod board;
+#[cfg(not(test))]
 pub mod panic;
 pub mod soc;
 mod util;
