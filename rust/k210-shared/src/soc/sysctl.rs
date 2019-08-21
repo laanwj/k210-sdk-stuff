@@ -718,34 +718,30 @@ fn pll_source_set_freq(pll: pll, source: clock_source, freq: u32) -> Result<u32,
     if let Some(found) = pll_compute::compute_params(freq_in, freq) {
         let ptr = pac::SYSCTL::ptr();
         unsafe {
-            let clkr: u8 = (found.nrx - 1).try_into().unwrap();
-            let clkf: u8 = (found.nfx - 1).try_into().unwrap();
-            let clkod: u8 = (found.no - 1).try_into().unwrap();
-            let bwadj: u8 = (found.nb - 1).try_into().unwrap();
             match pll {
                 PLL0 => {
                     (*ptr).pll0.modify(|_,w|
-                        w.clkr().bits(clkr)
-                         .clkf().bits(clkf)
-                         .clkod().bits(clkod)
-                         .bwadj().bits(bwadj)
+                        w.clkr().bits(found.clkr)
+                         .clkf().bits(found.clkf)
+                         .clkod().bits(found.clkod)
+                         .bwadj().bits(found.bwadj)
                     );
                 }
                 PLL1 => {
                     (*ptr).pll1.modify(|_,w|
-                        w.clkr().bits(clkr)
-                         .clkf().bits(clkf)
-                         .clkod().bits(clkod)
-                         .bwadj().bits(bwadj)
+                        w.clkr().bits(found.clkr)
+                         .clkf().bits(found.clkf)
+                         .clkod().bits(found.clkod)
+                         .bwadj().bits(found.bwadj)
                     );
                 }
                 PLL2 => {
                     (*ptr).pll2.modify(|_,w|
                         w.ckin_sel().bits(pll2_source_to_cksel(source))
-                         .clkr().bits(clkr)
-                         .clkf().bits(clkf)
-                         .clkod().bits(clkod)
-                         .bwadj().bits(bwadj)
+                         .clkr().bits(found.clkr)
+                         .clkf().bits(found.clkf)
+                         .clkod().bits(found.clkod)
+                         .bwadj().bits(found.bwadj)
                      );
                 }
             }

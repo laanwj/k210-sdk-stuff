@@ -1,11 +1,12 @@
+use core::convert::TryInto;
 use libm::F64Ext;
 
-/** Parameters for PLL */
+/** PLL configuration */
 pub struct Params {
-    pub nrx: i32,
-    pub no: i32,
-    pub nb: i32,
-    pub nfx: i64,
+    pub clkr: u8,
+    pub clkf: u8,
+    pub clkod: u8,
+    pub bwadj: u8,
 }
 
 /* constants for PLL frequency computation */
@@ -30,7 +31,6 @@ const REF_RNG: bool = true;
  * TODO: implement this without fp ops
  */
 pub fn compute_params(freq_in: u32, freq_out: u32) -> Option<Params> {
-    /* Parameters to be exported from the loop */
     let fin: f64 = freq_in.into();
     let fout: f64 = freq_out.into();
     let val: f64 = fout / fin;
@@ -38,7 +38,10 @@ pub fn compute_params(freq_in: u32, freq_out: u32) -> Option<Params> {
     // NOTE: removed the handling that the Kendryte SDK has for terr<=0.0, as this is impossible
     // given that NF_MAX is a positive integer constant
     let mut merr: f64 = terr;
+    let mut x_nrx: i32 = 0;
+    let mut x_no: i32 = 0;
 
+    // Parameters to be exported from the loop
     let mut found: Option<Params> = None;
     for nfi in (val as i32)..NF_MAX {
         let nr: i32 = ((nfi as f64) / val) as i32;
@@ -76,7 +79,7 @@ pub fn compute_params(freq_in: u32, freq_out: u32) -> Option<Params> {
             if (nr % no) != 0 {
                 continue;
             }
-            let mut nor: i32 = (if not > NO_MAX { NO_MAX } else { not } ) / no;
+            let mut nor: i32 = (if not > NO_MAX { NO_MAX } else { not }) / no;
             let mut nore: i32 = NF_MAX / nf;
             if nor > nore {
                 nor = nore;
@@ -100,7 +103,7 @@ pub fn compute_params(freq_in: u32, freq_out: u32) -> Option<Params> {
                 if (no > 1) && !found.is_none() {
                     continue;
                 }
-                /* wait for larger nf in later iterations */
+            /* wait for larger nf in later iterations */
             } else {
                 nrx /= no;
                 nfx *= nor as i64;
@@ -139,26 +142,26 @@ pub fn compute_params(freq_in: u32, freq_out: u32) -> Option<Params> {
             if REF_RNG && (nrx > NR_MAX) {
                 continue;
             }
-            if let Some(found) = &found {
+            if found.is_some() {
                 // check that this reduces error compared to minimum error value, or is an improvement
-                // in x_no
-                if !((err.abs() < merr * (1.0 - 1e-6))
-                     || (MAX_VCO && (no > found.no))
-                     ) {
+                // in no or nrx
+                if !((err.abs() < merr * (1.0 - 1e-6)) || (MAX_VCO && (no > x_no))) {
                     continue;
                 }
-                if nrx > found.nrx {
+                if nrx > x_nrx {
                     continue;
                 }
             }
 
             found = Some(Params {
-                nrx,
-                no,
-                nb,
-                nfx,
+                clkr: (nrx - 1).try_into().unwrap(),
+                clkf: (nfx - 1).try_into().unwrap(),
+                clkod: (no - 1).try_into().unwrap(),
+                bwadj: (nb - 1).try_into().unwrap(),
             });
             merr = err.abs();
+            x_no = no;
+            x_nrx = nrx;
         }
     }
     if merr >= terr * (1.0 - 1e-6) {
@@ -167,3 +170,5 @@ pub fn compute_params(freq_in: u32, freq_out: u32) -> Option<Params> {
         found
     }
 }
+
+// TODO: add tests
