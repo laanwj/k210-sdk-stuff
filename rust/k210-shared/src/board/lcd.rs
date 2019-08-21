@@ -15,9 +15,11 @@ use crate::soc::dmac::{DMAC,dma_channel};
 pub const SPI_CS: u32 = 3;
 pub const DCX_GPIONUM: u8 = 2;
 pub const RST_GPIONUM: u8 = 3;
-
 pub const LCD_X_MAX: u16 = 240;
 pub const LCD_Y_MAX: u16 = 320;
+/** SPI clock (this seems to be the highest possible value which is reliable on both my MaixGo
+ * boards) */
+pub const SPI_CLK: u32 = 18_000_000;
 
 #[repr(u8)]
 #[derive(Copy, Clone)]
@@ -210,7 +212,7 @@ impl<X: SPI> LCDLL for LCD<'_, X> {
         self.init_dcx();
         self.init_rst();
         self.set_rst(false);
-        self.spi.set_clk_rate(18000000);
+        self.spi.set_clk_rate(SPI_CLK);
         self.spi.configure(
             work_mode::MODE0,
             frame_format::OCTAL,
