@@ -222,11 +222,18 @@ from rust on a RISC-V device.
 [README](rust/secp256k1-test/README.md)
 
 rust/sdtest
--------------------
+-----------
 
 Read and write to a SD card using SPI.
 
 [README](rust/sdtest/README.md)
+
+rust/emdgfx
+-----------
+
+Experiments with `embedded-graphics` crate.
+
+[README](rust/embgfx/README.md)
 
 ROM re'ing
 ===========
