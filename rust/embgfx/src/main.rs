@@ -8,7 +8,7 @@ use embedded_graphics::fonts::Font6x8;
 use embedded_graphics::image::ImageBmp;
 use embedded_graphics::pixelcolor::Rgb565;
 use embedded_graphics::prelude::*;
-use embedded_graphics::primitives::Circle;
+use embedded_graphics::primitives::{Circle, Rectangle};
 use embedded_graphics::Drawing;
 use embedded_graphics::{icoord, text_6x8};
 use k210_hal::prelude::*;
@@ -69,10 +69,13 @@ impl Drawing<Rgb565> for Display {
     where
         T: IntoIterator<Item = Pixel<Rgb565>>,
     {
-        let data = unsafe {core::slice::from_raw_parts_mut(self.data.as_ptr() as *mut u16, DISP_PIXELS)};
+        let data =
+            unsafe { core::slice::from_raw_parts_mut(self.data.as_ptr() as *mut u16, DISP_PIXELS) };
         for Pixel(coord, color) in item {
-            let index = (coord[0]^1) + (coord[1] * (DISP_WIDTH as u32));
-            data[index as usize] = u16::from(color);
+            if coord[0] < (DISP_WIDTH as u32) && coord[1] < (DISP_HEIGHT as u32) {
+                let index = (coord[0] ^ 1) + (coord[1] * (DISP_WIDTH as u32));
+                data[index as usize] = u16::from(color);
+            }
         }
     }
 }
@@ -108,7 +111,6 @@ fn main() -> ! {
 
     let mut display = Display::new();
 
-    let c = Circle::new(Coord::new(20, 20), 8).fill(Some(Rgb565::RED));
     let t = Font6x8::render_str("Hello Rust!")
         .fill(Some(Rgb565::GREEN))
         .translate(Coord::new(20, 16));
@@ -116,7 +118,22 @@ fn main() -> ! {
         .unwrap()
         .translate(Coord::new(100, 20));
 
+    let mut coord = icoord!(20, 20);
+    let mut dir = icoord!(3, 3);
     loop {
+        // clear screen
+        // shouldn't really be necessary to clear the entire screen every frame
+        // then again it redraws everything anyway
+        display.draw(
+            Rectangle::new(
+                icoord!(0, 0),
+                icoord!(i32::from(DISP_WIDTH), i32::from(DISP_HEIGHT)),
+            )
+            .fill(Some(Rgb565::BLACK)),
+        );
+        // draw spot
+        let c = Circle::new(coord, 8).fill(Some(Rgb565::RED));
+        // draw other stuff
         display.draw(c);
         display.draw(t);
         display.draw(&image);
@@ -145,5 +162,19 @@ fn main() -> ! {
         );
 
         display.flush(&lcd);
+
+        coord += dir;
+        if coord.0 > i32::from(DISP_WIDTH) {
+            dir.0 = -(dir.0.abs() + 1);
+        }
+        if coord.1 > i32::from(DISP_HEIGHT) {
+            dir.1 = -(dir.1.abs() + 1);
+        }
+        if coord.0 < 0 {
+            dir.0 = dir.0.abs() + 1;
+        }
+        if coord.1 < 0 {
+            dir.1 = dir.1.abs() + 1;
+        }
     }
 }
