@@ -69,14 +69,10 @@ impl Drawing<Rgb565> for Display {
     where
         T: IntoIterator<Item = Pixel<Rgb565>>,
     {
+        let data = unsafe {core::slice::from_raw_parts_mut(self.data.as_ptr() as *mut u16, DISP_PIXELS)};
         for Pixel(coord, color) in item {
-            let index = coord[0] / 2 + (coord[1] * (DISP_WIDTH as u32) / 2);
-            let col = u32::from(u16::from(color));
-            self.data[index as usize] = if (coord[0] % 2) == 0 {
-                (self.data[index as usize] & 0x0000ffff) | (col << 16)
-            } else {
-                (self.data[index as usize] & 0xffff0000) | col
-            }
+            let index = (coord[0]^1) + (coord[1] * (DISP_WIDTH as u32));
+            data[index as usize] = u16::from(color);
         }
     }
 }
