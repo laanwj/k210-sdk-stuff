@@ -14,8 +14,6 @@ Also called "Dan" or "LicheeDan".
 - GD25LQ128D - 128Mbit w25qxx Flash chip (seems hardwired on SPI3)
 - RY1303 - 3 Channel 5.5V 2A 1.5MHz DC/DC Step down PMU
 - PT8211 - DAC audio (I2S)
-- CH340C - USB to serial chip CH340. used to flash firmware over USB connector and console access on boards except for the Maix Go
-- MSM261S4030H0 - Microphone (I2S)
 
 M1w only:
 
@@ -31,6 +29,7 @@ Maix Go
 - MSA300 - Accelerometer (I2C, address 0x26\*)
 - STM32F103C8 - JTAG & UART, debug M1 without extra Jlink, this bypasses the CH340C on the module (USB to host, serial to K210)
 - OV2640 - Color CMOS UXGA (2.0 MegaPixel) CAMERA C HI (DVP, SCCB address 0x60)
+- MSM261S4030H0 - Microphone (I2S)
 
 ### External
 
