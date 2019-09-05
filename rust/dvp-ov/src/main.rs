@@ -20,7 +20,7 @@ use k210_shared::soc::dvp::{DVPExt,sccb_addr_len,image_format};
 use k210_shared::board::ov2640;
 
 /** 64-byte aligned screen RAM */
-#[repr(align(64))]
+#[repr(C, align(64))]
 struct ScreenRAM {
     pub image: [u32; DISP_PIXELS / 2],
 }

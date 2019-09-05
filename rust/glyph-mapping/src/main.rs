@@ -22,7 +22,7 @@ use k210_shared::soc::dvp::{DVPExt,sccb_addr_len,image_format};
 use k210_shared::board::ov2640;
 
 /** 64-byte aligned planar RAM */
-#[repr(align(64))]
+#[repr(C, align(64))]
 struct PlanarScreenRAM {
     pub r: [u8; DISP_PIXELS],
     pub g: [u8; DISP_PIXELS],
