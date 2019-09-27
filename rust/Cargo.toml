@@ -19,11 +19,10 @@ members = [
 
 [patch.crates-io]
 k210-hal = { git = "https://github.com/riscv-rust/k210-hal.git", rev = "b83e843c19a2f0bc4eb7f56322ae844818709298" }
+k210-pac = { git = "https://github.com/riscv-rust/k210-pac.git", rev = "ce714c0b09a71e5b73357a479295e9ea1201501e" }
 
 # TODO: upstream these patches after the dependent change rust-lang/rust#62281 ends up in stable
 # patch: "Remove work-around for pcrel issue"
-k210-pac = { git = "https://github.com/laanwj/k210-pac.git", rev = "5d3b7ee576eb5a3f70d7454c1ca8603534850faf" }
-# was k210-pac = { git = "https://github.com/riscv-rust/k210-pac.git", rev = "dc1acb925b0ee45b7c5fefb6897dc8cf3c32838d" }
 
 # patch: "risc-v: Use medany model"
 cc = { git = "https://github.com/laanwj/cc-rs.git", rev = "83e66a79a25b55d0aa84db42257a8edbb0095cf8" }
