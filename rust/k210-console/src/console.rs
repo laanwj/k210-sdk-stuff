@@ -236,8 +236,10 @@ impl Console {
                         0 => { self.cur_fg = self.def_fg; self.cur_bg = self.def_bg; }
                         30..=37 => { self.cur_fg = PALETTE[usize::from(param - 30)]; }
                         38 => { state = Sgr::SpecialFg; }
+                        39 => { self.cur_fg = self.def_fg; }
                         40..=47 => { self.cur_bg = PALETTE[usize::from(param - 40)]; }
                         48 => { state = Sgr::SpecialBg; }
+                        49 => { self.cur_bg = self.def_bg; }
                         90..=97 => { self.cur_fg = PALETTE[usize::from(8 + param - 90)]; }
                         100..=107 => { self.cur_bg = PALETTE[usize::from(8 + param - 100)]; }
                         _ => {}
