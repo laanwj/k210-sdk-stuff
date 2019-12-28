@@ -6,6 +6,6 @@ edition = "2018"
 
 [dependencies]
 riscv-rt = "0.6"
-k210-hal = "0.1.0"
+k210-hal = "0.2.0"
 riscv = "0.5"
 k210-shared = { path = "../k210-shared" }
