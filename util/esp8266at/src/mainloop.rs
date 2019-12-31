@@ -10,11 +10,11 @@ pub fn mainloop<P, F, X>(
     h: &mut SerialNetworkHandler<X>,
     port: &mut P,
     mut f: F,
-    debug: &mut fmt::Write,
+    debug: &mut dyn fmt::Write,
 ) -> io::Result<()>
 where
     P: io::Read,
-    F: FnMut(&mut SerialNetworkHandler<X>, NetworkEvent, &mut fmt::Write) -> bool,
+    F: FnMut(&mut SerialNetworkHandler<X>, NetworkEvent, &mut dyn fmt::Write) -> bool,
     X: io::Write,
 {
     let mut serial_buf: Vec<u8> = vec![0; 2560]; // 2048 + some

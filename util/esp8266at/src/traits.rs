@@ -22,6 +22,6 @@ where
     type Error = io::Error;
 
     fn write_all(&mut self, buf: &[u8]) -> Result<(), Self::Error> {
-        (self as &mut io::Write).write_all(buf)
+        (self as &mut dyn io::Write).write_all(buf)
     }
 }

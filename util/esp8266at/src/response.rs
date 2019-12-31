@@ -117,8 +117,8 @@ named!(hex_u8<&[u8], u8>,
 named!(qstr<&[u8], &[u8]>,
     do_parse!(
         tag!(b"\"") >>
-        a: escaped!(is_not!("\\\""), b'\\', one_of!(b"\"\\")) >>
-        //a: is_not!("\"") >>
+        a: escaped!(is_not!(b"\\\""), b'\\', one_of!(b"\"\\")) >>
+        //a: is_not!(b"\"") >>
         tag!(b"\"") >>
         ( a )
     )
@@ -206,11 +206,11 @@ named!(cmdresponse<&[u8],CmdResponse>,
         | do_parse!(
             tag!(b"+CWJAP_CUR:") >>
             a: qstr >>
-            tag!(",") >>
+            tag!(b",") >>
             b: qstr >>
-            tag!(",") >>
+            tag!(b",") >>
             c: num_i32 >>
-            tag!(",") >>
+            tag!(b",") >>
             d: num_i32 >>
             (CmdResponse::CWJAP_CUR(a,b,c,d))
         )
@@ -253,7 +253,7 @@ named!(cmdresponse<&[u8],CmdResponse>,
 named!(cmdecho<&[u8],&[u8]>,
     recognize!(tuple!(
         tag!(b"AT"),
-        take_until!("\r")
+        take_until!("\r") // should be b"\r" but that gives a compiler error
     ))
 );
 
