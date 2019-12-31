@@ -1,6 +1,7 @@
 /** Parser for ESP8266 AT responses */
 use core::str;
-use nom::{Offset, digit, hex_digit};
+use nom::Offset;
+use nom::character::streaming::{digit1 as digit, hex_digit1 as hex_digit};
 
 /** Connection type for CIPSTATUS etc */
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -94,7 +95,7 @@ named!(num_i32<&[u8], i32>,
     map_res!(
         recognize!(
             tuple!(
-                opt!(one_of!(b"-")),
+                opt!(one_of!("-")),
                 digit
             )
         ),
@@ -117,7 +118,7 @@ named!(hex_u8<&[u8], u8>,
 named!(qstr<&[u8], &[u8]>,
     do_parse!(
         tag!(b"\"") >>
-        a: escaped!(is_not!(b"\\\""), b'\\', one_of!(b"\"\\")) >>
+        a: escaped!(is_not!("\\\""), '\\', one_of!("\"\\")) >>
         //a: is_not!(b"\"") >>
         tag!(b"\"") >>
         ( a )

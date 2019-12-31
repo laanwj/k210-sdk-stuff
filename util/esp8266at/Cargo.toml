@@ -9,7 +9,7 @@ std = []
 default = ["std"]
 
 [dependencies]
-nom = { version = "4", default-features = false }
+nom = { version = "5", default-features = false }
 
 [dev-dependencies]
 clap = "2"
