@@ -235,6 +235,13 @@ Experiments with `embedded-graphics` crate.
 
 [README](rust/embgfx/README.md)
 
+rust/voxel
+-------------
+
+Old-school voxel-based landscape renderer.
+
+[README](rust/voxel/README.md)
+
 ROM re'ing
 ===========
 

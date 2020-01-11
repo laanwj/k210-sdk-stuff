@@ -15,6 +15,7 @@ members = [
     "sdlcd",
     "interrupt",
     "embgfx",
+    "voxel",
 ]
 
 [patch.crates-io]
