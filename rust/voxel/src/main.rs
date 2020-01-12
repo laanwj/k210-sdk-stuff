@@ -203,6 +203,7 @@ fn main() -> ! {
     let horizon = (DISP_HEIGHT / 2) as f32; // y coordinate of horizon on screen
     let scale_height = 50.0; // Scaling factor for mountain heights
     let distance = 256; // Rendering distance
+    let h_frac = 0.8; // Smoothing fraction for height changes
 
     writeln!(stdout, "First frame").unwrap();
     let mut disp = Display::new();
@@ -210,16 +211,21 @@ fn main() -> ! {
     let mut p = (0.0, 0.0);
     // "Player" rotation
     let mut phi = 0.0f32;
+    // "Player" height
+    let mut height = 100.0;
     loop {
         // Orientation to variables for 2D rotation matrix.
         let sinphi = phi.sin();
         let cosphi = phi.cos();
         // Derive current player height from landscape height at the current
         // position.
-        // XXX: it'd be nice to apply some kind of low-pass filter here
-        // to prevent ugly sudden jumps, while not lying into mountains.
+        // Apply low-pass filter here to prevent ugly sudden jumps, while not flying into mountains.
         let (_, p_depth) = map.sample(p.0, p.1);
-        let height = fmax(p_depth as f32 + 20.0, 50.0);
+        let tgt_height = fmax(p_depth as f32 + 20.0, 50.0);
+        height = height * h_frac + tgt_height*(1.0 - h_frac);
+        if height < (p_depth as f32) {
+            height = p_depth as f32;
+        }
         // Render landscape!
         let mut ybuffer = [DISP_HEIGHT as i32; DISP_WIDTH as usize];
         for z in 1..distance {
