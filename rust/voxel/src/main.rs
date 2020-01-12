@@ -8,12 +8,14 @@ use libm::F32Ext;
 use k210_hal::prelude::*;
 use k210_hal::stdout::Stdout;
 use k210_hal::Peripherals;
-use k210_shared::board::def::{io, DISP_HEIGHT, DISP_PIXELS, DISP_WIDTH};
+use k210_shared::board::def::{io, DISP_HEIGHT, DISP_PIXELS, DISP_WIDTH, MSA300_SLV_ADDR,MSA300_ADDR_BITS,MSA300_CLK};
 use k210_shared::board::lcd::{self, LCD, LCDHL};
 use k210_shared::board::lcd_colors;
 use k210_shared::board::lcd_render::ScreenImage;
+use k210_shared::board::msa300::Accelerometer;
 use k210_shared::soc::dmac::{dma_channel, DMACExt};
 use k210_shared::soc::fpioa;
+use k210_shared::soc::i2c::{I2C,I2CExt};
 use k210_shared::soc::sleep::usleep;
 use k210_shared::soc::spi::SPIExt;
 use k210_shared::soc::sysctl;
@@ -58,6 +60,10 @@ fn io_mux_init() {
     fpioa::set_io_pull(io::LCD_DC, fpioa::pull::DOWN);
     fpioa::set_function(io::LCD_CS, fpioa::function::SPI0_SS3);
     fpioa::set_function(io::LCD_WR, fpioa::function::SPI0_SCLK);
+
+    /* I2C0 for touch-screen */
+    fpioa::set_function(io::I2C1_SCL, fpioa::function::I2C0_SCLK);
+    fpioa::set_function(io::I2C1_SDA, fpioa::function::I2C0_SDA);
 
     sysctl::set_spi0_dvp_data(true);
 }
@@ -198,6 +204,11 @@ fn main() -> ! {
     lcd.set_direction(lcd::direction::YX_LRUD);
     lcd.clear(lcd_colors::PURPLE);
 
+    writeln!(stdout, "MSA300 init").unwrap();
+    let i2c = p.I2C0.constrain();
+    i2c.init(MSA300_SLV_ADDR, MSA300_ADDR_BITS, MSA300_CLK);
+    let acc = Accelerometer::init(i2c).unwrap();
+
     // Some renderer constants:
     let sky_color = lcd_colors::rgb565(50, 100, 200); // Color of sky
     let horizon = (DISP_HEIGHT / 2) as f32; // y coordinate of horizon on screen
@@ -231,6 +242,7 @@ fn main() -> ! {
         for z in 1..distance {
             // Compute both end-points of (rotated) line segment
             // that represents this horizontal display line on map.
+            // 1 step in z = 1 step to the sides = 90° FOV.
             let z = z as f32;
             let mut pleft = (
                 (-cosphi * z - sinphi * z) + p.0,
@@ -274,7 +286,9 @@ fn main() -> ! {
 
         lcd.draw_picture(0, 0, DISP_WIDTH, DISP_HEIGHT, &disp.data);
 
-        p.1 -= 1.0;
-        phi += 0.005;
+        p.0 -= sinphi;
+        p.1 -= cosphi;
+        let (_, y, _) = acc.measure().unwrap();
+        phi += y * 0.02;
     }
 }
