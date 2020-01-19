@@ -21,5 +21,5 @@ members = [
 [patch.crates-io]
 
 # TODO: upstream these patches after the dependent change rust-lang/rust#62281 ends up in stable
-# patch: "risc-v: Use medany model"
+# patch: "risc-v: Use medany model" (PR upstream: alexcrichton/cc-rs#467)
 cc = { git = "https://github.com/laanwj/cc-rs.git", rev = "83e66a79a25b55d0aa84db42257a8edbb0095cf8" }
