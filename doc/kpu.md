@@ -42,7 +42,7 @@ segments (`kpu_activate_table_t`).
 > (flash size - software size)
 
 The flash size specs are somewhat of a red herring as they relate to software
-instead of hardare: the KPU does not have logic for loading parameters from
+instead of hardware: the KPU does not have logic for loading parameters from
 flash.
 
 Some other source mentions:
@@ -76,10 +76,10 @@ Looking at `lib/drivers/kpu.c` in the SDK, function `ai_step`, many types of CNN
 implemented in software instead of executed by the KPU. I suppose they accelerated the
 most common multiplication-intensive layers in hardware, which is `KL_K210_CONV`.
 
-Peripehral layout
+Peripheral layout
 =================
 
-The register layout of the peripheral is as folllows. Source: `lib/drivers/include/kpu.h`.
+The register layout of the peripheral is as follows. Source: `lib/drivers/include/kpu.h`.
 All registers are 64-bit.
 
 | Ofs   | Name              | Description                                                   |
@@ -114,13 +114,13 @@ src/common/include/kernels/k210/k210_kernels.h (emulation)
 
     bit    name
     ------ ----------------------
-    0      `int_en`               Generate interuupt after layer computation finished
+    0      `int_en`               Generate interrupt after layer computation finished
     1      `ram_flag`             ?
     2      `full_add`             Set in `kpu_conv2d_output_full_add`
     3      `depth_wise_layer`     Is a "depth-wise" layer (1 if enabled)
     4..63  reserved
 
-"depth-wise" affects meny of the computations: it likely means that the layer
+"depth-wise" affects many of the computations: it likely means that the layer
 computation mixes multiple channels so that they cannot be processed one by
 one.
 
