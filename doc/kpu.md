@@ -112,6 +112,8 @@ src/common/include/kernels/k210/k210_kernels.h (emulation)
 0 `interrupt_enabe`
 -------------------
 
+(register and field names are from the SDK header files, typos are as-is)
+
     bit    name
     ------ ----------------------
     0      `int_en`               Generate interrupt after layer computation finished
