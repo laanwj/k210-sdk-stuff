@@ -100,7 +100,7 @@ fn main() -> ! {
     let mut lcd = LCD::new(spi, &dmac, dma_channel::CHANNEL0);
     lcd.init();
     lcd.set_direction(lcd::direction::YX_LRUD);
-    let mut console: Console = Console::new();
+    let mut console: Console = Console::new(None);
 
     writeln!(console, "\x1b[48;2;128;192;255;38;5;0m WEATHER \x1b[0m \x1b[38;2;128;128;128m\x1b[0m").unwrap();
 

@@ -107,7 +107,7 @@ fn main() -> ! {
     dvp.set_auto(false);
 
     let mut image: ScreenImage = [0; DISP_PIXELS / 2];
-    let mut console: Console = Console::new();
+    let mut console: Console = Console::new(None);
     writeln!(stdout, "Starting frame loop").unwrap();
     loop {
         dvp.get_image();
@@ -141,6 +141,7 @@ fn main() -> ! {
                     lcd_colors::rgb565(r as u8, g as u8, b as u8),
                     0,
                     GLYPH_BY_FILL[i as usize].into(),
+                    0,
                 );
             }
         }

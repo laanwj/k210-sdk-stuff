@@ -5,6 +5,7 @@
 #![no_main]
 
 mod lfsr;
+mod example_colorfont;
 
 use k210_hal::Peripherals;
 use k210_hal::prelude::*;
@@ -19,7 +20,7 @@ use k210_shared::soc::spi::SPIExt;
 use k210_shared::soc::sysctl;
 use riscv_rt::entry;
 
-use k210_console::console::{Color, Console, ScreenImage, DISP_HEIGHT, DISP_WIDTH, DISP_PIXELS};
+use k210_console::console::{Color, Console, ScreenImage, DISP_HEIGHT, DISP_WIDTH, DISP_PIXELS, CellFlags};
 use k210_console::cp437;
 use k210_console::palette_xterm256::PALETTE;
 
@@ -132,7 +133,7 @@ fn main() -> ! {
     lcd.clear(lcd_colors::PURPLE);
 
     let mut image: ScreenImage = [0; DISP_PIXELS / 2];
-    let mut console: Console = Console::new();
+    let mut console: Console = Console::new(Some(&example_colorfont::CHARDATA));
 
     /* Make a border */
     let fg = Color::new(0x40, 0x40, 0x40);
@@ -191,7 +192,7 @@ fn main() -> ! {
         );
 
         /* just put some random stuff */
-        for y in 2..console.height() - 2 {
+        for y in 10..console.height() - 2 {
             for x in 2..console.width() - 2 {
                 let rv = s.next();
                 console.put(
@@ -201,6 +202,15 @@ fn main() -> ! {
                     Color::from_rgb565(PALETTE[((rv >> 20) & 0x7) as usize]),
                     cp437::from((rv & 0xff) as u8),
                 );
+            }
+        }
+
+        /* overlay image */
+        for y in 0..7 {
+            for x in 0..20 {
+                console.put_raw(x + 9, y + 2, 0, 0,
+                                example_colorfont::SEQ[usize::from(y)][usize::from(x)],
+                                CellFlags::COLOR);
             }
         }
 

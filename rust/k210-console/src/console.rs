@@ -74,6 +74,13 @@ impl Coord {
     }
 }
 
+/** Cell flags. */
+#[allow(non_snake_case)]
+pub mod CellFlags {
+    /** Cell contains a color font character. */
+    pub const COLOR: u16 = 1;
+}
+
 /** One character cell */
 #[derive(Copy, Clone)]
 pub struct Cell {
@@ -83,8 +90,8 @@ pub struct Cell {
     bg: u16,
     /** Font index. The only hard requirement on the font is that 0 is an empty glyph. */
     ch: u16,
-    /** Cell flags (currently unused) */
-    _flags: u16,
+    /** Cell flags (see CellFlags) */
+    flags: u16,
 }
 
 enum State {
@@ -110,6 +117,8 @@ enum Sgr {
 
 /** Visual attributes of console */
 pub struct Console {
+    /** Color font */
+    pub color_font: Option<&'static [[u32; 32]]>,
     /** Dirty flag */
     pub dirty: bool,
     /** Array of character cells representing console */
@@ -136,14 +145,15 @@ pub struct Console {
 
 impl Console {
     /** Create new, empty console */
-    pub fn new() -> Console {
+    pub fn new(color_font: Option<&'static [[u32; 32]]>) -> Console {
         Console {
+            color_font,
             dirty: false,
             cells: [Cell {
                 fg: DEF_FG,
                 bg: DEF_BG,
                 ch: 0,
-                _flags: 0,
+                flags: 0,
             }; GRID_CELLS],
             cursor_pos: Coord::new(0, 0),
             cursor_visible: true,
@@ -164,29 +174,46 @@ impl Console {
         for y in 0..GRID_HEIGHT {
             for x in 0..GRID_WIDTH  {
                 let cell = &self.cells[cell_idx];
-                let glyph = &cp437_8x8::FONT[usize::from(cell.ch)];
-                let mut image_ofs = image_base;
-                let is_cursor =
-                    self.cursor_visible && (y == self.cursor_pos.y) && (x == self.cursor_pos.x);
-                let fg = if is_cursor { cell.bg } else { cell.fg };
-                let bg = if is_cursor { cell.fg } else { cell.bg };
-                for yi in 0..8 {
-                    let val = glyph[yi];
-                    for xih in 0..4 {
-                        image[image_ofs + xih] = (u32::from(if val & (1 << (xih * 2 + 0)) != 0 {
-                            fg
-                        } else {
-                            bg
-                        })
-                            << 16)
-                            | (u32::from(if val & (1 << (xih * 2 + 1)) != 0 {
+                if (cell.flags & CellFlags::COLOR) != 0 {
+                    if let Some(font) = self.color_font {
+                        // glyph is a sequence of 32 (8*4) u32s, encoding two horizontal
+                        // pixels each.
+                        // TODO: do we want to highlight color font tiles when they're on the
+                        // cursor?
+                        let glyph = &font[usize::from(cell.ch)];
+                        let mut image_ofs = image_base;
+                        for yi in 0..8 {
+                            for xih in 0..4 {
+                                image[image_ofs + xih] = glyph[yi * 4 + xih];
+                            }
+                            image_ofs += usize::from(DISP_WIDTH) / 2;
+                        }
+                    }
+                } else {
+                    let glyph = &cp437_8x8::FONT[usize::from(cell.ch)];
+                    let mut image_ofs = image_base;
+                    let is_cursor =
+                        self.cursor_visible && (y == self.cursor_pos.y) && (x == self.cursor_pos.x);
+                    let fg = if is_cursor { cell.bg } else { cell.fg };
+                    let bg = if is_cursor { cell.fg } else { cell.bg };
+                    for yi in 0..8 {
+                        let val = glyph[yi];
+                        for xih in 0..4 {
+                            image[image_ofs + xih] = (u32::from(if val & (1 << (xih * 2 + 0)) != 0 {
                                 fg
                             } else {
                                 bg
                             })
-                                << 0);
+                                << 16)
+                                | (u32::from(if val & (1 << (xih * 2 + 1)) != 0 {
+                                    fg
+                                } else {
+                                    bg
+                                })
+                                    << 0);
+                        }
+                        image_ofs += usize::from(DISP_WIDTH) / 2;
                     }
-                    image_ofs += usize::from(DISP_WIDTH) / 2;
                 }
                 cell_idx += 1;
                 image_base += 8 / 2;
@@ -212,16 +239,15 @@ impl Console {
             fg: rgb565(fg.r, fg.g, fg.b),
             bg: rgb565(bg.r, bg.g, bg.b),
             ch: u16::from(cp437::to(ch)),
-            _flags: 0,
+            flags: 0,
         };
     }
 
     /** Raw put */
-    pub fn put_raw(&mut self, x: u16, y: u16, fg: u16, bg: u16, ch: u16) {
+    pub fn put_raw(&mut self, x: u16, y: u16, fg: u16, bg: u16, ch: u16, flags: u16) {
         self.dirty = true;
         self.cells[usize::from(y) * usize::from(GRID_WIDTH) + usize::from(x)] = Cell {
-            fg, bg, ch,
-            _flags: 0,
+            fg, bg, ch, flags
         };
     }
 
@@ -289,7 +315,7 @@ impl Console {
                 fg: self.cur_fg,
                 bg: self.cur_bg,
                 ch: 0,
-                _flags: 0,
+                flags: 0,
             };
         }
         if self.cursor_pos.y > 0 {
@@ -305,7 +331,7 @@ impl Console {
                 '\x08' => { // backspace
                     if self.cursor_pos.x > 0 {
                         self.cursor_pos.x -= 1;
-                        self.put_raw(self.cursor_pos.x, self.cursor_pos.y, self.cur_fg, self.cur_bg, 0);
+                        self.put_raw(self.cursor_pos.x, self.cursor_pos.y, self.cur_fg, self.cur_bg, 0, 0);
                     }
                 }
                 '\r' => { self.cursor_pos.x = 0; self.dirty = true; }
@@ -330,7 +356,7 @@ impl Console {
                         self.scroll();
                     }
 
-                    self.put_raw(self.cursor_pos.x, self.cursor_pos.y, self.cur_fg, self.cur_bg, cp437::to(ch).into());
+                    self.put_raw(self.cursor_pos.x, self.cursor_pos.y, self.cur_fg, self.cur_bg, cp437::to(ch).into(), 0);
                     self.cursor_pos.x += 1;
                 }
             }
