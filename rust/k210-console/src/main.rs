@@ -21,7 +21,7 @@ use k210_shared::soc::sysctl;
 use riscv_rt::entry;
 
 use k210_console::console::{Color, Console, ScreenImage, DISP_HEIGHT, DISP_WIDTH, DISP_PIXELS, CellFlags};
-use k210_console::cp437;
+use k210_console::{cp437, cp437_8x8};
 use k210_console::palette_xterm256::PALETTE;
 
 /** Connect pins to internal functions */
@@ -133,7 +133,7 @@ fn main() -> ! {
     lcd.clear(lcd_colors::PURPLE);
 
     let mut image: ScreenImage = [0; DISP_PIXELS / 2];
-    let mut console: Console = Console::new(Some(&example_colorfont::CHARDATA));
+    let mut console: Console = Console::new(&cp437_8x8::FONT, Some(&example_colorfont::FONT));
 
     /* Make a border */
     let fg = Color::new(0x40, 0x40, 0x40);

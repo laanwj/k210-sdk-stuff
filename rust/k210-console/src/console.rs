@@ -2,7 +2,6 @@ use core::fmt;
 
 use k210_shared::board::lcd_colors::rgb565;
 use crate::cp437;
-use crate::cp437_8x8;
 use crate::palette_xterm256::PALETTE;
 
 pub use k210_shared::board::def::{DISP_WIDTH,DISP_HEIGHT,DISP_PIXELS};
@@ -15,9 +14,10 @@ const DEF_BG: u16 = rgb565(0, 0, 0);
 pub type ScreenImage = [u32; DISP_PIXELS / 2];
 
 /* TODO
- * - pass in font and unicode mapping instead of hardcoding cp437
+ * - pass in unicode to font mapping instead of hardcoding cp437
  */
 
+/** Basic color math. */
 #[derive(Copy, Clone)]
 pub struct Color {
     r: u8,
@@ -62,6 +62,7 @@ impl Color {
     }
 }
 
+/** Integer screen coordinate. */
 #[derive(Copy, Clone)]
 pub struct Coord {
     x: u16,
@@ -117,6 +118,8 @@ enum Sgr {
 
 /** Visual attributes of console */
 pub struct Console {
+    /** Standard font */
+    pub font: &'static [[u8; 8]],
     /** Color font */
     pub color_font: Option<&'static [[u32; 32]]>,
     /** Dirty flag */
@@ -145,9 +148,9 @@ pub struct Console {
 
 impl Console {
     /** Create new, empty console */
-    pub fn new(color_font: Option<&'static [[u32; 32]]>) -> Console {
+    pub fn new(font: &'static [[u8; 8]], color_font: Option<&'static [[u32; 32]]>) -> Console {
         Console {
-            color_font,
+            font, color_font,
             dirty: false,
             cells: [Cell {
                 fg: DEF_FG,
@@ -190,7 +193,7 @@ impl Console {
                         }
                     }
                 } else {
-                    let glyph = &cp437_8x8::FONT[usize::from(cell.ch)];
+                    let glyph = &self.font[usize::from(cell.ch)];
                     let mut image_ofs = image_base;
                     let is_cursor =
                         self.cursor_visible && (y == self.cursor_pos.y) && (x == self.cursor_pos.x);

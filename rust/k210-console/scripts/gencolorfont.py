@@ -78,7 +78,7 @@ for (bd, ch) in charset.items():
 
 with open(outfile, 'w') as f:
     f.write(f'/* Auto-generated from {infile} by gencolorfont.py */\n')
-    f.write(f'pub static CHARDATA: [[u32; {m}]; {n}] = [\n')
+    f.write(f'pub static FONT: [[u32; {m}]; {n}] = [\n')
     for bd in charset_by_ch:
         f.write('    [')
         for val in bd:

@@ -5,7 +5,7 @@
 #![no_main]
 
 use k210_console::console::{Console, ScreenImage};
-use k210_console::cp437_8x8::GLYPH_BY_FILL;
+use k210_console::cp437_8x8::{FONT, GLYPH_BY_FILL};
 use k210_hal::Peripherals;
 use k210_hal::prelude::*;
 use k210_hal::stdout::Stdout;
@@ -107,7 +107,7 @@ fn main() -> ! {
     dvp.set_auto(false);
 
     let mut image: ScreenImage = [0; DISP_PIXELS / 2];
-    let mut console: Console = Console::new(None);
+    let mut console: Console = Console::new(&FONT, None);
     writeln!(stdout, "Starting frame loop").unwrap();
     loop {
         dvp.get_image();
