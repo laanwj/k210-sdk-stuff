@@ -1,7 +1,6 @@
 use core::fmt;
 
 use k210_shared::board::lcd_colors::rgb565;
-use crate::cp437;
 use crate::palette_xterm256::PALETTE;
 
 pub use k210_shared::board::def::{DISP_WIDTH,DISP_HEIGHT,DISP_PIXELS};
@@ -12,10 +11,6 @@ const DEF_FG: u16 = rgb565(192, 192, 192);
 const DEF_BG: u16 = rgb565(0, 0, 0);
 
 pub type ScreenImage = [u32; DISP_PIXELS / 2];
-
-/* TODO
- * - pass in unicode to font mapping instead of hardcoding cp437
- */
 
 /** Basic color math. */
 #[derive(Copy, Clone)]
@@ -118,6 +113,8 @@ enum Sgr {
 
 /** Visual attributes of console */
 pub struct Console {
+    /** Map unicode character to font index */
+    map_utf: &'static dyn Fn(char) -> u16,
     /** Standard font */
     pub font: &'static [[u8; 8]],
     /** Color font */
@@ -148,9 +145,9 @@ pub struct Console {
 
 impl Console {
     /** Create new, empty console */
-    pub fn new(font: &'static [[u8; 8]], color_font: Option<&'static [[u32; 32]]>) -> Console {
+    pub fn new(map_utf: &'static dyn Fn(char) -> u16, font: &'static [[u8; 8]], color_font: Option<&'static [[u32; 32]]>) -> Console {
         Console {
-            font, color_font,
+            map_utf, font, color_font,
             dirty: false,
             cells: [Cell {
                 fg: DEF_FG,
@@ -241,7 +238,7 @@ impl Console {
         self.cells[usize::from(y) * usize::from(GRID_WIDTH) + usize::from(x)] = Cell {
             fg: rgb565(fg.r, fg.g, fg.b),
             bg: rgb565(bg.r, bg.g, bg.b),
-            ch: u16::from(cp437::to(ch)),
+            ch: (self.map_utf)(ch),
             flags: 0,
         };
     }
@@ -359,7 +356,7 @@ impl Console {
                         self.scroll();
                     }
 
-                    self.put_raw(self.cursor_pos.x, self.cursor_pos.y, self.cur_fg, self.cur_bg, cp437::to(ch).into(), 0);
+                    self.put_raw(self.cursor_pos.x, self.cursor_pos.y, self.cur_fg, self.cur_bg, (self.map_utf)(ch), 0);
                     self.cursor_pos.x += 1;
                 }
             }

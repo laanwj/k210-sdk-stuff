@@ -133,7 +133,7 @@ fn main() -> ! {
     lcd.clear(lcd_colors::PURPLE);
 
     let mut image: ScreenImage = [0; DISP_PIXELS / 2];
-    let mut console: Console = Console::new(&cp437_8x8::FONT, Some(&example_colorfont::FONT));
+    let mut console: Console = Console::new(&cp437::to, &cp437_8x8::FONT, Some(&example_colorfont::FONT));
 
     /* Make a border */
     let fg = Color::new(0x40, 0x40, 0x40);

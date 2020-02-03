@@ -38,7 +38,7 @@ pub fn from(ch: u8) -> char {
     FROM[usize::from(ch)]
 }
 
-pub fn to(ch: char) -> u8 {
+pub fn to(ch: char) -> u16 {
     match ch {
         '\u{0000}' => 0x00, // NUL
         '\u{263a}' => 0x01, // WHITE SMILING FACE

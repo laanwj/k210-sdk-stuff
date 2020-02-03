@@ -22,7 +22,7 @@ use k210_shared::soc::spi::SPIExt;
 use k210_shared::soc::sysctl;
 use riscv_rt::entry;
 use k210_console::console::{Console, ScreenImage, DISP_HEIGHT, DISP_WIDTH, DISP_PIXELS};
-use k210_console::cp437_8x8;
+use k210_console::{cp437, cp437_8x8};
 use buffered_uart;
 
 mod config;
@@ -101,7 +101,7 @@ fn main() -> ! {
     let mut lcd = LCD::new(spi, &dmac, dma_channel::CHANNEL0);
     lcd.init();
     lcd.set_direction(lcd::direction::YX_LRUD);
-    let mut console: Console = Console::new(&cp437_8x8::FONT, None);
+    let mut console: Console = Console::new(&cp437::to, &cp437_8x8::FONT, None);
 
     writeln!(console, "\x1b[48;2;128;192;255;38;5;0m TERMINAL \x1b[0m \x1b[38;2;128;128;128m\x1b[0m").unwrap();
 
