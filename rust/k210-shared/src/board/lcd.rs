@@ -147,6 +147,7 @@ pub trait LCDHL {
     fn set_direction(&mut self, dir: direction);
     fn clear(&self, color: u16);
     fn draw_picture(&self, x1: u16, y1: u16, width: u16, height: u16, data: &[u32]);
+    fn shutdown(&mut self);
 }
 
 impl<'a, X: SPI> LCD<'a, X> {
@@ -325,6 +326,10 @@ impl<X: SPI> LCDHL for LCD<'_, X> {
 
         /*display on*/
         self.write_command(command::DISPLAY_ON);
+    }
+
+    fn shutdown(&mut self) {
+        self.set_rst(false);
     }
 
     fn set_direction(&mut self, dir: direction) {
