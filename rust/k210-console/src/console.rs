@@ -248,6 +248,14 @@ impl Console {
         }
     }
 
+    /** Handle 'H' or 'f' CSI. */
+    fn handle_cursorhome(&mut self) {
+        let param = &self.num[0..self.idx+1];
+        let x = param.get(0).unwrap_or(&0);
+        let y = param.get(1).unwrap_or(&0);
+        self.cursor_pos = Coord::new(x.saturating_sub(1), y.saturating_sub(1));
+    }
+
     /** Scroll (only up, currently) */
     pub fn scroll(&mut self) {
         let gw = usize::from(GRID_WIDTH);
@@ -325,6 +333,28 @@ impl Console {
                 }
                 'm' => {
                     self.handle_sgr();
+                    self.state = State::Initial;
+                }
+                /*
+                TODO: cursor movement
+                Esc[ValueA  Move cursor up n lines  CUU
+                Esc[ValueB  Move cursor down n lines    CUD
+                Esc[ValueC  Move cursor right n lines   CUF
+                Esc[ValueD  Move cursor left n lines    CUB
+                Esc[H   Move cursor to upper left corner    cursorhome
+                Esc[;H  Move cursor to upper left corner    cursorhome
+                Esc[Line;ColumnH    Move cursor to screen location v,h  CUP
+                Esc[f   Move cursor to upper left corner    hvhome
+                Esc[;f  Move cursor to upper left corner    hvhome
+                Esc[Line;Columnf    Move cursor to screen location v,h  CUP
+                EscD    Move/scroll window up one line  IND
+                EscM    Move/scroll window down one line    RI
+                EscE    Move to next line   NEL
+                Esc7    Save cursor position and attributes     DECSC
+                Esc8    Restore cursor position and attributes  DECSC 
+                */
+                'H' | 'f' => {
+                    self.handle_cursorhome();
                     self.state = State::Initial;
                 }
                 _ => {
