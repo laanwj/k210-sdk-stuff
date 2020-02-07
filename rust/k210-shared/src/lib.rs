@@ -7,4 +7,5 @@ pub mod board;
 #[cfg(not(test))]
 pub mod panic;
 pub mod soc;
+pub mod timing;
 mod util;
