@@ -143,10 +143,16 @@ pub trait LCDLL {
 
 /** High-level interface */
 pub trait LCDHL {
+    /** Turn on and initialize the LCD display, this needs to be called before it's possible to use it. */
     fn init(&mut self);
+    /** Set direction/alignment of display. It can be rotated and/or mirrored in every direction. */
     fn set_direction(&mut self, dir: direction);
+    /** Clear the screen to a single RGB565 color. */
     fn clear(&self, color: u16);
+    /** Draw a picture, filling the entire screen or part of it. `data` packs two RGB565 pixels
+     * per u32 as 0xAAAABBBB. */
     fn draw_picture(&self, x1: u16, y1: u16, width: u16, height: u16, data: &[u32]);
+    /** Shut down and turn off the screen. */
     fn shutdown(&mut self);
 }
 
