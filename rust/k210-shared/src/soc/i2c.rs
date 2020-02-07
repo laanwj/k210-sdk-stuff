@@ -13,6 +13,8 @@ pub trait I2CExt: Deref<Target = i2c0::RegisterBlock> + Sized {
     const CLK: sysctl::clock;
     #[doc(hidden)]
     const DIV: sysctl::threshold;
+    #[doc(hidden)]
+    const RESET: sysctl::reset;
 
     /// Constrains I2C peripheral so it plays nicely with the other abstractions
     fn constrain(self) -> I2CImpl<Self>;
@@ -21,18 +23,21 @@ pub trait I2CExt: Deref<Target = i2c0::RegisterBlock> + Sized {
 impl I2CExt for I2C0 {
     const CLK: sysctl::clock = sysctl::clock::I2C0;
     const DIV: sysctl::threshold = sysctl::threshold::I2C0;
+    const RESET: sysctl::reset = sysctl::reset::I2C0;
 
     fn constrain(self) -> I2CImpl<Self> { I2CImpl::<Self> { i2c: self } }
 }
 impl I2CExt for I2C1 {
     const CLK: sysctl::clock = sysctl::clock::I2C1;
     const DIV: sysctl::threshold = sysctl::threshold::I2C1;
+    const RESET: sysctl::reset = sysctl::reset::I2C1;
 
     fn constrain(self) -> I2CImpl<Self> { I2CImpl::<Self> { i2c: self } }
 }
 impl I2CExt for I2C2 {
     const CLK: sysctl::clock = sysctl::clock::I2C2;
     const DIV: sysctl::threshold = sysctl::threshold::I2C2;
+    const RESET: sysctl::reset = sysctl::reset::I2C2;
 
     fn constrain(self) -> I2CImpl<Self> { I2CImpl::<Self> { i2c: self } }
 }
@@ -52,6 +57,7 @@ impl<IF: I2CExt> I2C for I2CImpl<IF> {
         // sets up a fixed clock divide by (3+1)*2=8
         sysctl::clock_enable(IF::CLK);
         sysctl::clock_set_threshold(IF::DIV, 3);
+        sysctl::reset(IF::RESET);
 
         let v_i2c_freq = sysctl::clock_get_freq(sysctl::clock::I2C0);
         let v_period_clk_cnt = v_i2c_freq / i2c_clk / 2;
