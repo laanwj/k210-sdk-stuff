@@ -4,25 +4,27 @@
 #![no_std]
 #![no_main]
 
-mod lfsr;
 mod example_colorfont;
+mod lfsr;
 
-use k210_hal::Peripherals;
 use k210_hal::prelude::*;
 use k210_hal::stdout::Stdout;
+use k210_hal::Peripherals;
 use k210_shared::board::def::io;
-use k210_shared::board::lcd::{LCD,LCDHL,self};
+use k210_shared::board::lcd::{self, LCD, LCDHL};
 use k210_shared::board::lcd_colors;
-use k210_shared::soc::dmac::{DMACExt, dma_channel};
+use k210_shared::soc::dmac::{dma_channel, DMACExt};
 use k210_shared::soc::fpioa;
 use k210_shared::soc::sleep::usleep;
 use k210_shared::soc::spi::SPIExt;
 use k210_shared::soc::sysctl;
 use riscv_rt::entry;
 
-use k210_console::console::{Color, Console, ScreenImage, DISP_HEIGHT, DISP_WIDTH, DISP_PIXELS, CellFlags};
-use k210_console::{cp437, cp437_8x8};
+use k210_console::console::{
+    CellFlags, Color, Console, ScreenImage, DISP_HEIGHT, DISP_PIXELS, DISP_WIDTH,
+};
 use k210_console::palette_xterm256::PALETTE;
+use k210_console::{cp437, cp437_8x8};
 
 /** Connect pins to internal functions */
 fn io_mux_init() {
@@ -58,7 +60,9 @@ fn main() -> ! {
     usleep(200000);
 
     // Configure UART
-    let serial = p.UARTHS.configure((p.pins.pin5, p.pins.pin4), 115_200.bps(), &clocks);
+    let serial = p
+        .UARTHS
+        .configure((p.pins.pin5, p.pins.pin4), 115_200.bps(), &clocks);
     let (mut tx, _) = serial.split();
 
     let mut stdout = Stdout(&mut tx);
@@ -133,7 +137,8 @@ fn main() -> ! {
     lcd.clear(lcd_colors::PURPLE);
 
     let mut image: ScreenImage = [0; DISP_PIXELS / 2];
-    let mut console: Console = Console::new(&cp437::to, &cp437_8x8::FONT, Some(&example_colorfont::FONT));
+    let mut console: Console =
+        Console::new(&cp437::to, &cp437_8x8::FONT, Some(&example_colorfont::FONT));
 
     /* Make a border */
     let fg = Color::new(0x40, 0x40, 0x40);
@@ -151,13 +156,7 @@ fn main() -> ! {
     console.put(0, 0, fg, bg, '┌');
     console.put(console.width() - 1, 0, fg, bg, '┐');
     console.put(0, console.height() - 1, fg, bg, '└');
-    console.put(
-        console.width() - 1,
-        console.height() - 1,
-        fg,
-        bg,
-        '┘',
-    );
+    console.put(console.width() - 1, console.height() - 1, fg, bg, '┘');
 
     let mut frame = 0;
     let mut s = lfsr::LFSR::new();
@@ -208,9 +207,14 @@ fn main() -> ! {
         /* overlay image */
         for y in 0..7 {
             for x in 0..20 {
-                console.put_raw(x + 9, y + 2, 0, 0,
-                                example_colorfont::SEQ[usize::from(y)][usize::from(x)],
-                                CellFlags::COLOR);
+                console.put_raw(
+                    x + 9,
+                    y + 2,
+                    0,
+                    0,
+                    example_colorfont::SEQ0[usize::from(y)][usize::from(x)],
+                    CellFlags::COLOR,
+                );
             }
         }
 

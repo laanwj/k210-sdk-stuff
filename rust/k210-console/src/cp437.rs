@@ -38,8 +38,8 @@ pub fn from(ch: u8) -> char {
     FROM[usize::from(ch)]
 }
 
-pub fn to(ch: char) -> u16 {
-    match ch {
+pub fn to(ch: char) -> (u16, u16) {
+    (match ch {
         '\u{0000}' => 0x00, // NUL
         '\u{263a}' => 0x01, // WHITE SMILING FACE
         '\u{263b}' => 0x02, // BLACK SMILING FACE
@@ -297,5 +297,5 @@ pub fn to(ch: char) -> u16 {
         '\u{25a0}' => 0xfe, // BLACK SQUARE
         '\u{25a1}' => 0xff, // WHITE SQUARE
         _ => 254, // Unknown
-    }
+    }, 0)
 }

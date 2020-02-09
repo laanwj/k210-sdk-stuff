@@ -37,15 +37,10 @@ def encode_block(block):
                  rgb565(block[yi][xi*2 + 1]))
     return tuple(out)
 
-infile = sys.argv[1]
-outfile = sys.argv[2]
+infiles = sys.argv[1:-1]
+outfile = sys.argv[-1]
 
-img = Image.open(infile)
-
-blocks_x = (img.size[0] + (BW-1))//BW
-blocks_y = (img.size[1] + (BH-1))//BH
-
-print(f'{blocks_x}×{blocks_y}')
+images = [(infile, Image.open(infile)) for infile in infiles]
 
 # character set, addressed by content
 charset = {}
@@ -54,19 +49,27 @@ charset = {}
 empty_block = encode_block([[BG]*BW]*BH)
 charset[empty_block] = 0
 
-out = []
-for by in range(0, blocks_y):
-    row = []
-    for bx in range(0, blocks_x):
-        bd = encode_block(extract_block(img, (bx * BW, by * BH)))
-        # add character to character set
-        try:
-            ch = charset[bd]
-        except KeyError:
-            ch = len(charset)
-            charset[bd] = ch
-        row.append(ch)
-    out.append(row)
+seq = []
+for (infile, img) in images:
+    blocks_x = (img.size[0] + (BW-1))//BW
+    blocks_y = (img.size[1] + (BH-1))//BH
+
+    print(f'{infile}: {blocks_x}×{blocks_y}')
+
+    out = []
+    for by in range(0, blocks_y):
+        row = []
+        for bx in range(0, blocks_x):
+            bd = encode_block(extract_block(img, (bx * BW, by * BH)))
+            # add character to character set
+            try:
+                ch = charset[bd]
+            except KeyError:
+                ch = len(charset)
+                charset[bd] = ch
+            row.append(ch)
+        out.append(row)
+    seq.append(out)
 
 m = len(empty_block)
 n = len(charset)
@@ -78,6 +81,7 @@ for (bd, ch) in charset.items():
 
 with open(outfile, 'w') as f:
     f.write(f'/* Auto-generated from {infile} by gencolorfont.py */\n')
+    f.write('#[rustfmt::skip]\n')
     f.write(f'pub static FONT: [[u32; {m}]; {n}] = [\n')
     for bd in charset_by_ch:
         f.write('    [')
@@ -89,11 +93,12 @@ with open(outfile, 'w') as f:
     f.write('\n')
 
     # TODO: output sequence; RLE encoding of some kind?
-    f.write(f'pub static SEQ: [[u16; {blocks_x}]; {blocks_y}] = [\n')
-    for subseq in out:
-        f.write('    [')
-        for val in subseq:
-            f.write(f'0x{val:04x}, ')
-        f.write('],\n')
-    f.write('];\n')
-    
+    for (i,out) in enumerate(seq):
+        f.write('#[rustfmt::skip]\n')
+        f.write(f'pub static SEQ{i}: [[u16; {blocks_x}]; {blocks_y}] = [\n')
+        for subseq in out:
+            f.write('    [')
+            for val in subseq:
+                f.write(f'0x{val:04x}, ')
+            f.write('],\n')
+        f.write('];\n')

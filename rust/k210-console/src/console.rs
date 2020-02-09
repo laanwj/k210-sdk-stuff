@@ -18,14 +18,16 @@ pub use crate::color::Color;
 /** Cell flags. */
 #[allow(non_snake_case)]
 pub mod CellFlags {
-    /** Cell contains a color font character. */
+    /** Cell contains a color font character if this flag is set, and `ch` is an offset into
+     * the color font. If not set, `ch` is an offset into the normal b/w bitmap font.
+     */
     pub const COLOR: u16 = 1;
 }
 
 /** One character cell */
 #[derive(Copy, Clone)]
 pub struct Cell {
-    /** Background color in RGB565 */
+    /** Foreground color in RGB565 */
     fg: u16,
     /** Background color in RGB565 */
     bg: u16,
@@ -58,12 +60,12 @@ enum Sgr {
 
 /** Visual attributes of console */
 pub struct Console {
-    /** Map unicode character to font index */
-    map_utf: &'static dyn Fn(char) -> u16,
+    /** Map unicode character to font index and flags word. */
+    map_utf: &'static dyn Fn(char) -> (u16, u16),
     /** Standard font */
     pub font: &'static [[u8; 8]],
     /** Color font */
-    pub color_font: Option<&'static [[u32; 32]]>,
+    pub color_font: &'static [[u32; 32]],
     /** Dirty flag */
     pub dirty: bool,
     /** Array of character cells representing console */
@@ -90,9 +92,10 @@ pub struct Console {
 
 impl Console {
     /** Create new, empty console */
-    pub fn new(map_utf: &'static dyn Fn(char) -> u16, font: &'static [[u8; 8]], color_font: Option<&'static [[u32; 32]]>) -> Console {
+    pub fn new(map_utf: &'static dyn Fn(char) -> (u16, u16), font: &'static [[u8; 8]], color_font: Option<&'static [[u32; 32]]>) -> Console {
         Console {
-            map_utf, font, color_font,
+            map_utf, font,
+            color_font: color_font.unwrap_or(&[]),
             dirty: false,
             cells: [Cell {
                 fg: DEF_FG,
@@ -120,22 +123,20 @@ impl Console {
             for x in 0..GRID_WIDTH  {
                 let cell = &self.cells[cell_idx];
                 if (cell.flags & CellFlags::COLOR) != 0 {
-                    if let Some(font) = self.color_font {
-                        // glyph is a sequence of 32 (8*4) u32s, encoding two horizontal
-                        // pixels each.
-                        // TODO: do we want to highlight color font tiles when they're on the
-                        // cursor?
-                        let glyph = &font[usize::from(cell.ch)];
-                        let mut image_ofs = image_base;
-                        for yi in 0..8 {
-                            for xih in 0..4 {
-                                image[image_ofs + xih] = glyph[yi * 4 + xih];
-                            }
-                            image_ofs += usize::from(DISP_WIDTH) / 2;
+                    // glyph is a sequence of 32 (8*4) u32s, encoding two horizontal
+                    // pixels each, these are written to the display memory as-is.
+                    // TODO: do we want to highlight color font tiles when they're on the
+                    // cursor?
+                    let glyph = self.color_font.get(usize::from(cell.ch)).unwrap_or(&[0u32; 32]);
+                    let mut image_ofs = image_base;
+                    for yi in 0..8 {
+                        for xih in 0..4 {
+                            image[image_ofs + xih] = glyph[yi * 4 + xih];
                         }
+                        image_ofs += usize::from(DISP_WIDTH) / 2;
                     }
                 } else {
-                    let glyph = &self.font[usize::from(cell.ch)];
+                    let glyph = self.font.get(usize::from(cell.ch)).unwrap_or(&[0u8; 8]);
                     let mut image_ofs = image_base;
                     let is_cursor =
                         self.cursor_visible && (y == self.cursor_pos.y) && (x == self.cursor_pos.x);
@@ -180,11 +181,12 @@ impl Console {
      */
     pub fn put(&mut self, x: u16, y: u16, fg: Color, bg: Color, ch: char) {
         self.dirty = true;
+        let (cell_ch, cell_flags) = (self.map_utf)(ch);
         self.cells[usize::from(y) * usize::from(GRID_WIDTH) + usize::from(x)] = Cell {
             fg: rgb565(fg.r, fg.g, fg.b),
             bg: rgb565(bg.r, bg.g, bg.b),
-            ch: (self.map_utf)(ch),
-            flags: 0,
+            ch: cell_ch,
+            flags: cell_flags,
         };
     }
 
@@ -249,7 +251,7 @@ impl Console {
     }
 
     /** Handle 'H' or 'f' CSI. */
-    fn handle_cursorhome(&mut self) {
+    fn handle_cup(&mut self) {
         let param = &self.num[0..self.idx+1];
         let x = param.get(0).unwrap_or(&0);
         let y = param.get(1).unwrap_or(&0);
@@ -277,7 +279,7 @@ impl Console {
         self.dirty = true;
     }
 
-    /** Put a char at current cursor position, interpreting control and escape codes. */
+    /** Put a character at current cursor position, interpreting control and escape codes. */
     pub fn putch(&mut self, ch: char) {
         match self.state {
             State::Initial => match ch {
@@ -309,7 +311,8 @@ impl Console {
                         self.scroll();
                     }
 
-                    self.put_raw(self.cursor_pos.x, self.cursor_pos.y, self.cur_fg, self.cur_bg, (self.map_utf)(ch), 0);
+                    let (cell_ch, cell_flags) = (self.map_utf)(ch);
+                    self.put_raw(self.cursor_pos.x, self.cursor_pos.y, self.cur_fg, self.cur_bg, cell_ch, cell_flags);
                     self.cursor_pos.x += 1;
                 }
             }
@@ -354,7 +357,7 @@ impl Console {
                 Esc8    Restore cursor position and attributes  DECSC 
                 */
                 'H' | 'f' => {
-                    self.handle_cursorhome();
+                    self.handle_cup();
                     self.state = State::Initial;
                 }
                 _ => {
