@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 '''
-Slice an image into 8x8 chunks (tiles) to create a color font.
+Slice an image (or multiple images) into 8x8 chunks (tiles) and deduplicate
+them to create a color font and a sequence of characters that represents the
+original image(s).
 '''
 import sys
 from PIL import Image
@@ -8,7 +10,7 @@ import struct
 
 BW=8       # tile width
 BH=8       # tile height
-BG=(0,0,0) # RGB color for background
+BG=(0,0,0) # RGB color for background (hardcoded, could be configurable)
 
 def rgb565(color):
     '''Truncate RGB888[8] color to RGB565'''
@@ -37,6 +39,7 @@ def encode_block(block):
                  rgb565(block[yi][xi*2 + 1]))
     return tuple(out)
 
+assert(len(sys.argv) >= 3)
 infiles = sys.argv[1:-1]
 outfile = sys.argv[-1]
 
@@ -49,6 +52,7 @@ charset = {}
 empty_block = encode_block([[BG]*BW]*BH)
 charset[empty_block] = 0
 
+# sequence of characters to represent every image
 seq = []
 for (infile, img) in images:
     blocks_x = (img.size[0] + (BW-1))//BW
@@ -61,15 +65,16 @@ for (infile, img) in images:
         row = []
         for bx in range(0, blocks_x):
             bd = encode_block(extract_block(img, (bx * BW, by * BH)))
-            # add character to character set
             try:
+                # re-use existing matching character
                 ch = charset[bd]
             except KeyError:
+                # add character to character set
                 ch = len(charset)
                 charset[bd] = ch
             row.append(ch)
         out.append(row)
-    seq.append(out)
+    seq.append((out, blocks_x, blocks_y))
 
 m = len(empty_block)
 n = len(charset)
@@ -93,7 +98,7 @@ with open(outfile, 'w') as f:
     f.write('\n')
 
     # TODO: output sequence; RLE encoding of some kind?
-    for (i,out) in enumerate(seq):
+    for (i,(out,blocks_x,blocks_y)) in enumerate(seq):
         f.write('#[rustfmt::skip]\n')
         f.write(f'pub static SEQ{i}: [[u16; {blocks_x}]; {blocks_y}] = [\n')
         for subseq in out:
