@@ -660,10 +660,19 @@ UARTx
 | 0xfc  | `CTR`             | Component Type Register                                       |
 
 This block is replicated for all 3 UART peripherals. The latter registers (0x20
-and higher) are not used in the SDK, but defined in the structure. Their use is
-unknown, although the names match some other UART controllers.
+and higher) are not used in the SDK, but defined in the structure.
+
+It looks like this matches the "Designware" 16550 compatible UART, which has a
+driver in the Linux kernel tree (`drivers/tty/serial/8250/8250_dw.c`).
+
 The best match to the register names and offsets appears to be the UART described in
 [HUGEIC Communication Interface Peripheral User’s Guide](http://www.huge-ic.com/Communication%20Interface%20Peripheral%20User%27s%20Guide%20V0.1.pdf).
+
+```
+UART1: Designware UART version 4.0.1
+UART1: Features APB 32 bits THRE SIR ADDITIONAL_FEAT SHADOW UART_ADD_ENCODED_PARAMS DMA_EXTRA UART 16 bytes
+UART1: CTR 44570110
+```
 
 UARTHS
 ------
