@@ -8,7 +8,7 @@ use core::str;
 use esp8266at::handler::{NetworkEvent, SerialNetworkHandler};
 use esp8266at::response::{parse, ConnectionType, ParseResult};
 use esp8266at::traits::{self, Write};
-use k210_hal::Peripherals;
+use k210_hal::{Peripherals, pac};
 use k210_hal::prelude::*;
 use k210_hal::stdout::Stdout;
 use k210_shared::board::def::io;
@@ -65,6 +65,45 @@ fn io_init() {
     sysctl::set_power_mode(sysctl::power_bank::BANK7, sysctl::io_power_mode::V18);
 }
 
+/** Show some information about Designware UART. */
+fn show_uart_info(debug: &mut dyn core::fmt::Write, uart: *const pac::uart1::RegisterBlock) {
+    let cpr = unsafe { (*uart).cpr.read() }.bits();
+    let ucv = unsafe { (*uart).ucv.read() }.bits();
+    let ctr = unsafe { (*uart).ctr.read() }.bits();
+    writeln!(debug, "UART1: Designware UART version {}.{}.{}",
+             char::from((ucv >> 24) as u8),
+             char::from(((ucv >> 16) & 0xff) as u8),
+             char::from(((ucv >> 8) & 0xff) as u8),
+             ).unwrap();
+    write!(debug, "UART1: Features").unwrap();
+    write!(debug, " APB {} bits", match cpr & 3 {
+        0 => 8,
+        1 => 16,
+        2 => 32,
+        _ => 0,
+    }).unwrap();
+    let flags = [
+        (4, "AFCE"),
+        (5, "THRE"),
+        (6, "SIR"),
+        (7, "SIR_LP"),
+        (8, "ADDITIONAL_FEAT"),
+        (9, "FIFO_ACCESS"),
+        (10, "FIFO_STAT"),
+        (11, "SHADOW"),
+        (12, "UART_ADD_ENCODED_PARAMS"),
+        (13, "DMA_EXTRA"),
+    ];
+    for (bit, name) in &flags {
+        if (cpr & (1u32 << bit)) != 0u32 {
+            write!(debug, " {}", name).unwrap();
+        }
+    }
+    write!(debug, " UART {} bytes", ((cpr >> 16) & 0xff) * 16).unwrap();
+    writeln!(debug).unwrap();
+    writeln!(debug, "UART1: CTR {:08x}", ctr).unwrap();
+}
+
 #[entry]
 fn main() -> ! {
     let p = Peripherals::take().unwrap();
@@ -94,6 +133,8 @@ fn main() -> ! {
     buffered_uart::init();
     let mut wa = WriteAdapter::new();
     let mut sh = SerialNetworkHandler::new(&mut wa, config::APNAME.as_bytes(), config::APPASS.as_bytes());
+
+    show_uart_info(&mut debug, pac::UART1::ptr());
 
     // LCD init
     let dmac = p.DMAC.configure();
