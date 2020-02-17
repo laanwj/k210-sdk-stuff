@@ -46,9 +46,9 @@ pub enum io {
     ISP_RX = 4,
     /** Host TX (to STM32F103C8) */
     ISP_TX = 5,
-    /** WIFI serial TX (to ESP8285) */
+    /** WIFI serial TX (from perspective of ESP8285, so our RX) */
     WIFI_TX = 6,
-    /** WIFI serial RX (from ESP8285) */
+    /** WIFI serial RX (from perspective of ESP8285, so our TX) */
     WIFI_RX = 7,
     /** WIFI enable (to ESP8285) */
     WIFI_EN = 8,
