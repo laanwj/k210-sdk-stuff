@@ -416,6 +416,7 @@ pub fn set_power_mode(power_bank: power_bank, mode: io_power_mode) {
     }
 }
 
+/** Route SPI0_D0-D7 DVP_D0-D7 functions to SPI and DVP data pins (bypassing FPIOA). */
 pub fn set_spi0_dvp_data(status: bool) {
     unsafe {
         (*pac::SYSCTL::ptr())
