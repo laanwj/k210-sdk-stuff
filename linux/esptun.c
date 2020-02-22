@@ -182,7 +182,7 @@ static void write_esc(int fd, const char *buf, int n)
 }
 
 /**
- * Write a 32-bit unsigned integer.
+ * Write a 32-bit unsigned integer (as ASCII text).
  */
 static void write_uint(int fd, uint32_t x)
 {
@@ -237,7 +237,7 @@ static int setup_uart(int fd, int speed)
 
     /* fetch bytes as they become available */
     tty.c_cc[VMIN] = 1;
-    tty.c_cc[VTIME] = 1;
+    tty.c_cc[VTIME] = 0;
 
     if (ioctl(fd, TCSETS2, &tty) != 0) {
         my_err("Error from TCSETS2: %s", strerror(errno));
