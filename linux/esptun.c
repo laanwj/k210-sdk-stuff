@@ -30,7 +30,7 @@
 /* buffer for reading from tun/tap interface, must be >= 1500 */
 #define TAP_BUFSIZE 2000
 /* baud rate (max 115200*40 = 4608000) */
-#define BAUDRATE (115200 * 40)
+#define BAUDRATE (115200 * 10)
 
 /** Macro for writing static strings without needing strlen. */
 #define S(s) (const uint8_t*)(s), (sizeof(s)-1)
