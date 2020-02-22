@@ -41,6 +41,8 @@ uint8_t esp_buffer[ESP_BUFSIZE];
 uint8_t tap_buffer[TAP_BUFSIZE];
 size_t tap2net;
 size_t net2tap;
+int esp_fd = -1;
+int tun_fd = -1;
 
 /**
  * Prints debugging.
@@ -342,8 +344,15 @@ static bool is_prefix(const uint8_t *esp_buffer, size_t len, const uint8_t *pref
     return true;
 }
 
+/** Send a packet to tun interface. */
+static void tun_tx_packet(int fd, const uint8_t *esp_buffer, size_t size) {
+    if (write(fd, esp_buffer, size) <= 0) {
+        log_info(WARNING, "warning: error writing to tun: %s\n", strerror(errno));
+    }
+}
+
 /** Get OK/FAIL status after running a command on the ESP. */
-static bool esp_read_responses(int fd)
+static bool esp_read_responses(int fd, bool early_terminate)
 {
     /** TODO handle timeouts. */
     size_t end = 0;
@@ -354,10 +363,12 @@ static bool esp_read_responses(int fd)
             exit(1);
         }
         end += n;
+
         size_t ptr = 0;
         while (ptr < end) {
             const uint8_t *resp = &esp_buffer[ptr];
-            size_t len = esp_response_is_complete(resp, end - ptr, NULL);
+            struct packet_info pkt_info;
+            size_t len = esp_response_is_complete(resp, end - ptr, &pkt_info);
             if (len) {
                 log_debug("<-: ");
                 debug_response(resp, len);
@@ -379,6 +390,12 @@ static bool esp_read_responses(int fd)
                 if (is_prefix(resp, len, S("WIFI "))) {
                     log_info(INFO2, "  %.*s\n", len - 2, resp);
                 }
+                /* Did we receive a packet? */
+                if (is_prefix(resp, len, pktprefix, sizeof(pktprefix)) && tun_fd != -1) {
+                    log_debug("NET2TUN %lu: Read %d bytes from the esp interface\n", net2tap, pkt_info.payload_len);
+                    net2tap++;
+                    tun_tx_packet(tun_fd, pkt_info.payload, pkt_info.payload_len);
+                }
 
                 /* On non-final response, keep reading. */
             } else {
@@ -394,6 +411,10 @@ static bool esp_read_responses(int fd)
         /* Remove processed responses from esp_buffer by shifting bytes. */
         memmove(esp_buffer, &esp_buffer[ptr], end - ptr);
         end -= ptr;
+        if (early_terminate && end == 0) {
+            /* All responses processed, back to select so that packets from tun get a chance. */
+            return true;
+        }
     }
 }
 
@@ -402,16 +423,9 @@ static void esp_tx_packet(int fd, const uint8_t *esp_buffer, size_t size) {
     write_all(fd, S("AT+CIPSEND="));
     write_uint(fd, size);
     write_all(fd, S("\r\n"));
-    if (esp_read_responses(fd)) {
+    if (esp_read_responses(fd, false)) {
         write_all(fd, esp_buffer, size);
-        esp_read_responses(fd);
-    }
-}
-
-/** Send a packet to tun interface. */
-static void tun_tx_packet(int fd, const uint8_t *esp_buffer, size_t size) {
-    if (write(fd, esp_buffer, size) <= 0) {
-        log_info(WARNING, "warning: error writing to tun: %s\n", strerror(errno));
+        esp_read_responses(fd, false);
     }
 }
 
@@ -429,7 +443,7 @@ int main(int argc, char **argv)
     const char *host = argv[5];
     int port = atoi(argv[6]);
 
-    int esp_fd = open(portname, O_RDWR | O_NOCTTY | O_SYNC);
+    esp_fd = open(portname, O_RDWR | O_NOCTTY | O_SYNC);
     if (esp_fd < 0) {
         my_err("Error opening %s: %s", portname, strerror(errno));
     }
@@ -438,7 +452,6 @@ int main(int argc, char **argv)
     setup_uart(esp_fd, 115200);
 
     /* initialize tun/tap interface */
-    int tun_fd;
     if ((tun_fd = tun_alloc(if_name, IFF_TUN | IFF_NO_PI)) < 0) {
         my_err("Error connecting to tun interface %s!\n", if_name);
     }
@@ -447,17 +460,17 @@ int main(int argc, char **argv)
 
     log_info(INFO1, "Initializing device\n");
     write_all(esp_fd, S("ATE0\r\n"));
-    if (!esp_read_responses(esp_fd)) {
+    if (!esp_read_responses(esp_fd, false)) {
         my_err("Could not disable echo");
     }
 
     write_all(esp_fd, S("AT+CWMODE_CUR=1\r\n"));
-    if (!esp_read_responses(esp_fd)) {
+    if (!esp_read_responses(esp_fd, false)) {
         my_err("Could not switch to station mode");
     }
 
     write_all(esp_fd, S("AT+CIPMUX=0\r\n"));
-    if (!esp_read_responses(esp_fd)) {
+    if (!esp_read_responses(esp_fd, false)) {
         my_err("Could not switch to single-connection mode");
     }
 
@@ -465,13 +478,13 @@ int main(int argc, char **argv)
     write_all(esp_fd, S("AT+UART_CUR="));
     write_uint(esp_fd, BAUDRATE);
     write_all(esp_fd, S(",8,1,0,0\r\n"));
-    if (!esp_read_responses(esp_fd)) {
+    if (!esp_read_responses(esp_fd, false)) {
         my_err("Could not set faster baudrate");
     }
     setup_uart(esp_fd, BAUDRATE);
 
     write_all(esp_fd, S("AT\r\n"));
-    if (!esp_read_responses(esp_fd)) {
+    if (!esp_read_responses(esp_fd, false)) {
         my_err("AT test unsuccesful: new baudrate unstable?");
     }
 
@@ -481,12 +494,12 @@ int main(int argc, char **argv)
     write_all(esp_fd, S("\",\""));
     write_esc(esp_fd, passwd, strlen(passwd));
     write_all(esp_fd, S("\"\r\n"));
-    if (!esp_read_responses(esp_fd)) {
+    if (!esp_read_responses(esp_fd, false)) {
         my_err("Could not connect to AP");
     }
 
     write_all(esp_fd, S("AT+CIPSTA_CUR?\r\n"));
-    if (!esp_read_responses(esp_fd)) {
+    if (!esp_read_responses(esp_fd, false)) {
         my_err("Could not query IP");
     }
 
@@ -498,7 +511,7 @@ int main(int argc, char **argv)
     write_all(esp_fd, S(","));
     write_uint(esp_fd, port); /* local port is same as remote port for now */
     write_all(esp_fd, S("\r\n"));
-    if (!esp_read_responses(esp_fd)) {
+    if (!esp_read_responses(esp_fd, false)) {
         my_err("Could not open UDP connection");
     }
 
@@ -508,7 +521,7 @@ int main(int argc, char **argv)
     if (daemon(0, 0) < 0) {
         my_err("Could not go to background\n");
     }
-    debug = 0; /* no use to log anything after this */
+    debug = false; /* no use to log anything after this */
 
     struct pollfd fds[2] = {
         {esp_fd, POLLIN, 0},
@@ -526,50 +539,10 @@ int main(int argc, char **argv)
 
         /* Handle input from UART */
         if (fds[0].revents & POLLIN) {
-            /* Read all available responses entirely */
-            size_t end = 0;
-            while (true) {
-                ssize_t n = read(esp_fd, &esp_buffer[end], ESP_BUFSIZE - end);
-                if (n <= 0) {
-                    perror("Reading from UART");
-                    exit(1);
-                }
-                end += n;
-
-                size_t ptr = 0;
-                while (ptr < end) {
-                    const uint8_t *resp = &esp_buffer[ptr];
-                    struct packet_info pkt_info;
-                    size_t len = esp_response_is_complete(resp, end - ptr, &pkt_info);
-                    if (len) {
-                        log_debug("<-: ");
-                        debug_response(resp, len);
-                        log_debug("\n");
-
-                        if (is_prefix(resp, len, pktprefix, sizeof(pktprefix))) {
-                            /* Received UDP packet. */
-                            log_debug("NET2TUN %lu: Read %d bytes from the esp interface\n", net2tap, pkt_info.payload_len);
-                            net2tap++;
-                            tun_tx_packet(tun_fd, pkt_info.payload, pkt_info.payload_len);
-                        }
-                    } else {
-                        if (end == ESP_BUFSIZE) {
-                            /* Buffer full but command wasn't complete - this isn't good,
-                             * exit to prevent looping forever. */
-                            my_err("Buffer full with unterminated command");
-                        }
-                        break;
-                    }
-                    ptr += len;
-                }
-                /* Remove processed responses from esp_buffer */
-                memmove(esp_buffer, &esp_buffer[ptr], end - ptr);
-                end -= ptr;
-                if (!end) {
-                    /* All responses processed, back to select. */
-                    break;
-                }
-            }
+            /* Read all data available from the UART, before processing data from TUN, to make sure we don't miss any.
+             * TODO: There can still be data loss at high baudrates, unfortunately, this needs logic to re-sync with the device in this case.
+             */
+            esp_read_responses(esp_fd, true);
         }
 
         // Handle input from TUN
