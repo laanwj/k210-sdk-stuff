@@ -38,6 +38,7 @@
 bool debug = false;
 char *progname;
 uint8_t esp_buffer[ESP_BUFSIZE];
+size_t esp_end;
 uint8_t tap_buffer[TAP_BUFSIZE];
 size_t tap2net;
 size_t net2tap;
@@ -354,21 +355,22 @@ static void tun_tx_packet(int fd, const uint8_t *esp_buffer, size_t size) {
 /** Get OK/FAIL status after running a command on the ESP. */
 static bool esp_read_responses(int fd, bool early_terminate)
 {
+    bool finished = false;
+    bool retval = false;
     /** TODO handle timeouts. */
-    size_t end = 0;
-    while (true) {
-        ssize_t n = read(fd, &esp_buffer[end], ESP_BUFSIZE - end);
+    while (!finished) {
+        ssize_t n = read(fd, &esp_buffer[esp_end], ESP_BUFSIZE - esp_end);
         if (n <= 0) {
             perror("Reading from UART");
             exit(1);
         }
-        end += n;
+        esp_end += n;
 
         size_t ptr = 0;
-        while (ptr < end) {
+        while (ptr < esp_end) {
             const uint8_t *resp = &esp_buffer[ptr];
             struct packet_info pkt_info;
-            size_t len = esp_response_is_complete(resp, end - ptr, &pkt_info);
+            size_t len = esp_response_is_complete(resp, esp_end - ptr, &pkt_info);
             if (len) {
                 log_debug("<-: ");
                 debug_response(resp, len);
@@ -376,12 +378,14 @@ static bool esp_read_responses(int fd, bool early_terminate)
                 /* Check for final response */
                 if (is_prefix(resp, len, S("OK"))
                  || is_prefix(resp, len, S("SEND OK"))) {
-                    return true;
+                    finished = true;
+                    retval = true;
                 }
                 if (is_prefix(resp, len, S("FAIL"))
                   || is_prefix(resp, len, S("ERROR"))
                   || is_prefix(resp, len, S("ALREADY CONNECTED"))) {
-                    return false;
+                    finished = true;
+                    retval = false;
                 }
                 /* Log interesting info responses */
                 if (is_prefix(resp, len, S("+CIPSTA_CUR"))) {
@@ -399,7 +403,7 @@ static bool esp_read_responses(int fd, bool early_terminate)
 
                 /* On non-final response, keep reading. */
             } else {
-                if (end == ESP_BUFSIZE) {
+                if (esp_end == ESP_BUFSIZE) {
                     /* Buffer full but command wasn't complete - this isn't good,
                      * exit to prevent looping forever. */
                     my_err("Buffer full with unterminated command");
@@ -408,14 +412,18 @@ static bool esp_read_responses(int fd, bool early_terminate)
             }
             ptr += len;
         }
+
         /* Remove processed responses from esp_buffer by shifting bytes. */
-        memmove(esp_buffer, &esp_buffer[ptr], end - ptr);
-        end -= ptr;
-        if (early_terminate && end == 0) {
+        memmove(esp_buffer, &esp_buffer[ptr], esp_end - ptr);
+        esp_end -= ptr;
+
+        if (early_terminate && esp_end == 0) {
             /* All responses processed, back to select so that packets from tun get a chance. */
-            return true;
+            finished = true;
+            retval = true;
         }
     }
+    return retval;
 }
 
 /** Send a packet to ESP interface. */
