@@ -27,6 +27,18 @@ For example:
 (setting the MTU to `1500-20-8` the typical network MTU minus IP and UDP header overhead, because
 otherwise the ESP's network stack will drop the oversized packets)
 
+### Baudrate note
+
+If the tunnel hangs intermittently, the problem may be the `BAUDRATE` setting. The ESP8285 can handle
+baudrates up to `115200*40 = 4608000` baud and `esptun` will try switching to a higher baudrate.
+
+However, these higher baudrates are unstable as it seems that the UART cannot
+keep up reading in some cases and loses data. This may be a misconfiguration or something that could
+be improved in the `8250_dw` Linux driver for this peripheral (DMA support?).
+
+Which values work may vary, if you want to be completely safe use `115200`. The value can be changed
+at the top of `esptun.c`.
+
 Host side
 ---------
 
