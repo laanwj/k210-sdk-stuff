@@ -45,27 +45,15 @@ size_t net2tap;
 int esp_fd = -1;
 int tun_fd = -1;
 
-/**
- * Prints debugging.
- */
-static void log_debug(const char *msg, ...)
-{
-    va_list argp;
-
-    if (debug) {
-        va_start(argp, msg);
-        vfprintf(stderr, msg, argp);
-        va_end(argp);
-    }
-}
-
 #define INFO1 0
 #define INFO2 1
 #define WARNING 2
+#define DEBUG 3
+
 /**
- * Prints warning/info.
+ * Prints debug/warning/info.
  */
-static void log_info(int cls, const char *msg, ...)
+static void logprintf(int cls, const char *msg, ...)
 {
     va_list argp;
     int attr;
@@ -73,6 +61,12 @@ static void log_info(int cls, const char *msg, ...)
         case INFO1: attr = 95; break;
         case INFO2: attr = 35; break;
         case WARNING: attr = 91; break;
+        case DEBUG:
+            if (!debug) {
+                return;
+            }
+            attr = 0;
+            break;
     }
     fprintf(stderr, "\x1b[%dm", attr);
     va_start(argp, msg);
@@ -81,14 +75,14 @@ static void log_info(int cls, const char *msg, ...)
     fprintf(stderr, "\x1b[0m");
 }
 
-static const char hexchars[16] = "0123456789abcdef";
 /**
  * Log a raw response for debugging.
  */
 static void debug_response(const uint8_t *esp_buffer, size_t n) {
+    static const char hexchars[16] = "0123456789abcdef";
     if (debug) {
         for(size_t i = 0; i < n; ++i) {
-            if (esp_buffer[i] < 32 || esp_buffer[i] >= 127) {
+            if (esp_buffer[i] < 32 || esp_buffer[i] >= 127 || esp_buffer[i] == '\\') {
                 fputc('\\', stderr);
                 fputc('x', stderr);
                 fputc(hexchars[esp_buffer[i] >> 4], stderr);
@@ -304,6 +298,7 @@ static size_t esp_response_is_complete(const uint8_t *b, size_t end, struct pack
     return 0;
 }
 
+/** Check if a buffer starts with a specified prefix. */
 static bool is_prefix(const uint8_t *esp_buffer, size_t len, const uint8_t *prefix, size_t prefix_len)
 {
     if (len < prefix_len) {
@@ -321,7 +316,7 @@ static bool is_prefix(const uint8_t *esp_buffer, size_t len, const uint8_t *pref
 /** Send a packet to tun interface. */
 static void tun_tx_packet(int fd, const uint8_t *esp_buffer, size_t size) {
     if (write(fd, esp_buffer, size) <= 0) {
-        log_info(WARNING, "warning: error writing to tun: %s\n", strerror(errno));
+        logprintf(WARNING, "warning: error writing to tun: %s\n", strerror(errno));
     }
 }
 
@@ -345,9 +340,9 @@ static bool esp_read_responses(int fd, bool early_terminate)
             struct packet_info pkt_info;
             size_t len = esp_response_is_complete(resp, esp_end - ptr, &pkt_info);
             if (len) {
-                log_debug("<-: ");
+                logprintf(DEBUG, "<-: ");
                 debug_response(resp, len);
-                log_debug("\n");
+                logprintf(DEBUG, "\n");
                 /* Check for final response */
                 if (is_prefix(resp, len, S("OK"))
                  || is_prefix(resp, len, S("SEND OK"))) {
@@ -362,14 +357,14 @@ static bool esp_read_responses(int fd, bool early_terminate)
                 }
                 /* Log interesting info responses */
                 if (is_prefix(resp, len, S("+CIPSTA_CUR"))) {
-                    log_info(INFO2, "  %.*s\n", len - 11 - 2, resp + 11);
+                    logprintf(INFO2, "  %.*s\n", len - 11 - 2, resp + 11);
                 }
                 if (is_prefix(resp, len, S("WIFI "))) {
-                    log_info(INFO2, "  %.*s\n", len - 2, resp);
+                    logprintf(INFO2, "  %.*s\n", len - 2, resp);
                 }
                 /* Did we receive a packet? */
                 if (is_prefix(resp, len, pktprefix, sizeof(pktprefix)) && tun_fd != -1) {
-                    log_debug("NET2TUN %lu: Read %d bytes from the esp interface\n", net2tap, pkt_info.payload_len);
+                    logprintf(DEBUG, "NET2TUN %lu: Read %d bytes from the esp interface\n", net2tap, pkt_info.payload_len);
                     net2tap++;
                     tun_tx_packet(tun_fd, pkt_info.payload, pkt_info.payload_len);
                 }
@@ -437,9 +432,9 @@ int main(int argc, char **argv)
         my_err("Error connecting to tun interface %s!\n", if_name);
     }
 
-    log_info(INFO1, "Successfully connected to interface %s\n", if_name);
+    logprintf(INFO1, "Successfully connected to interface %s\n", if_name);
 
-    log_info(INFO1, "Initializing device\n");
+    logprintf(INFO1, "Initializing device\n");
     write_all(esp_fd, S("ATE0\r\n"));
     if (!esp_read_responses(esp_fd, false)) {
         my_err("Could not disable echo");
@@ -455,7 +450,7 @@ int main(int argc, char **argv)
         my_err("Could not switch to single-connection mode");
     }
 
-    log_info(INFO1, "Changing baudrate to %d\n", BAUDRATE);
+    logprintf(INFO1, "Changing baudrate to %d\n", BAUDRATE);
     write_all(esp_fd, S("AT+UART_CUR="));
     write_uint(esp_fd, BAUDRATE);
     write_all(esp_fd, S(",8,1,0,0\r\n"));
@@ -469,7 +464,7 @@ int main(int argc, char **argv)
         my_err("AT test unsuccesful: new baudrate unstable?");
     }
 
-    log_info(INFO1, "Connecting to AP\n");
+    logprintf(INFO1, "Connecting to AP\n");
     write_all(esp_fd, S("AT+CWJAP_CUR=\""));
     write_esc(esp_fd, ssid, strlen(ssid));
     write_all(esp_fd, S("\",\""));
@@ -484,7 +479,7 @@ int main(int argc, char **argv)
         my_err("Could not query IP");
     }
 
-    log_info(INFO1, "Opening UDP connection to %s:%d from port %d\n", host, port, port);
+    logprintf(INFO1, "Opening UDP connection to %s:%d from port %d\n", host, port, port);
     write_all(esp_fd, S("AT+CIPSTART=\"UDP\",\""));
     write_esc(esp_fd, host, strlen(host));
     write_all(esp_fd, S("\","));
@@ -496,7 +491,7 @@ int main(int argc, char **argv)
         my_err("Could not open UDP connection");
     }
 
-    log_info(INFO1, "Starting packet loop, moving to background\n");
+    logprintf(INFO1, "Starting packet loop, moving to background\n");
 
     /* Process to background */
     if (daemon(0, 0) < 0) {
@@ -526,7 +521,7 @@ int main(int argc, char **argv)
             esp_read_responses(esp_fd, true);
         }
 
-        // Handle input from TUN
+        /* Handle input from TUN */
         if (fds[1].revents & POLLIN) {
             ssize_t nread;
             /* data from tun/tap: just read it and write it to the network */
@@ -535,7 +530,7 @@ int main(int argc, char **argv)
                 exit(1);
             }
 
-            log_debug("TUN2NET %lu: Read %d bytes from the tap interface\n", tap2net, nread);
+            logprintf(DEBUG, "TUN2NET %lu: Read %d bytes from the tap interface\n", tap2net, nread);
 
             tap2net++;
             esp_tx_packet(esp_fd, tap_buffer, nread);
