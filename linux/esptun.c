@@ -337,7 +337,7 @@ static bool esp_read_responses(int fd, bool early_terminate)
         size_t ptr = 0;
         while (ptr < esp_end) {
             const uint8_t *resp = &esp_buffer[ptr];
-            struct packet_info pkt_info;
+            struct packet_info pkt_info = {};
             size_t len = esp_response_is_complete(resp, esp_end - ptr, &pkt_info);
             if (len) {
                 logprintf(DEBUG, "<-: ");
