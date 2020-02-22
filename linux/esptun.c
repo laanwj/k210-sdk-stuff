@@ -540,7 +540,7 @@ int main(int argc, char **argv)
             fds[i].revents = 0;
         }
 
-        if (poll(fds, 2, 0) < 0) {
+        if (poll(fds, 2, -1) < 0) {
             perror("poll");
             exit(1);
         }
