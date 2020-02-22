@@ -151,36 +151,6 @@ int tun_alloc(char *dev, int flags)
 }
 
 /**
- * Read routine that checks for errors and exits if an error is
- * returned (including unexpected EOF).
- */
-static int cread(int fd, uint8_t *buf, int n)
-{
-    int nread;
-
-    if ((nread = read(fd, buf, n)) <= 0) {
-        perror("Reading data");
-        exit(1);
-    }
-    return nread;
-}
-
-/**
- * Write routine that checks for errors and exits if an error is
- * returned (including unexpected EOF).
- */
-static int cwrite(int fd, const uint8_t *buf, int n)
-{
-    int nwrite;
-
-    if ((nwrite = write(fd, buf, n)) <= 0) {
-        perror("Writing data");
-        exit(1);
-    }
-    return nwrite;
-}
-
-/**
  * Ensures we write exactly n bytes. Exit in case of error or EOF.
  */
 static void write_all(int fd, const uint8_t *buf, int n)
@@ -188,7 +158,10 @@ static void write_all(int fd, const uint8_t *buf, int n)
     int nwrite, left = n;
 
     while (left > 0) {
-        nwrite = cwrite(fd, buf, left);
+        if ((nwrite = write(fd, buf, left)) <= 0) {
+            perror("Writing data");
+            exit(1);
+        }
         left -= nwrite;
         buf += nwrite;
     }
@@ -555,8 +528,12 @@ int main(int argc, char **argv)
 
         // Handle input from TUN
         if (fds[1].revents & POLLIN) {
+            ssize_t nread;
             /* data from tun/tap: just read it and write it to the network */
-            size_t nread = cread(tun_fd, tap_buffer, TAP_BUFSIZE);
+            if ((nread = read(tun_fd, tap_buffer, TAP_BUFSIZE)) <= 0) {
+                perror("Reading data from tap");
+                exit(1);
+            }
 
             log_debug("TUN2NET %lu: Read %d bytes from the tap interface\n", tap2net, nread);
 
