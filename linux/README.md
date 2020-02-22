@@ -19,9 +19,13 @@ IP address and switch the interface on.
 For example:
 
     /root/esptun tun0 /dev/ttyS1 "accesspointname" "secretpassword" 192.168.122.21 23232
+    /sbin/ip link set dev tun0 mtu 1472
     /sbin/ip addr add 10.0.1.2/24 dev tun0
     /sbin/ip link set tun0 up
     /sbin/ip route add default via 10.0.1.1 dev tun0
+
+(setting the MTU to `1500-20-8` the typical network MTU minus IP and UDP header overhead, because
+otherwise the ESP's network stack will drop the oversized packets)
 
 Host side
 ---------
@@ -30,7 +34,8 @@ On the other endpoint the tunnel is expected to be a host running `socat` or sim
 the tunnel. For example:
 
     sudo socat UDP:192.168.2.127:23232,bind=192.168.122.21:23232 \
-        TUN:10.0.1.1/24,tun-name=tundudp,iff-no-pi,tun-type=tun,su=$USER,iff-up
+        TUN:10.0.1.1/24,tun-name=tundudp,iff-no-pi,tun-type=tun,su=$USER,iff-up &
+    sudo ip link set dev tundudp mtu 1472
 
 Optionally, enable forwarding and masquerading:
 

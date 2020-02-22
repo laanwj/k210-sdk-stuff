@@ -395,12 +395,12 @@ static bool esp_read_responses(int fd, bool early_terminate)
 }
 
 /** Send a packet to ESP interface. */
-static void esp_tx_packet(int fd, const uint8_t *esp_buffer, size_t size) {
+static void esp_tx_packet(int fd, const uint8_t *buffer, size_t size) {
     write_all(fd, S("AT+CIPSEND="));
     write_uint(fd, size);
     write_all(fd, S("\r\n"));
     if (esp_read_responses(fd, false)) {
-        write_all(fd, esp_buffer, size);
+        write_all(fd, buffer, size);
         esp_read_responses(fd, false);
     }
 }
