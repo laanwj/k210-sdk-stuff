@@ -24,82 +24,89 @@ pub const SPI_CLK: u32 = 18_000_000;
 #[repr(u8)]
 #[derive(Copy, Clone)]
 pub enum command {
-    NO_OPERATION = 0x00,
-    SOFTWARE_RESET = 0x01,
-    READ_ID = 0x04,
-    READ_STATUS = 0x09,
-    READ_POWER_MODE = 0x0A,
-    READ_MADCTL = 0x0B,
-    READ_PIXEL_FORMAT = 0x0C,
-    READ_IMAGE_FORMAT = 0x0D,
-    READ_SIGNAL_MODE = 0x0E,
-    READ_SELT_DIAG_RESULT = 0x0F,
-    SLEEP_ON = 0x10,
-    SLEEP_OFF = 0x11,
-    PARTIAL_DISPLAY_ON = 0x12,
-    NORMAL_DISPLAY_ON = 0x13,
-    INVERSION_DISPLAY_OFF = 0x20,
-    INVERSION_DISPLAY_ON = 0x21,
-    GAMMA_SET = 0x26,
-    DISPLAY_OFF = 0x28,
-    DISPLAY_ON = 0x29,
-    HORIZONTAL_ADDRESS_SET = 0x2A,
-    VERTICAL_ADDRESS_SET = 0x2B,
-    MEMORY_WRITE = 0x2C,
-    COLOR_SET = 0x2D,
-    MEMORY_READ = 0x2E,
-    PARTIAL_AREA = 0x30,
-    VERTICAL_SCROLL_DEFINE = 0x33,
-    TEAR_EFFECT_LINE_OFF = 0x34,
-    TEAR_EFFECT_LINE_ON = 0x35,
-    MEMORY_ACCESS_CTL = 0x36,
-    VERTICAL_SCROLL_S_ADD = 0x37,
-    IDLE_MODE_OFF = 0x38,
-    IDLE_MODE_ON = 0x39,
-    PIXEL_FORMAT_SET = 0x3A,
-    WRITE_MEMORY_CONTINUE = 0x3C,
-    READ_MEMORY_CONTINUE = 0x3E,
-    SET_TEAR_SCANLINE = 0x44,
-    GET_SCANLINE = 0x45,
-    WRITE_BRIGHTNESS = 0x51,
-    READ_BRIGHTNESS = 0x52,
-    WRITE_CTRL_DISPLAY = 0x53,
-    READ_CTRL_DISPLAY = 0x54,
-    WRITE_BRIGHTNESS_CTL = 0x55,
-    READ_BRIGHTNESS_CTL = 0x56,
-    WRITE_MIN_BRIGHTNESS = 0x5E,
-    READ_MIN_BRIGHTNESS = 0x5F,
-    READ_ID1 = 0xDA,
-    READ_ID2 = 0xDB,
-    READ_ID3 = 0xDC,
-    RGB_IF_SIGNAL_CTL = 0xB0,
-    NORMAL_FRAME_CTL = 0xB1,
-    IDLE_FRAME_CTL = 0xB2,
-    PARTIAL_FRAME_CTL = 0xB3,
-    INVERSION_CTL = 0xB4,
-    BLANK_PORCH_CTL = 0xB5,
-    DISPLAY_FUNCTION_CTL = 0xB6,
-    ENTRY_MODE_SET = 0xB7,
-    BACKLIGHT_CTL1 = 0xB8,
-    BACKLIGHT_CTL2 = 0xB9,
-    BACKLIGHT_CTL3 = 0xBA,
-    BACKLIGHT_CTL4 = 0xBB,
-    BACKLIGHT_CTL5 = 0xBC,
-    BACKLIGHT_CTL7 = 0xBE,
-    BACKLIGHT_CTL8 = 0xBF,
-    POWER_CTL1 = 0xC0,
-    POWER_CTL2 = 0xC1,
-    VCOM_CTL1 = 0xC5,
-    VCOM_CTL2 = 0xC7,
-    NV_MEMORY_WRITE = 0xD0,
-    NV_MEMORY_PROTECT_KEY = 0xD1,
-    NV_MEMORY_STATUS_READ = 0xD2,
-    READ_ID4 = 0xD3,
-    POSITIVE_GAMMA_CORRECT = 0xE0,
-    NEGATIVE_GAMMA_CORRECT = 0xE1,
-    DIGITAL_GAMMA_CTL1 = 0xE2,
-    DIGITAL_GAMMA_CTL2 = 0xE3,
-    INTERFACE_CTL = 0xF6,
+    NOP = 0x00,
+    SWRESET = 0x01,
+    RDDID = 0x04,
+    RDDST = 0x09,
+    RDDPM = 0x0A,
+    RDDMADCTL = 0x0B,
+    RDDCOLMOD = 0x0C,
+    RDDIM = 0x0D,
+    RDDSM = 0x0E,
+    RDDSDR = 0x0F,
+    SLPIN = 0x10,
+    SLPOUT = 0x11,
+    PTLON = 0x12,
+    NORON = 0x13,
+    INVOF = 0x20,
+    INVON = 0x21,
+    GAMSET = 0x26,
+    DISPOFF = 0x28,
+    DISPON = 0x29,
+    CASET = 0x2A,
+    RASET = 0x2B,
+    RAMWR = 0x2C,
+    RAMRD = 0x2E,
+    PTLAR = 0x30,
+    VSCRDEF = 0x33,
+    TEOFF = 0x34,
+    TEON = 0x35,
+    MADCTL = 0x36,
+    VSCRSADD = 0x37,
+    IDMOFF = 0x38,
+    IDMON = 0x39,
+    COLMOD = 0x3A,
+    RAMWRC = 0x3C,
+    RAMRDC = 0x3E,
+    TESCAN = 0x44,
+    RDTESCAN = 0x45,
+    WRDISBV = 0x51,
+    RDDISBV = 0x52,
+    WRCTRLD = 0x53,
+    RDCTRLD = 0x54,
+    WRCACE = 0x55,
+    RDCABC = 0x56,
+    WRCABCMB = 0x5E,
+    RDCABCMB = 0x5F,
+    RDABCSDR = 0x68,
+    RAMCTRL = 0xB0,
+    RGBCTRL = 0xB1,
+    PORCTRL = 0xB2,
+    FRCTRL1 = 0xB3,
+    PARCTRL = 0xB5,
+    GCTRL = 0xB7,
+    GTADJ = 0xB8,
+    DGMEN = 0xBA,
+    VCOMS = 0xBB,
+    LCMCTRL = 0xC0,
+    IDSET = 0xC1,
+    VDVVRHEN = 0xC2,
+    VRHS = 0xC3,
+    VDVSET = 0xC4,
+    VCMOFSET = 0xC5,
+    FRCTR2 = 0xC6,
+    CABCCTRL = 0xC7,
+    REGSEL1 = 0xC8,
+    REGSEL2 = 0xCA,
+    PWMFRSEL = 0xCC,
+    PWCTRL1 = 0xD0,
+    VAPVANEN = 0xD2,
+    RDID1 = 0xDA,
+    RDID2 = 0xDB,
+    RDID3 = 0xDC,
+    CMD2EN = 0xDF,
+    PVGAMCTRL = 0xE0,
+    NVGAMCTRL = 0xE1,
+    DGMLUTR = 0xE2,
+    DGMLUTB = 0xE3,
+    GATECTRL = 0xE4,
+    SPI2EN = 0xE7,
+    PWCTRL2 = 0xE8,
+    EQCTRL = 0xE9,
+    PROMCTRL = 0xEC,
+    PROMEN = 0xFA,
+    NVMSET = 0xFC,
+    PROMACT = 0xFE,
 }
 
 #[repr(u8)]
@@ -193,7 +200,7 @@ impl<'a, X: SPI> LCD<'a, X> {
     }
 
     fn set_area(&self, x1: u16, y1: u16, x2: u16, y2: u16) {
-        self.write_command(command::HORIZONTAL_ADDRESS_SET);
+        self.write_command(command::CASET);
         self.write_byte(&[
             (x1 >> 8).into(),
             (x1 & 0xff).into(),
@@ -201,7 +208,7 @@ impl<'a, X: SPI> LCD<'a, X> {
             (x2 & 0xff).into(),
         ]);
 
-        self.write_command(command::VERTICAL_ADDRESS_SET);
+        self.write_command(command::RASET);
         self.write_byte(&[
             (y1 >> 8).into(),
             (y1 & 0xff).into(),
@@ -209,7 +216,7 @@ impl<'a, X: SPI> LCD<'a, X> {
             (y2 & 0xff).into(),
         ]);
 
-        self.write_command(command::MEMORY_WRITE);
+        self.write_command(command::RAMWR);
     }
 }
 
@@ -320,18 +327,18 @@ impl<X: SPI> LCDHL for LCD<'_, X> {
     fn init(&mut self) {
         self.hard_init();
         /*soft reset*/
-        self.write_command(command::SOFTWARE_RESET);
+        self.write_command(command::SWRESET);
         usleep(100000);
         /*exit sleep*/
-        self.write_command(command::SLEEP_OFF);
+        self.write_command(command::SLPOUT);
         usleep(100000);
         /*pixel format*/
-        self.write_command(command::PIXEL_FORMAT_SET);
+        self.write_command(command::COLMOD);
         self.write_byte(&[0x55]);
         self.set_direction(direction::XY_LRUD);
 
         /*display on*/
-        self.write_command(command::DISPLAY_ON);
+        self.write_command(command::DISPON);
     }
 
     fn shutdown(&mut self) {
@@ -347,7 +354,7 @@ impl<X: SPI> LCDHL for LCD<'_, X> {
             self.height = LCD_Y_MAX;
         }
 
-        self.write_command(command::MEMORY_ACCESS_CTL);
+        self.write_command(command::MADCTL);
         self.write_byte(&[dir as u32]);
     }
 
