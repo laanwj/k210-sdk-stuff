@@ -371,14 +371,15 @@ static bool esp_read_responses(int fd, bool early_terminate)
 
                 /* On non-final response, keep reading. */
             } else {
-                if (esp_end == ESP_BUFSIZE) {
-                    /* Buffer full but command wasn't complete - this isn't good,
-                     * exit to prevent looping forever. */
-                    my_err("Buffer full with unterminated command");
-                }
                 break;
             }
             ptr += len;
+        }
+
+        if (ptr == 0 && esp_end == ESP_BUFSIZE) {
+            /* Buffer full there was no progress processing responses - this isn't good,
+             * exit to prevent looping forever. */
+            my_err("Buffer full with unterminated command");
         }
 
         /* Remove processed responses from esp_buffer by shifting bytes. */
