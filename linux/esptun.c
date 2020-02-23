@@ -56,7 +56,7 @@ int tun_fd = -1;
 static __attribute__ ((format (printf, 2, 3))) void logprintf(int cls, const char *msg, ...)
 {
     va_list argp;
-    int attr;
+    int attr = 0;
     switch (cls) {
         case INFO1: attr = 95; break;
         case INFO2: attr = 35; break;
@@ -65,7 +65,6 @@ static __attribute__ ((format (printf, 2, 3))) void logprintf(int cls, const cha
             if (!debug) {
                 return;
             }
-            attr = 0;
             break;
     }
     fprintf(stderr, "\x1b[%dm", attr);
@@ -346,6 +345,7 @@ static bool esp_read_responses(int fd, bool early_terminate)
                     retval = true;
                 }
                 if (is_prefix(resp, len, S("FAIL"))
+                  || is_prefix(resp, len, S("SEND FAIL"))
                   || is_prefix(resp, len, S("ERROR"))
                   || is_prefix(resp, len, S("ALREADY CONNECTED"))) {
                     finished = true;
