@@ -53,7 +53,7 @@ int tun_fd = -1;
 /**
  * Prints debug/warning/info.
  */
-static void logprintf(int cls, const char *msg, ...)
+static __attribute__ ((format (printf, 2, 3))) void logprintf(int cls, const char *msg, ...)
 {
     va_list argp;
     int attr;
@@ -97,7 +97,7 @@ static void debug_response(const uint8_t *esp_buffer, size_t n) {
 /**
  * Prints error message on stderr and exits the program.
  */
-static void my_err(char *msg, ...)
+static __attribute__ ((format (printf, 1, 2))) void my_err(char *msg, ...)
 {
     va_list argp;
 
@@ -121,8 +121,7 @@ int tun_alloc(char *dev, int flags)
     const char *clonedev = "/dev/net/tun";
 
     if ((fd = open(clonedev, O_RDWR)) < 0) {
-        perror("Opening /dev/net/tun");
-        return fd;
+        my_err("Opening /dev/net/tun (%s)", strerror(errno));
     }
 
     memset(&ifr, 0, sizeof(ifr));
@@ -134,9 +133,8 @@ int tun_alloc(char *dev, int flags)
     }
 
     if ((err = ioctl(fd, TUNSETIFF, (void *)&ifr)) < 0) {
-        perror("ioctl(TUNSETIFF)");
         close(fd);
-        return err;
+        my_err("ioctl(TUNSETIFF) (%s)", strerror(errno));
     }
 
     strcpy(dev, ifr.ifr_name);
@@ -153,8 +151,7 @@ static void write_all(int fd, const uint8_t *buf, int n)
 
     while (left > 0) {
         if ((nwrite = write(fd, buf, left)) <= 0) {
-            perror("Writing data");
-            exit(1);
+            my_err("Writing data (%s)", strerror(errno));
         }
         left -= nwrite;
         buf += nwrite;
@@ -208,7 +205,7 @@ static int setup_uart(int fd, int speed)
     struct termios2 tty;
 
     if (ioctl(fd, TCGETS2, &tty) != 0) {
-        my_err("Error from TCGETS2: %s", strerror(errno));
+        my_err("Error from TCGETS2 (%s)", strerror(errno));
     }
 
     tty.c_cflag |= (CLOCAL | CREAD);    /* ignore modem controls */
@@ -234,7 +231,7 @@ static int setup_uart(int fd, int speed)
     tty.c_cc[VTIME] = 0;
 
     if (ioctl(fd, TCSETS2, &tty) != 0) {
-        my_err("Error from TCSETS2: %s", strerror(errno));
+        my_err("Error from TCSETS2 (%s)", strerror(errno));
     }
     return 0;
 }
@@ -316,7 +313,7 @@ static bool is_prefix(const uint8_t *esp_buffer, size_t len, const uint8_t *pref
 /** Send a packet to tun interface. */
 static void tun_tx_packet(int fd, const uint8_t *esp_buffer, size_t size) {
     if (write(fd, esp_buffer, size) <= 0) {
-        logprintf(WARNING, "warning: error writing to tun: %s\n", strerror(errno));
+        logprintf(WARNING, "warning: error writing to tun (%s)\n", strerror(errno));
     }
 }
 
@@ -329,8 +326,7 @@ static bool esp_read_responses(int fd, bool early_terminate)
     while (!finished) {
         ssize_t n = read(fd, &esp_buffer[esp_end], ESP_BUFSIZE - esp_end);
         if (n <= 0) {
-            perror("Reading from UART");
-            exit(1);
+            my_err("Reading from UART (%s)", strerror(errno));
         }
         esp_end += n;
 
@@ -357,14 +353,14 @@ static bool esp_read_responses(int fd, bool early_terminate)
                 }
                 /* Log interesting info responses */
                 if (is_prefix(resp, len, S("+CIPSTA_CUR"))) {
-                    logprintf(INFO2, "  %.*s\n", len - 11 - 2, resp + 11);
+                    logprintf(INFO2, "  %.*s\n", (int)(len - 11 - 2), resp + 11);
                 }
                 if (is_prefix(resp, len, S("WIFI "))) {
-                    logprintf(INFO2, "  %.*s\n", len - 2, resp);
+                    logprintf(INFO2, "  %.*s\n", (int)(len - 2), resp);
                 }
                 /* Did we receive a packet? */
                 if (is_prefix(resp, len, pktprefix, sizeof(pktprefix)) && tun_fd != -1) {
-                    logprintf(DEBUG, "NET2TUN %lu: Read %d bytes from the esp interface\n", net2tap, pkt_info.payload_len);
+                    logprintf(DEBUG, "NET2TUN %lu: Read %ld bytes from the esp interface\n", net2tap, pkt_info.payload_len);
                     net2tap++;
                     tun_tx_packet(tun_fd, pkt_info.payload, pkt_info.payload_len);
                 }
@@ -422,7 +418,7 @@ int main(int argc, char **argv)
 
     esp_fd = open(portname, O_RDWR | O_NOCTTY | O_SYNC);
     if (esp_fd < 0) {
-        my_err("Error opening %s: %s", portname, strerror(errno));
+        my_err("Error opening %s (%s)", portname, strerror(errno));
     }
 
     /* initial: baudrate 115200, 8 bits, no parity, 1 stop bit */
@@ -510,8 +506,7 @@ int main(int argc, char **argv)
         }
 
         if (poll(fds, 2, -1) < 0) {
-            perror("poll");
-            exit(1);
+            my_err("poll (%s)", strerror(errno));
         }
 
         /* Handle input from UART */
@@ -527,11 +522,10 @@ int main(int argc, char **argv)
             ssize_t nread;
             /* data from tun/tap: just read it and write it to the network */
             if ((nread = read(tun_fd, tap_buffer, TAP_BUFSIZE)) <= 0) {
-                perror("Reading data from tap");
-                exit(1);
+                my_err("Reading data from tap (%s)", strerror(errno));
             }
 
-            logprintf(DEBUG, "TUN2NET %lu: Read %d bytes from the tap interface\n", tap2net, nread);
+            logprintf(DEBUG, "TUN2NET %lu: Read %ld bytes from the tap interface\n", tap2net, nread);
 
             tap2net++;
             esp_tx_packet(esp_fd, tap_buffer, nread);
