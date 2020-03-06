@@ -80,7 +80,7 @@ static __attribute__ ((format (printf, 2, 3))) void logprintf(int cls, const cha
 static void debug_response(const uint8_t *esp_buffer, size_t n) {
     static const char hexchars[16] = "0123456789abcdef";
     if (debug) {
-        for(size_t i = 0; i < n; ++i) {
+        for (size_t i = 0; i < n; ++i) {
             if (esp_buffer[i] < 32 || esp_buffer[i] >= 127 || esp_buffer[i] == '\\') {
                 fputc('\\', stderr);
                 fputc('x', stderr);
@@ -117,7 +117,7 @@ int tun_alloc(char *dev, int flags)
 {
     struct ifreq ifr;
     int fd, err;
-    const char *clonedev = "/dev/net/tun";
+    static const char *clonedev = "/dev/net/tun";
 
     if ((fd = open(clonedev, O_RDWR)) < 0) {
         my_err("Opening /dev/net/tun (%s)", strerror(errno));
@@ -300,8 +300,7 @@ static bool is_prefix(const uint8_t *esp_buffer, size_t len, const uint8_t *pref
     if (len < prefix_len) {
         return false;
     }
-    for (size_t i = 0; i < prefix_len; ++i)
-    {
+    for (size_t i = 0; i < prefix_len; ++i) {
         if (esp_buffer[i] != prefix[i]) {
             return false;
         }
@@ -530,7 +529,7 @@ int main(int argc, char **argv)
             tap2net++;
             esp_tx_packet(esp_fd, tap_buffer, nread);
         }
-    } while (1);
+    } while (true);
 
     return 0;
 }
