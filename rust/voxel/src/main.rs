@@ -21,6 +21,8 @@ use k210_shared::soc::spi::SPIExt;
 use k210_shared::soc::sysctl;
 use riscv_rt::entry;
 
+#[macro_use]
+mod aligned_as;
 mod map_data;
 
 /** Euclidian modulus. */
