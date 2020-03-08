@@ -20,6 +20,6 @@ members = [
 
 [patch.crates-io]
 
-# TODO: upstream these patches after the dependent change rust-lang/rust#62281 ends up in stable
-# patch: "risc-v: Use medany model" (PR upstream: alexcrichton/cc-rs#467)
+# This patch was merged upstream, unfortunately, rust-secp256k1 puts a restriction on 
+# cc_rs <= 1.0.41 so we can't actually use the newer version yet.
 cc = { git = "https://github.com/laanwj/cc-rs.git", rev = "83e66a79a25b55d0aa84db42257a8edbb0095cf8" }

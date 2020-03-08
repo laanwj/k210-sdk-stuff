@@ -9,4 +9,4 @@ riscv-rt = "0.6"
 k210-hal = "0.2.0"
 riscv = "0.5"
 k210-shared = { path = "../k210-shared" }
-secp256k1 = { version = "0.15.2", default-features = false, features = ['lowmemory'] }
+secp256k1 = { version = "0.17", default-features = false, features = ['lowmemory'] }
