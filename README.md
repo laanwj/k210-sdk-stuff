@@ -242,6 +242,13 @@ Old-school voxel-based landscape renderer.
 
 [README](rust/voxel/README.md)
 
+rust/cryptest
+-------------
+
+Test the cryptographic acceleration engines of the K210.
+
+[README](rust/cryptest/README.md)
+
 ROM re'ing
 ===========
 

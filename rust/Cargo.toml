@@ -16,6 +16,7 @@ members = [
     "interrupt",
     "embgfx",
     "voxel",
+    "cryptest",
 ]
 
 [patch.crates-io]
