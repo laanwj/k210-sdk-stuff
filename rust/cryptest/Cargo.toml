@@ -9,3 +9,4 @@ k210-hal = "0.2.0"
 k210-shared = { path = "../k210-shared" }
 riscv = "0.5"
 riscv-rt = "0.6"
+hex-literal = "0.2"

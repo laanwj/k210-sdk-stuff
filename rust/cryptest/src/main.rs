@@ -4,19 +4,35 @@
 #![no_std]
 #![no_main]
 
-use core::sync::atomic::{self, Ordering};
-use k210_hal::{Peripherals, pac};
+use hex_literal::hex;
 use k210_hal::prelude::*;
 use k210_hal::stdout::Stdout;
-use k210_shared::soc::sysctl;
+use k210_hal::Peripherals;
 use k210_shared::soc::sleep::usleep;
+use k210_shared::soc::sysctl;
+use k210_shared::soc::aes::{self, cipher_mode, encrypt_sel};
+use k210_shared::soc::sha256::SHA256Ctx;
 use riscv::asm;
 use riscv_rt::entry;
 
+struct AESTestVec {
+    cipher_mode: cipher_mode,
+    key: &'static [u8],
+    pt: &'static [u8],
+    ct: &'static [u8],
+    iv: &'static [u8],
+    aad: &'static [u8],
+    tag: &'static [u8],
+}
+
+struct SHA256TestVec {
+    data: &'static [u8],
+    hash: [u8; 32],
+}
+
 #[entry]
 fn main() -> ! {
-    let p = Peripherals::take().unwrap();
-
+    let mut p = Peripherals::take().unwrap();
     let clocks = k210_hal::clock::Clocks::new();
 
     // Enable clocks for AES and reset the engine
@@ -39,116 +55,124 @@ fn main() -> ! {
         "Init",
     ).unwrap();
 
-    let aes = unsafe { &*pac::AES::ptr() };
-    let sha256 = unsafe { &*pac::SHA256::ptr() };
+    let aes = &mut p.AES;
+    let sha256 = &mut p.SHA256;
 
-    write!(stdout, "AES128: ").unwrap();
-    let key: [u32; 4] = [0x16157e2b, 0xa6d2ae28, 0x8815f7ab, 0x3c4fcf09];
-    let pt: [u32; 4] = [0xe2bec16b, 0x969f402e, 0x117e3de9, 0x2a179373];
-    let ctref: [u32; 4] = [0xb47bd73a, 0x60367a0d, 0xf3ca9ea8, 0x97ef6624];
-    let mut ct = [0u32; 4];
-    unsafe {
-        use pac::aes::mode_ctl::{CIPHER_MODE_A, KEY_MODE_A};
-        use pac::aes::encrypt_sel::ENCRYPT_SEL_A;
-        use pac::aes::en::EN_A;
-        use pac::aes::endian::ENDIAN_A;
-        use pac::aes::data_in_flag::DATA_IN_FLAG_A;
-        use pac::aes::data_out_flag::DATA_OUT_FLAG_A;
+    // https://boringssl.googlesource.com/boringssl/+/2214/crypto/cipher/cipher_test.txt
+    // https://github.com/plenluno/openssl/blob/master/openssl/test/evptests.txt
+    // http://csrc.nist.gov/groups/ST/toolkit/BCM/documents/proposedmodes/gcm/gcm-spec.pdf
+    for tv in &[
+        AESTestVec {
+            cipher_mode: cipher_mode::ECB,
+            key: &hex!("2B7E151628AED2A6ABF7158809CF4F3C"),
+            pt: &hex!("6BC1BEE22E409F96E93D7E117393172A"),
+            ct: &hex!("3AD77BB40D7A3660A89ECAF32466EF97"),
+            iv: &hex!(""),
+            aad: &hex!(""),
+            tag: &hex!(""),
+        },
+        AESTestVec {
+            cipher_mode: cipher_mode::GCM,
+            key: &hex!("e98b72a9881a84ca6b76e0f43e68647a"),
+            pt: &hex!("28286a321293253c3e0aa2704a278032"),
+            ct: &hex!("5a3c1cf1985dbb8bed818036fdd5ab42"),
+            iv: &hex!("8b23299fde174053f3d652ba"),
+            aad: &hex!(""),
+            tag: &hex!("23c7ab0f952b7091cd324835043b5eb5"),
+        },
+        AESTestVec {
+            cipher_mode: cipher_mode::GCM,
+            key: &hex!("816e39070410cf2184904da03ea5075a"),
+            pt: &hex!("ecafe96c67a1646744f1c891f5e69427"),
+            ct: &hex!("552ebe012e7bcf90fcef712f8344e8f1"),
+            iv: &hex!("32c367a3362613b27fc3e67e"),
+            aad: &hex!("f2a30728ed874ee02983c294435d3c16"),
+            tag: &hex!("ecaae9fc68276a45ab0ca3cb9dd9539f"),
+        },
+        AESTestVec {
+            cipher_mode: cipher_mode::GCM,
+            key: &hex!("95bcde70c094f04e3dd8259cafd88ce8"),
+            pt: &hex!("32f51e837a9748838925066d69e87180f34a6437e6b396e5643b34cb2ee4f7b1"),
+            ct: &hex!("8a023ba477f5b809bddcda8f55e09064d6d88aaec99c1e141212ea5b08503660"),
+            iv: &hex!("12cf097ad22380432ff40a5c"),
+            aad: &hex!("c783a0cca10a8d9fb8d27d69659463f2"),
+            tag: &hex!("562f500dae635d60a769b466e15acd1e"),
+        },
+        AESTestVec {
+            cipher_mode: cipher_mode::GCM,
+            key: &hex!("387218b246c1a8257748b56980e50c94"),
+            pt: &hex!("48f5b426baca03064554cc2b30"),
+            ct: &hex!("cdba9e73eaf3d38eceb2b04a8d"),
+            iv: &hex!("dd7e014198672be39f95b69d"),
+            aad: &hex!(""),
+            tag: &hex!("ecf90f4a47c9c626d6fb2c765d201556"),
+        },
+    ] {
+        let mut ct_out = [0u8; 32];
+        let mut tag_out = [0u8; 16];
 
-        aes.endian.write(|w| w.endian().variant(ENDIAN_A::LE));
+        write!(stdout, "AES128: ").unwrap();
+        aes::run(
+            aes,
+            tv.cipher_mode,
+            encrypt_sel::ENCRYPTION,
+            tv.key,
+            tv.iv,
+            tv.aad,
+            tv.pt,
+            &mut ct_out,
+            &mut tag_out,
+        );
 
-        for i in 0..4 {
-            aes.key[i].write(|w| w.bits(key[3 - i]));
+        if &ct_out[0..tv.ct.len()] == tv.ct {
+            write!(stdout, "MATCH").unwrap();
+        } else {
+            write!(stdout, "MISMATCH").unwrap();
         }
-        aes.mode_ctl.write(|w|
-            w.cipher_mode().variant(CIPHER_MODE_A::ECB)
-             .key_mode().variant(KEY_MODE_A::AES128));
-        aes.encrypt_sel.write(|w|
-            w.encrypt_sel().variant(ENCRYPT_SEL_A::ENCRYPTION));
-        aes.aad_num.write(|w| w.bits(0));
-        aes.pc_num.write(|w| w.bits(15));
-        aes.en.write(|w|
-            w.en().variant(EN_A::ENABLE));
 
-        // Can write up to 80 bytes (20 words) here at once before the queue is full.
-        for &v in pt.iter() {
-            while aes.data_in_flag.read().data_in_flag() != DATA_IN_FLAG_A::CAN_INPUT {
-                atomic::compiler_fence(Ordering::SeqCst)
+        write!(stdout, " ").unwrap();
+
+        if tv.cipher_mode == cipher_mode::GCM {
+            if &tag_out[0..tv.tag.len()] == tv.tag {
+                write!(stdout, "TAGMATCH").unwrap();
+            } else {
+                write!(stdout, "TAGMISMATCH").unwrap();
             }
-            aes.text_data.write(|w| w.bits(v));
         }
+        writeln!(stdout).unwrap();
 
-        for i in 0..4 {
-            while aes.data_out_flag.read().data_out_flag() != DATA_OUT_FLAG_A::CAN_OUTPUT {
-                atomic::compiler_fence(Ordering::SeqCst)
-            }
-            ct[i] = aes.out_data.read().bits();
-            //write!(stdout, "{:08x} ", val).unwrap();
-        }
-        if ct == ctref {
+    }
+
+    // https://www.di-mgt.com.au/sha_testvectors.html
+    for tv in &[
+        SHA256TestVec {
+            data: b"",
+            hash: hex!("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+        },
+        SHA256TestVec {
+            data: b"abc",
+            hash: hex!("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad")
+        },
+        SHA256TestVec {
+            data: b"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq",
+            hash: hex!("248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1")
+        },
+        SHA256TestVec {
+            data: b"abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu",
+            hash: hex!("cf5b16a778af8380036ce59e7b0492370b249b11e8f07a51afac45037afee9d1")
+        },
+    ] {
+        write!(stdout, "SHA256: ").unwrap();
+        let mut sha = SHA256Ctx::new(sha256, tv.data.len());
+        sha.update(&tv.data[..]);
+        let sha_out = sha.finish();
+        if sha_out == tv.hash {
             writeln!(stdout, "MATCH").unwrap();
         } else {
             writeln!(stdout, "MISMATCH").unwrap();
         }
     }
-    /*
-    $ echo -n "abc" | sha256sum
-    ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad  -
-    */
-    let sha_in: [u8; 64] = [
-        b'a', b'b', b'c', 0x80, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x18, // Padding (total size in bits, big-endian)
-    ];
-    let sha_out_ref: [u8; 32] = [
-        0xba, 0x78, 0x16, 0xbf, 0x8f, 0x01, 0xcf, 0xea,
-        0x41, 0x41, 0x40, 0xde, 0x5d, 0xae, 0x22, 0x23,
-        0xb0, 0x03, 0x61, 0xa3, 0x96, 0x17, 0x7a, 0x9c,
-        0xb4, 0x10, 0xff, 0x61, 0xf2, 0x00, 0x15, 0xad,
-    ];
-    let mut sha_out = [0u8; 32];
-    write!(stdout, "SHA256: ").unwrap();
-    unsafe {
-        use pac::sha256::function_reg_0::{ENDIAN_A};
-        sha256.num_reg.write(|w|
-            w.data_cnt().bits(1));
-        sha256.function_reg_0.write(|w|
-            w.endian().variant(ENDIAN_A::BE)
-             .en().bit(true));
-        sha256.function_reg_1.write(|w|
-            w.dma_en().bit(false));
-        for i in 0..16 {
-            while sha256.function_reg_1.read().fifo_in_full().bit() {
-                atomic::compiler_fence(Ordering::SeqCst)
-            }
-            sha256.data_in.write(|w| w.bits(
-                    ((sha_in[i*4 + 0] as u32) << 0)
-                  | ((sha_in[i*4 + 1] as u32) << 8)
-                  | ((sha_in[i*4 + 2] as u32) << 16)
-                  | ((sha_in[i*4 + 3] as u32) << 24)
-                ));
-        }
-        while !sha256.function_reg_0.read().en().bit() {
-            atomic::compiler_fence(Ordering::SeqCst)
-        }
-        for i in 0..8 {
-            let val = sha256.result[7 - i].read().bits();
-            sha_out[i*4 + 0] = (val >> 0) as u8;
-            sha_out[i*4 + 1] = (val >> 8) as u8;
-            sha_out[i*4 + 2] = (val >> 16) as u8;
-            sha_out[i*4 + 3] = (val >> 24) as u8;
-        }
-        if sha_out == sha_out_ref {
-            writeln!(stdout, "MATCH").unwrap();
-        } else {
-            writeln!(stdout, "MISMATCH").unwrap();
-        }
-    }
+
     loop {
         unsafe { asm::wfi(); }
     }
