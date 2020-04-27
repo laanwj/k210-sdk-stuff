@@ -61,7 +61,7 @@ fn main() -> ! {
     // https://boringssl.googlesource.com/boringssl/+/2214/crypto/cipher/cipher_test.txt
     // https://github.com/plenluno/openssl/blob/master/openssl/test/evptests.txt
     // http://csrc.nist.gov/groups/ST/toolkit/BCM/documents/proposedmodes/gcm/gcm-spec.pdf
-    for tv in &[
+    for tv in [
         AESTestVec {
             cipher_mode: cipher_mode::ECB,
             key: &hex!("000102030405060708090A0B0C0D0E0F"),
@@ -148,6 +148,42 @@ fn main() -> ! {
             key: &hex!("603DEB1015CA71BE2B73AEF0857D77811F352C073B6108D72D9810A30914DFF4"),
             pt: &hex!("F69F2445DF4F9B17AD2B417BE66C3710"),
             ct: &hex!("23304B7A39F9F3FF067D8D8F9E24ECC7"),
+            iv: &hex!(""),
+            aad: &hex!(""),
+            tag: &hex!(""),
+        },
+        AESTestVec {
+            cipher_mode: cipher_mode::ECB,
+            key: &hex!("8e73b0f7da0e6452c810f32b809079e562f8ead2522c6b7b"),
+            pt: &hex!("6bc1bee22e409f96e93d7e117393172a"),
+            ct: &hex!("bd334f1d6e45f25ff712a214571fa5cc"),
+            iv: &hex!(""),
+            aad: &hex!(""),
+            tag: &hex!(""),
+        },
+        AESTestVec {
+            cipher_mode: cipher_mode::ECB,
+            key: &hex!("8e73b0f7da0e6452c810f32b809079e562f8ead2522c6b7b"),
+            pt: &hex!("ae2d8a571e03ac9c9eb76fac45af8e51"),
+            ct: &hex!("974104846d0ad3ad7734ecb3ecee4eef"),
+            iv: &hex!(""),
+            aad: &hex!(""),
+            tag: &hex!(""),
+        },
+        AESTestVec {
+            cipher_mode: cipher_mode::ECB,
+            key: &hex!("8e73b0f7da0e6452c810f32b809079e562f8ead2522c6b7b"),
+            pt: &hex!("30c81c46a35ce411e5fbc1191a0a52ef"),
+            ct: &hex!("ef7afd2270e2e60adce0ba2face6444e"),
+            iv: &hex!(""),
+            aad: &hex!(""),
+            tag: &hex!(""),
+        },
+        AESTestVec {
+            cipher_mode: cipher_mode::ECB,
+            key: &hex!("8e73b0f7da0e6452c810f32b809079e562f8ead2522c6b7b"),
+            pt: &hex!("f69f2445df4f9b17ad2b417be66c3710"),
+            ct: &hex!("9a4b41ba738d6c72fb16691603c18e0e"),
             iv: &hex!(""),
             aad: &hex!(""),
             tag: &hex!(""),
@@ -378,7 +414,7 @@ fn main() -> ! {
             aad: &hex!(""),
             tag: &hex!("cac45f60e31efd3b5a43b98a22ce1aa1"),
         },
-    ] {
+    ].iter() {
         let mut ct_out = [0u8; 128];
         let mut tag_out = [0u8; 16];
 
