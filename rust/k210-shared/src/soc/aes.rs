@@ -6,8 +6,10 @@ use k210_hal::pac;
 use pac::aes::data_in_flag::DATA_IN_FLAG_A;
 use pac::aes::data_out_flag::DATA_OUT_FLAG_A;
 use pac::aes::en::EN_A;
+use pac::aes::finish::FINISH_A;
 use pac::aes::endian::ENDIAN_A;
 use pac::aes::mode_ctl::KEY_MODE_A;
+use pac::aes::tag_chk::TAG_CHK_A;
 
 use crate::soc::sysctl;
 
@@ -64,10 +66,6 @@ pub fn run(
         32 => KEY_MODE_A::AES256,
         _ => panic!("invalid key size for AES"),
     };
-    // Must reset the engine every time before use, otherwise it seems to hang.
-    // This is the same as the Kendryte SDK does. I have tried to disable the engine instead
-    // through `en` as well as different things with `finish` but to no avail.
-    sysctl::reset(sysctl::reset::AES);
     unsafe {
         aes.endian.write(|w| w.endian().variant(ENDIAN_A::LE));
 
@@ -120,14 +118,32 @@ pub fn run(
             }
         }
 
-        if tag.len() != 0 {
+        if cipher_mode == cipher_mode::GCM && tag.len() != 0 {
             // Read and store tag, if requested
             // TODO: the engine also supports writing a tag through gcm_in_tag
             // and verifying it, presumably in linear time.
+            while aes.tag_in_flag.read().tag_in_flag() != DATA_IN_FLAG_A::CAN_INPUT {
+                atomic::compiler_fence(Ordering::SeqCst)
+            }
+            // Write a fake tag
+            aes.gcm_in_tag[0].write(|w| w.bits(0));
+            aes.gcm_in_tag[1].write(|w| w.bits(0));
+            aes.gcm_in_tag[2].write(|w| w.bits(0));
+            aes.gcm_in_tag[3].write(|w| w.bits(0));
+            // Wait until tag was checked
+            while aes.tag_chk.read().tag_chk() == TAG_CHK_A::BUSY {
+                atomic::compiler_fence(Ordering::SeqCst)
+            }
+
             for i in 0..4 {
                 let val = aes.gcm_out_tag[3 - i].read().bits();
                 tag[i*4..i*4+4].copy_from_slice(&val.to_be_bytes());
             }
+        }
+
+        // Wait until AES engine finished
+        while aes.finish.read().finish() != FINISH_A::FINISHED {
+            atomic::compiler_fence(Ordering::SeqCst)
         }
     }
 }
