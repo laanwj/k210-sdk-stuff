@@ -307,6 +307,35 @@ fn main() -> ! {
             aad: &hex!("feedfacedeadbeeffeedfacedeadbeefabaddad2"),
             tag: &hex!("5bc94fbc3221a5db94fae95ae7121a47"),
         },
+        /*
+        AESTestVec {
+            cipher_mode: cipher_mode::GCM,
+            key: &hex!("0000000000000000000000000000000000000000000000000000000000000000"),
+            pt: &hex!(""),
+            ct: &hex!(""),
+            iv: &hex!("000000000000000000000000"),
+            aad: &hex!(""),
+            tag: &hex!("530f8afbc74536b9a963b4f1c4cb738b"),
+        },
+        */
+        AESTestVec {
+            cipher_mode: cipher_mode::GCM,
+            key: &hex!("0000000000000000000000000000000000000000000000000000000000000000"),
+            pt: &hex!("00000000000000000000000000000000"),
+            ct: &hex!("cea7403d4d606b6e074ec5d3baf39d18"),
+            iv: &hex!("000000000000000000000000"),
+            aad: &hex!(""),
+            tag: &hex!("d0d1c8a799996bf0265b98b5d48ab919"),
+        },
+        AESTestVec {
+            cipher_mode: cipher_mode::GCM,
+            key: &hex!("feffe9928665731c6d6a8f9467308308feffe9928665731c6d6a8f9467308308"),
+            pt: &hex!("d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39"),
+            ct: &hex!("522dc1f099567d07f47f37a32a84427d643a8cdcbfe5c0c97598a2bd2555d1aa8cb08e48590dbb3da7b08b1056828838c5f61e6393ba7a0abcc9f662"),
+            iv: &hex!("cafebabefacedbaddecaf888"),
+            aad: &hex!("feedfacedeadbeeffeedfacedeadbeefabaddad2"),
+            tag: &hex!("76fc6ece0f4e1768cddf8853bb2d551b"),
+        },
     ] {
         let mut ct_out = [0u8; 64];
         let mut tag_out = [0u8; 16];
