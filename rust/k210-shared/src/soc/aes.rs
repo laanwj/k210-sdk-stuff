@@ -53,6 +53,7 @@ pub fn run(
         tag: &mut [u8],
     )
 {
+    assert!(ind.len() != 0);
     match cipher_mode {
         cipher_mode::ECB => assert!(iv.len() == 0 && aad.len() == 0),
         cipher_mode::CBC => assert!(iv.len() == 16 && aad.len() == 0),
