@@ -64,10 +64,163 @@ fn main() -> ! {
     for tv in &[
         AESTestVec {
             cipher_mode: cipher_mode::ECB,
+            key: &hex!("000102030405060708090A0B0C0D0E0F"),
+            pt: &hex!("00112233445566778899AABBCCDDEEFF"),
+            ct: &hex!("69C4E0D86A7B0430D8CDB78070B4C55A"),
+            iv: &hex!(""),
+            aad: &hex!(""),
+            tag: &hex!(""),
+        },
+        AESTestVec {
+            cipher_mode: cipher_mode::ECB,
+            key: &hex!("000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F"),
+            pt: &hex!("00112233445566778899AABBCCDDEEFF"),
+            ct: &hex!("8EA2B7CA516745BFEAFC49904B496089"),
+            iv: &hex!(""),
+            aad: &hex!(""),
+            tag: &hex!(""),
+        },
+        AESTestVec {
+            cipher_mode: cipher_mode::ECB,
             key: &hex!("2B7E151628AED2A6ABF7158809CF4F3C"),
             pt: &hex!("6BC1BEE22E409F96E93D7E117393172A"),
             ct: &hex!("3AD77BB40D7A3660A89ECAF32466EF97"),
             iv: &hex!(""),
+            aad: &hex!(""),
+            tag: &hex!(""),
+        },
+        AESTestVec {
+            cipher_mode: cipher_mode::ECB,
+            key: &hex!("2B7E151628AED2A6ABF7158809CF4F3C"),
+            pt: &hex!("AE2D8A571E03AC9C9EB76FAC45AF8E51"),
+            ct: &hex!("F5D3D58503B9699DE785895A96FDBAAF"),
+            iv: &hex!(""),
+            aad: &hex!(""),
+            tag: &hex!(""),
+        },
+        AESTestVec {
+            cipher_mode: cipher_mode::ECB,
+            key: &hex!("2B7E151628AED2A6ABF7158809CF4F3C"),
+            pt: &hex!("30C81C46A35CE411E5FBC1191A0A52EF"),
+            ct: &hex!("43B1CD7F598ECE23881B00E3ED030688"),
+            iv: &hex!(""),
+            aad: &hex!(""),
+            tag: &hex!(""),
+        },
+        AESTestVec {
+            cipher_mode: cipher_mode::ECB,
+            key: &hex!("2B7E151628AED2A6ABF7158809CF4F3C"),
+            pt: &hex!("F69F2445DF4F9B17AD2B417BE66C3710"),
+            ct: &hex!("7B0C785E27E8AD3F8223207104725DD4"),
+            iv: &hex!(""),
+            aad: &hex!(""),
+            tag: &hex!(""),
+        },
+        AESTestVec {
+            cipher_mode: cipher_mode::ECB,
+            key: &hex!("603DEB1015CA71BE2B73AEF0857D77811F352C073B6108D72D9810A30914DFF4"),
+            pt: &hex!("6BC1BEE22E409F96E93D7E117393172A"),
+            ct: &hex!("F3EED1BDB5D2A03C064B5A7E3DB181F8"),
+            iv: &hex!(""),
+            aad: &hex!(""),
+            tag: &hex!(""),
+        },
+        AESTestVec {
+            cipher_mode: cipher_mode::ECB,
+            key: &hex!("603DEB1015CA71BE2B73AEF0857D77811F352C073B6108D72D9810A30914DFF4"),
+            pt: &hex!("AE2D8A571E03AC9C9EB76FAC45AF8E51"),
+            ct: &hex!("591CCB10D410ED26DC5BA74A31362870"),
+            iv: &hex!(""),
+            aad: &hex!(""),
+            tag: &hex!(""),
+        },
+        AESTestVec {
+            cipher_mode: cipher_mode::ECB,
+            key: &hex!("603DEB1015CA71BE2B73AEF0857D77811F352C073B6108D72D9810A30914DFF4"),
+            pt: &hex!("30C81C46A35CE411E5FBC1191A0A52EF"),
+            ct: &hex!("B6ED21B99CA6F4F9F153E7B1BEAFED1D"),
+            iv: &hex!(""),
+            aad: &hex!(""),
+            tag: &hex!(""),
+        },
+        AESTestVec {
+            cipher_mode: cipher_mode::ECB,
+            key: &hex!("603DEB1015CA71BE2B73AEF0857D77811F352C073B6108D72D9810A30914DFF4"),
+            pt: &hex!("F69F2445DF4F9B17AD2B417BE66C3710"),
+            ct: &hex!("23304B7A39F9F3FF067D8D8F9E24ECC7"),
+            iv: &hex!(""),
+            aad: &hex!(""),
+            tag: &hex!(""),
+        },
+        AESTestVec {
+            cipher_mode: cipher_mode::CBC,
+            key: &hex!("2B7E151628AED2A6ABF7158809CF4F3C"),
+            pt: &hex!("6BC1BEE22E409F96E93D7E117393172A"),
+            ct: &hex!("7649ABAC8119B246CEE98E9B12E9197D"),
+            iv: &hex!("000102030405060708090A0B0C0D0E0F"),
+            aad: &hex!(""),
+            tag: &hex!(""),
+        },
+        AESTestVec {
+            cipher_mode: cipher_mode::CBC,
+            key: &hex!("2B7E151628AED2A6ABF7158809CF4F3C"),
+            pt: &hex!("AE2D8A571E03AC9C9EB76FAC45AF8E51"),
+            ct: &hex!("5086CB9B507219EE95DB113A917678B2"),
+            iv: &hex!("7649ABAC8119B246CEE98E9B12E9197D"),
+            aad: &hex!(""),
+            tag: &hex!(""),
+        },
+        AESTestVec {
+            cipher_mode: cipher_mode::CBC,
+            key: &hex!("2B7E151628AED2A6ABF7158809CF4F3C"),
+            pt: &hex!("30C81C46A35CE411E5FBC1191A0A52EF"),
+            ct: &hex!("73BED6B8E3C1743B7116E69E22229516"),
+            iv: &hex!("5086CB9B507219EE95DB113A917678B2"),
+            aad: &hex!(""),
+            tag: &hex!(""),
+        },
+        AESTestVec {
+            cipher_mode: cipher_mode::CBC,
+            key: &hex!("2B7E151628AED2A6ABF7158809CF4F3C"),
+            pt: &hex!("F69F2445DF4F9B17AD2B417BE66C3710"),
+            ct: &hex!("3FF1CAA1681FAC09120ECA307586E1A7"),
+            iv: &hex!("73BED6B8E3C1743B7116E69E22229516"),
+            aad: &hex!(""),
+            tag: &hex!(""),
+        },
+        AESTestVec {
+            cipher_mode: cipher_mode::CBC,
+            key: &hex!("603DEB1015CA71BE2B73AEF0857D77811F352C073B6108D72D9810A30914DFF4"),
+            pt: &hex!("6BC1BEE22E409F96E93D7E117393172A"),
+            ct: &hex!("F58C4C04D6E5F1BA779EABFB5F7BFBD6"),
+            iv: &hex!("000102030405060708090A0B0C0D0E0F"),
+            aad: &hex!(""),
+            tag: &hex!(""),
+        },
+        AESTestVec {
+            cipher_mode: cipher_mode::CBC,
+            key: &hex!("603DEB1015CA71BE2B73AEF0857D77811F352C073B6108D72D9810A30914DFF4"),
+            pt: &hex!("AE2D8A571E03AC9C9EB76FAC45AF8E51"),
+            ct: &hex!("9CFC4E967EDB808D679F777BC6702C7D"),
+            iv: &hex!("F58C4C04D6E5F1BA779EABFB5F7BFBD6"),
+            aad: &hex!(""),
+            tag: &hex!(""),
+        },
+        AESTestVec {
+            cipher_mode: cipher_mode::CBC,
+            key: &hex!("603DEB1015CA71BE2B73AEF0857D77811F352C073B6108D72D9810A30914DFF4"),
+            pt: &hex!("30C81C46A35CE411E5FBC1191A0A52EF"),
+            ct: &hex!("39F23369A9D9BACFA530E26304231461"),
+            iv: &hex!("9CFC4E967EDB808D679F777BC6702C7D"),
+            aad: &hex!(""),
+            tag: &hex!(""),
+        },
+        AESTestVec {
+            cipher_mode: cipher_mode::CBC,
+            key: &hex!("603DEB1015CA71BE2B73AEF0857D77811F352C073B6108D72D9810A30914DFF4"),
+            pt: &hex!("F69F2445DF4F9B17AD2B417BE66C3710"),
+            ct: &hex!("B2EB05E2C39BE9FCDA6C19078C6A9D1B"),
+            iv: &hex!("39F23369A9D9BACFA530E26304231461"),
             aad: &hex!(""),
             tag: &hex!(""),
         },
@@ -107,11 +260,63 @@ fn main() -> ! {
             aad: &hex!(""),
             tag: &hex!("ecf90f4a47c9c626d6fb2c765d201556"),
         },
+        /* tag is wrong when length of plaintext is 0?
+        AESTestVec {
+            cipher_mode: cipher_mode::GCM,
+            key: &hex!("00000000000000000000000000000000"),
+            pt: &hex!(""),
+            ct: &hex!(""),
+            iv: &hex!("000000000000000000000000"),
+            aad: &hex!(""),
+            tag: &hex!("58e2fccefa7e3061367f1d57a4e7455a"), // ref 00000000fa7e3061367f1d57a4e7455a
+        },
+        */
+        AESTestVec {
+            cipher_mode: cipher_mode::GCM,
+            key: &hex!("00000000000000000000000000000000"),
+            pt: &hex!("00000000000000000000000000000000"),
+            ct: &hex!("0388dace60b6a392f328c2b971b2fe78"),
+            iv: &hex!("000000000000000000000000"),
+            aad: &hex!(""),
+            tag: &hex!("ab6e47d42cec13bdf53a67b21257bddf"),
+        },
+        AESTestVec {
+            cipher_mode: cipher_mode::GCM,
+            key: &hex!("feffe9928665731c6d6a8f9467308308"),
+            pt: &hex!("d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b391aafd255"),
+            ct: &hex!("42831ec2217774244b7221b784d0d49ce3aa212f2c02a4e035c17e2329aca12e21d514b25466931c7d8f6a5aac84aa051ba30b396a0aac973d58e091473f5985"),
+            iv: &hex!("cafebabefacedbaddecaf888"),
+            aad: &hex!(""),
+            tag: &hex!("4d5c2af327cd64a62cf35abd2ba6fab4"),
+        },
+        AESTestVec {
+            cipher_mode: cipher_mode::GCM,
+            key: &hex!("feffe9928665731c6d6a8f9467308308"),
+            pt: &hex!("d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b391aafd255"),
+            ct: &hex!("42831ec2217774244b7221b784d0d49ce3aa212f2c02a4e035c17e2329aca12e21d514b25466931c7d8f6a5aac84aa051ba30b396a0aac973d58e091473f5985"),
+            iv: &hex!("cafebabefacedbaddecaf888"),
+            aad: &hex!(""),
+            tag: &hex!("4d5c2af327cd64a62cf35abd2ba6fab4"),
+        },
+        AESTestVec {
+            cipher_mode: cipher_mode::GCM,
+            key: &hex!("feffe9928665731c6d6a8f9467308308"),
+            pt: &hex!("d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39"),
+            ct: &hex!("42831ec2217774244b7221b784d0d49ce3aa212f2c02a4e035c17e2329aca12e21d514b25466931c7d8f6a5aac84aa051ba30b396a0aac973d58e091"),
+            iv: &hex!("cafebabefacedbaddecaf888"),
+            aad: &hex!("feedfacedeadbeeffeedfacedeadbeefabaddad2"),
+            tag: &hex!("5bc94fbc3221a5db94fae95ae7121a47"),
+        },
     ] {
-        let mut ct_out = [0u8; 32];
+        let mut ct_out = [0u8; 64];
         let mut tag_out = [0u8; 16];
 
-        write!(stdout, "AES128: ").unwrap();
+        write!(stdout, "AES{}{}: ", tv.key.len()*8,
+            match tv.cipher_mode {
+                cipher_mode::ECB => "ECB",
+                cipher_mode::CBC => "CBC",
+                cipher_mode::GCM => "GCM",
+            }).unwrap();
         aes::run(
             aes,
             tv.cipher_mode,
@@ -136,7 +341,14 @@ fn main() -> ! {
             if &tag_out[0..tv.tag.len()] == tv.tag {
                 write!(stdout, "TAGMATCH").unwrap();
             } else {
-                write!(stdout, "TAGMISMATCH").unwrap();
+                write!(stdout, "TAGMISMATCH ").unwrap();
+                for v in &tag_out[0..tv.tag.len()] {
+                    write!(stdout, "{:02x}", v).unwrap();
+                }
+                write!(stdout, " ref: ").unwrap();
+                for v in tv.tag {
+                    write!(stdout, "{:02x}", v).unwrap();
+                }
             }
         }
         writeln!(stdout).unwrap();

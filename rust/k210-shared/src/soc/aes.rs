@@ -53,6 +53,11 @@ pub fn run(
         tag: &mut [u8],
     )
 {
+    match cipher_mode {
+        cipher_mode::ECB => assert!(iv.len() == 0 && aad.len() == 0),
+        cipher_mode::CBC => assert!(iv.len() == 16 && aad.len() == 0),
+        cipher_mode::GCM => assert!(iv.len() == 12),
+    }
     let key_mode = match key.len() {
         16 => KEY_MODE_A::AES128,
         24 => KEY_MODE_A::AES192,
@@ -60,6 +65,8 @@ pub fn run(
         _ => panic!("invalid key size for AES"),
     };
     // Must reset the engine every time before use, otherwise it seems to hang.
+    // This is the same as the Kendryte SDK does. I have tried to disable the engine instead
+    // through `en` as well as different things with `finish` but to no avail.
     sysctl::reset(sysctl::reset::AES);
     unsafe {
         aes.endian.write(|w| w.endian().variant(ENDIAN_A::LE));
