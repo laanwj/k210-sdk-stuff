@@ -11,8 +11,6 @@ use pac::aes::endian::ENDIAN_A;
 use pac::aes::mode_ctl::KEY_MODE_A;
 use pac::aes::tag_chk::TAG_CHK_A;
 
-use crate::soc::sysctl;
-
 pub use pac::aes::mode_ctl::CIPHER_MODE_A as cipher_mode;
 pub use pac::aes::encrypt_sel::ENCRYPT_SEL_A as encrypt_sel;
 

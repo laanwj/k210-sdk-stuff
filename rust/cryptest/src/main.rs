@@ -336,8 +336,50 @@ fn main() -> ! {
             aad: &hex!("feedfacedeadbeeffeedfacedeadbeefabaddad2"),
             tag: &hex!("76fc6ece0f4e1768cddf8853bb2d551b"),
         },
+        /*
+        // 128 bytes aad
+        AESTestVec {
+            cipher_mode: cipher_mode::GCM,
+            key: &hex!("00000000000000000000000000000000"),
+            pt: &hex!(""),
+            ct: &hex!(""),
+            iv: &hex!("000000000000000000000000"),
+            aad: &hex!("d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b391aafd255522dc1f099567d07f47f37a32a84427d643a8cdcbfe5c0c97598a2bd2555d1aa8cb08e48590dbb3da7b08b1056828838c5f61e6393ba7a0abcc9f662898015ad"),
+            tag: &hex!("5fea793a2d6f974d37e68e0cb8ff9492"),
+        },
+        */
+        // 48 bytes plaintext
+        AESTestVec {
+            cipher_mode: cipher_mode::GCM,
+            key: &hex!("00000000000000000000000000000000"),
+            pt: &hex!("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"),
+            ct: &hex!("0388dace60b6a392f328c2b971b2fe78f795aaab494b5923f7fd89ff948bc1e0200211214e7394da2089b6acd093abe0"),
+            iv: &hex!("000000000000000000000000"),
+            aad: &hex!(""),
+            tag: &hex!("9dd0a376b08e40eb00c35f29f9ea61a4"),
+        },
+        // 80 bytes plaintext
+        AESTestVec {
+            cipher_mode: cipher_mode::GCM,
+            key: &hex!("00000000000000000000000000000000"),
+            pt: &hex!("0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"),
+            ct: &hex!("0388dace60b6a392f328c2b971b2fe78f795aaab494b5923f7fd89ff948bc1e0200211214e7394da2089b6acd093abe0c94da219118e297d7b7ebcbcc9c388f28ade7d85a8ee35616f7124a9d5270291"),
+            iv: &hex!("000000000000000000000000"),
+            aad: &hex!(""),
+            tag: &hex!("98885a3a22bd4742fe7b72172193b163"),
+        },
+        // 128 bytes plaintext
+        AESTestVec {
+            cipher_mode: cipher_mode::GCM,
+            key: &hex!("00000000000000000000000000000000"),
+            pt: &hex!("0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"),
+            ct: &hex!("0388dace60b6a392f328c2b971b2fe78f795aaab494b5923f7fd89ff948bc1e0200211214e7394da2089b6acd093abe0c94da219118e297d7b7ebcbcc9c388f28ade7d85a8ee35616f7124a9d527029195b84d1b96c690ff2f2de30bf2ec89e00253786e126504f0dab90c48a30321de3345e6b0461e7c9e6c6b7afedde83f40"),
+            iv: &hex!("000000000000000000000000"),
+            aad: &hex!(""),
+            tag: &hex!("cac45f60e31efd3b5a43b98a22ce1aa1"),
+        },
     ] {
-        let mut ct_out = [0u8; 64];
+        let mut ct_out = [0u8; 128];
         let mut tag_out = [0u8; 16];
 
         write!(stdout, "AES{}{}: ", tv.key.len()*8,
