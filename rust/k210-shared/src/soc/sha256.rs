@@ -39,21 +39,44 @@ impl <'a> SHA256Ctx<'a> {
     /** Update SHA256 computation with new data. */
     pub fn update<'b, X>(&mut self, data: X)
         where X: IntoIterator<Item = &'b u8> {
+        let mut block = self.block;
+        let mut ptr = self.ptr;
         for &v in data {
-            let copy_ofs = self.ptr % 4;
-            self.block |= (v as u32) << (copy_ofs * 8);
-            self.ptr += 1;
+            let copy_ofs = ptr % 4;
+            block |= (v as u32) << (copy_ofs * 8);
+            ptr += 1;
 
             if copy_ofs == 3 {
                 unsafe {
                     while self.sha.function_reg_1.read().fifo_in_full().bit() {
                         atomic::compiler_fence(Ordering::SeqCst)
                     }
-                    self.sha.data_in.write(|w| w.bits(self.block));
+                    self.sha.data_in.write(|w| w.bits(block));
                 }
-                self.block = 0;
+                block = 0;
             }
         }
+        self.block = block;
+        self.ptr = ptr;
+    }
+
+    /** Update SHA256 computation with new data (32 bit little-endian, must be four-aligned in
+     * the data stream). This is roughly two times faster than byte by byte using `update`.
+     */
+    pub fn update32<'b, X>(&mut self, data: X)
+        where X: IntoIterator<Item = &'b u32> {
+        assert!((self.ptr & 3) == 0);
+        let mut ptr = self.ptr;
+        for &v in data {
+            unsafe {
+                while self.sha.function_reg_1.read().fifo_in_full().bit() {
+                    atomic::compiler_fence(Ordering::SeqCst)
+                }
+                self.sha.data_in.write(|w| w.bits(v));
+            }
+            ptr += 4;
+        }
+        self.ptr = ptr;
     }
 
     /** Finish up SHA256 computation. */

@@ -551,12 +551,14 @@ fn main() -> ! {
     // (this is shorter than the given test vector as it is the maximum that the SHA256 engine
     // supports, 65536 SHA blocks)
     {
-        let time_start = clock();
         let expected = hex!("929156a9422e05b71655509e8e9e7292d65d540a7342c94df3e121cedd407dfe");
         let s = b"abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmno";
+        let s_u32 = [0x64636261, 0x68676665, 0x65646362, 0x69686766, 0x66656463, 0x6a696867, 0x67666564, 0x6b6a6968, 0x68676665, 0x6c6b6a69, 0x69686766, 0x6d6c6b6a, 0x6a696867, 0x6e6d6c6b, 0x6b6a6968, 0x6f6e6d6c];
         // let size = 16_777_216 * s.len();
         let size = 65_535 * s.len();
-        write!(stdout, "SHA256 ({} bytes): ", size).unwrap();
+
+        write!(stdout, "SHA256 hw ({} bytes): ", size).unwrap();
+        let time_start = clock();
         let mut sha = SHA256Ctx::new(sha256, size);
         sha.update(s.iter().cycle().take(size));
         let sha_out = sha.finish();
@@ -568,6 +570,22 @@ fn main() -> ! {
         }
         write!(stdout, " ({} kB/s)", (size as u64) * 1_000 / (time_end - time_start)).unwrap();
         writeln!(stdout).unwrap();
+
+        write!(stdout, "SHA256 hw, 32bit ({} bytes): ", size).unwrap();
+        let time_start = clock();
+        let mut sha = SHA256Ctx::new(sha256, size);
+        sha.update32(s_u32.iter().cycle().take(size / 4));
+        let sha_out = sha.finish();
+        let time_end = clock();
+        if sha_out == expected {
+            write!(stdout, "MATCH").unwrap();
+        } else {
+            write!(stdout, "MISMATCH").unwrap();
+        }
+        write!(stdout, " ({} kB/s)", (size as u64) * 1_000 / (time_end - time_start)).unwrap();
+        writeln!(stdout).unwrap();
+
+        // Yet another thing to try would be DMA?
 
         // Software
         write!(stdout, "SHA256 sw ({} bytes): ", size).unwrap();
