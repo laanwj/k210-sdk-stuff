@@ -13,6 +13,7 @@ use k210_shared::soc::sleep::usleep;
 use k210_shared::soc::sysctl;
 use k210_shared::soc::aes::{self, cipher_mode, encrypt_sel};
 use k210_shared::soc::sha256::SHA256Ctx;
+use k210_shared::timing::clock;
 use riscv::asm;
 use riscv_rt::entry;
 
@@ -549,6 +550,7 @@ fn main() -> ! {
     // (this is shorter than the given test vector as it is the maximum that the SHA256 engine
     // supports, 65536 SHA blocks)
     {
+        let time_start = clock();
         let expected = hex!("929156a9422e05b71655509e8e9e7292d65d540a7342c94df3e121cedd407dfe");
         let s = b"abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmno";
         // let size = 16_777_216 * s.len();
@@ -557,11 +559,13 @@ fn main() -> ! {
         let mut sha = SHA256Ctx::new(sha256, size);
         sha.update(s.iter().cycle().take(size));
         let sha_out = sha.finish();
+        let time_end = clock();
         if sha_out == expected {
             write!(stdout, "MATCH").unwrap();
         } else {
-            writeln!(stdout, "MISMATCH").unwrap();
+            write!(stdout, "MISMATCH").unwrap();
         }
+        write!(stdout, " ({} kB/s)", (size as u64) * 1_000 / (time_end - time_start)).unwrap();
         writeln!(stdout).unwrap();
     }
 
