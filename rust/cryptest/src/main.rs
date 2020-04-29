@@ -16,6 +16,7 @@ use k210_shared::soc::sha256::SHA256Ctx;
 use k210_shared::timing::clock;
 use riscv::asm;
 use riscv_rt::entry;
+use sha2::{Sha256, Digest};
 
 struct AESTestVec {
     cipher_mode: cipher_mode,
@@ -561,6 +562,22 @@ fn main() -> ! {
         let sha_out = sha.finish();
         let time_end = clock();
         if sha_out == expected {
+            write!(stdout, "MATCH").unwrap();
+        } else {
+            write!(stdout, "MISMATCH").unwrap();
+        }
+        write!(stdout, " ({} kB/s)", (size as u64) * 1_000 / (time_end - time_start)).unwrap();
+        writeln!(stdout).unwrap();
+
+        // Software
+        write!(stdout, "SHA256 sw ({} bytes): ", size).unwrap();
+        let time_start = clock();
+        let mut hasher = Sha256::new();
+        for _ in 0..65_535 {
+            hasher.input(&s[..]);
+        }
+        let time_end = clock();
+        if hasher.result()[..] == expected {
             write!(stdout, "MATCH").unwrap();
         } else {
             write!(stdout, "MISMATCH").unwrap();

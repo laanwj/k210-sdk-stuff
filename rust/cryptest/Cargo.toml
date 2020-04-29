@@ -10,3 +10,4 @@ k210-shared = { path = "../k210-shared" }
 riscv = "0.5"
 riscv-rt = "0.6"
 hex-literal = "0.2"
+sha2 = { version = "0.8", default-features = false }
