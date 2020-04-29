@@ -20,6 +20,10 @@ impl <'a> SHA256Ctx<'a> {
      * before calling finish, or the result will likely be incorrect or the engine will hang.
      */
     pub fn new(sha: &'a mut pac::SHA256, input_len: usize) -> SHA256Ctx {
+        let num_blocks = (input_len + 64 + 8) / 64;
+        // Can hash up to 65536 blocks, this is the largest value that fits into data_cnt
+        // (0 = 65536).
+        assert!(num_blocks <= 0x10000);
         unsafe {
             sha.num_reg.write(|w|
                 w.data_cnt().bits(((input_len + 64 + 8) / 64) as u16));

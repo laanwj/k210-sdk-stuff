@@ -4,6 +4,7 @@
 #![no_std]
 #![no_main]
 
+use core::iter;
 use hex_literal::hex;
 use k210_hal::prelude::*;
 use k210_hal::stdout::Stdout;
@@ -458,8 +459,44 @@ fn main() -> ! {
                 }
             }
         }
-        writeln!(stdout).unwrap();
 
+        let mut pt_out = [0u8; 128];
+        let mut tag_out2 = [0u8; 16];
+        aes::run(
+            aes,
+            tv.cipher_mode,
+            encrypt_sel::DECRYPTION,
+            tv.key,
+            tv.iv,
+            tv.aad,
+            &ct_out[0..tv.ct.len()],
+            &mut pt_out,
+            &mut tag_out2,
+        );
+
+        write!(stdout, " ").unwrap();
+        if &pt_out[0..tv.pt.len()] == tv.pt {
+            write!(stdout, "MATCH").unwrap();
+        } else {
+            write!(stdout, "MISMATCH").unwrap();
+        }
+        write!(stdout, " ").unwrap();
+        if tv.cipher_mode == cipher_mode::GCM {
+            if &tag_out2[0..tv.tag.len()] == tv.tag {
+                write!(stdout, "TAGMATCH").unwrap();
+            } else {
+                write!(stdout, "TAGMISMATCH ").unwrap();
+                for v in &tag_out2[0..tv.tag.len()] {
+                    write!(stdout, "{:02x}", v).unwrap();
+                }
+                write!(stdout, " ref: ").unwrap();
+                for v in tv.tag {
+                    write!(stdout, "{:02x}", v).unwrap();
+                }
+            }
+        }
+
+        writeln!(stdout).unwrap();
     }
 
     // https://www.di-mgt.com.au/sha_testvectors.html
@@ -490,6 +527,42 @@ fn main() -> ! {
         } else {
             writeln!(stdout, "MISMATCH").unwrap();
         }
+    }
+
+    // Very long test vector
+    // Input message: one million (1,000,000) repetitions of the character "a" (0x61).
+    {
+        let expected = hex!("cdc76e5c9914fb9281a1c7e284d73e67f1809a48a497200e046d39ccc7112cd0");
+        let size = 1_000_000;
+        write!(stdout, "SHA256 ({} bytes): ", size).unwrap();
+        let mut sha = SHA256Ctx::new(sha256, size);
+        sha.update(iter::repeat(&b'a').take(size));
+        let sha_out = sha.finish();
+        if sha_out == expected {
+            writeln!(stdout, "MATCH").unwrap();
+        } else {
+            writeln!(stdout, "MISMATCH").unwrap();
+        }
+    }
+
+    // "abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmno" repeated 65,535 times
+    // (this is shorter than the given test vector as it is the maximum that the SHA256 engine
+    // supports, 65536 SHA blocks)
+    {
+        let expected = hex!("929156a9422e05b71655509e8e9e7292d65d540a7342c94df3e121cedd407dfe");
+        let s = b"abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmno";
+        // let size = 16_777_216 * s.len();
+        let size = 65_535 * s.len();
+        write!(stdout, "SHA256 ({} bytes): ", size).unwrap();
+        let mut sha = SHA256Ctx::new(sha256, size);
+        sha.update(s.iter().cycle().take(size));
+        let sha_out = sha.finish();
+        if sha_out == expected {
+            write!(stdout, "MATCH").unwrap();
+        } else {
+            writeln!(stdout, "MISMATCH").unwrap();
+        }
+        writeln!(stdout).unwrap();
     }
 
     loop {
