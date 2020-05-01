@@ -429,7 +429,10 @@ fn main() -> ! {
                 cipher_mode::CBC => "CBC",
                 cipher_mode::GCM => "GCM",
             }).unwrap();
-        aes::run(
+
+        // copy in tag for verification check
+        tag_out[0..tv.tag.len()].copy_from_slice(tv.tag);
+        let vs = aes::run(
             aes,
             tv.cipher_mode,
             encrypt_sel::ENCRYPTION,
@@ -450,6 +453,12 @@ fn main() -> ! {
         write!(stdout, " ").unwrap();
 
         if tv.cipher_mode == cipher_mode::GCM {
+            let vs = vs.unwrap();
+            if vs {
+                write!(stdout, "HWTAGMATCH ").unwrap();
+            } else {
+                write!(stdout, "HWTAGMISMATCH ").unwrap();
+            }
             if &tag_out[0..tv.tag.len()] == tv.tag {
                 write!(stdout, "TAGMATCH").unwrap();
             } else {
@@ -466,7 +475,9 @@ fn main() -> ! {
 
         let mut pt_out = [0u8; 128];
         let mut tag_out2 = [0u8; 16];
-        aes::run(
+        // copy in tag for verification check
+        tag_out2[0..tv.tag.len()].copy_from_slice(tv.tag);
+        let vs = aes::run(
             aes,
             tv.cipher_mode,
             encrypt_sel::DECRYPTION,
@@ -486,6 +497,12 @@ fn main() -> ! {
         }
         write!(stdout, " ").unwrap();
         if tv.cipher_mode == cipher_mode::GCM {
+            let vs = vs.unwrap();
+            if vs {
+                write!(stdout, "HWTAGMATCH ").unwrap();
+            } else {
+                write!(stdout, "HWTAGMISMATCH ").unwrap();
+            }
             if &tag_out2[0..tv.tag.len()] == tv.tag {
                 write!(stdout, "TAGMATCH").unwrap();
             } else {

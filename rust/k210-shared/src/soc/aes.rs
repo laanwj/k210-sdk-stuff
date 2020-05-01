@@ -96,31 +96,45 @@ fn finish(
         aes: &mut pac::AES,
         cipher_mode: cipher_mode,
         tag: Option<&mut [u8]>,
-    ) {
+    ) -> Option<bool> {
+    let mut tag_chk_status: Option<bool> = None;
     unsafe {
         if cipher_mode == cipher_mode::GCM {
-            // Read and store tag, if requested
-            // TODO: the engine also supports writing a tag through gcm_in_tag
-            // and verifying it, presumably in linear time.
+            // GO through tag verification (this is mandatory for GCM mode,
+            // otherwise the engine will hang)
             while aes.tag_in_flag.read().tag_in_flag() != DATA_IN_FLAG_A::CAN_INPUT {
                 atomic::compiler_fence(Ordering::SeqCst)
             }
-            // Write a fake tag
-            aes.gcm_in_tag[0].write(|w| w.bits(0));
-            aes.gcm_in_tag[1].write(|w| w.bits(0));
-            aes.gcm_in_tag[2].write(|w| w.bits(0));
-            aes.gcm_in_tag[3].write(|w| w.bits(0));
+            if let Some(ref tag) = tag {
+                // If there is a tag passed in, verify it
+                for i in 0..4 {
+                    aes.gcm_in_tag[3-i].write(|w| w.bits(
+                           u32::from_be_bytes(tag[i*4..i*4+4].try_into().unwrap())));
+                }
+            } else {
+                // Write a fake tag
+                for i in 0..4 {
+                    aes.gcm_in_tag[3-i].write(|w| w.bits(0));
+                }
+            }
+
             // Wait until tag was checked
             while aes.tag_chk.read().tag_chk() == TAG_CHK_A::BUSY {
                 atomic::compiler_fence(Ordering::SeqCst)
             }
 
             if let Some(tag) = tag {
+                // Store tag check status, but only if there was a tag to check
+                tag_chk_status = Some(aes.tag_chk.read().tag_chk() == TAG_CHK_A::SUCCESS);
+
+                // Read and store tag, if requested
                 for i in 0..4 {
                     let val = aes.gcm_out_tag[3 - i].read().bits();
                     tag[i*4..i*4+4].copy_from_slice(&val.to_be_bytes());
                 }
             }
+
+            aes.tag_clear.write(|w| w.bits(0));
         }
 
         // Wait until AES engine finished
@@ -128,10 +142,16 @@ fn finish(
             atomic::compiler_fence(Ordering::SeqCst)
         }
     }
+    tag_chk_status
 }
 
 /** AES operation (encrypt or decrypt) using hardware engine. Takes a &mut
  * AES as only one operation can be active at a time.
+ * In GCM mode, a mutable array can be passed which both provides the
+ * tag to check against, as well as receives the computed tag.
+ * Returns tag validation status (true if input tag matches computed tag,
+ * false otherwise). This comparison is done in hardware in (one would expect)
+ * constant time.
  *
  * Supported modes:
  *
@@ -151,7 +171,7 @@ pub fn run(
         ind: &[u8],
         outd: &mut [u8],
         tag: Option<&mut [u8]>,
-    )
+    ) -> Option<bool>
 {
     setup(aes, cipher_mode, encrypt_sel, key, iv, aad, ind.len());
 
@@ -172,7 +192,7 @@ pub fn run(
 
     }
 
-    finish(aes, cipher_mode, tag);
+    finish(aes, cipher_mode, tag)
 }
 
 /** Iterator-based interface. */
@@ -213,10 +233,15 @@ impl <'a, I> Iterator for OutIterator<'a, I>
 
 impl <'a, I> OutIterator<'a, I>
     where I: Iterator<Item=u32> {
-    pub fn finish(&mut self, tag: Option<&mut [u8]>) {
+
+    /**
+     * Returns tag validation status (true if input tag matches computed tag,
+     * false otherwise). None if no tag was provided or the mode was not GCM.
+     */
+    pub fn finish(&mut self, tag: Option<&mut [u8]>) -> Option<bool> {
         assert!(self.iptr >= self.len && self.optr >= self.len);
-        finish(self.aes, self.cipher_mode, tag);
         self.finished = true;
+        finish(self.aes, self.cipher_mode, tag)
     }
 }
 
