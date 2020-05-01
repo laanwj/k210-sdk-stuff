@@ -631,7 +631,7 @@ fn main() -> ! {
         assert!(o.next().unwrap() == 0x2e2b34ca);
     }
     // writeln!(stdout).unwrap();
-    o.finish(None);
+    core::mem::drop(o);
     let time_end = clock();
     writeln!(stdout, "({} kB/s)", (size as u64) * 1_000 / (time_end - time_start)).unwrap();
 

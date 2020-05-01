@@ -184,6 +184,7 @@ pub struct OutIterator<'a, I>
     len: usize,
     iptr: usize,
     optr: usize,
+    finished: bool,
 }
 
 impl <'a, I> Iterator for OutIterator<'a, I>
@@ -215,6 +216,18 @@ impl <'a, I> OutIterator<'a, I>
     pub fn finish(&mut self, tag: Option<&mut [u8]>) {
         assert!(self.iptr >= self.len && self.optr >= self.len);
         finish(self.aes, self.cipher_mode, tag);
+        self.finished = true;
+    }
+}
+
+impl <'a, I> Drop for OutIterator<'a, I>
+    where I: Iterator<Item=u32> {
+    /** Implement drop so that the AES hardware operation is finished up when the iterator goes out
+     * of scope. */
+    fn drop(&mut self) {
+        if !self.finished {
+            self.finish(None);
+        }
     }
 }
 
@@ -241,5 +254,6 @@ pub fn run_iter32<'a, X>(
         len,
         iptr: 0,
         optr: 0,
+        finished: false,
     }
 }
