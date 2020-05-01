@@ -17,6 +17,8 @@ use k210_shared::timing::clock;
 use riscv::asm;
 use riscv_rt::entry;
 use sha2::{Sha256, Digest};
+use aes_soft::block_cipher_trait::generic_array::GenericArray;
+use aes_soft::block_cipher_trait::BlockCipher;
 
 struct AESTestVec {
     cipher_mode: cipher_mode,
@@ -436,7 +438,7 @@ fn main() -> ! {
             tv.aad,
             tv.pt,
             &mut ct_out,
-            &mut tag_out,
+            Some(&mut tag_out),
         );
 
         if &ct_out[0..tv.ct.len()] == tv.ct {
@@ -473,7 +475,7 @@ fn main() -> ! {
             tv.aad,
             &ct_out[0..tv.ct.len()],
             &mut pt_out,
-            &mut tag_out2,
+            Some(&mut tag_out2),
         );
 
         write!(stdout, " ").unwrap();
@@ -549,7 +551,7 @@ fn main() -> ! {
 
     // "abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmno" repeated 65,535 times
     // (this is shorter than the given test vector as it is the maximum that the SHA256 engine
-    // supports, 65536 SHA blocks)
+    // supports, 65536 SHA blocks including padding)
     {
         let expected = hex!("929156a9422e05b71655509e8e9e7292d65d540a7342c94df3e121cedd407dfe");
         let s = b"abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmno";
@@ -603,6 +605,49 @@ fn main() -> ! {
         write!(stdout, " ({} kB/s)", (size as u64) * 1_000 / (time_end - time_start)).unwrap();
         writeln!(stdout).unwrap();
     }
+
+    // Try iterator-based AES
+    // let indata = [0, 0, 0, 0, 0, 0, 0, 0];
+    let size = 256 * 1024;
+    write!(stdout, "AES128 hw, 32bit ({} bytes): ", size).unwrap();
+    let time_start = clock();
+    let mut o = aes::run_iter32(
+            aes,
+            cipher_mode::ECB,
+            encrypt_sel::ENCRYPTION,
+            &hex!("00000000000000000000000000000000"),
+            &hex!(""),
+            &hex!(""),
+            //indata.iter().copied(),
+            iter::repeat(0).take(size / 4),
+            size,
+        );
+    for _ in 0..size / 16 {
+        // ;
+        // write!(stdout, "{:08x} ", o.next().unwrap()).unwrap();
+        assert!(o.next().unwrap() == 0xd44be966);
+        assert!(o.next().unwrap() == 0x3b2c8aef);
+        assert!(o.next().unwrap() == 0x59fa4c88);
+        assert!(o.next().unwrap() == 0x2e2b34ca);
+    }
+    // writeln!(stdout).unwrap();
+    o.finish(None);
+    let time_end = clock();
+    writeln!(stdout, "({} kB/s)", (size as u64) * 1_000 / (time_end - time_start)).unwrap();
+
+    write!(stdout, "AES128 sw ({} bytes): ", size).unwrap();
+    let time_start = clock();
+    let key = GenericArray::from_slice(&[0u8; 16]);
+    let cipher = aes_soft::Aes128::new(&key);
+    let expect = GenericArray::clone_from_slice(&[0x66, 0xe9, 0x4b, 0xd4, 0xef, 0x8a, 0x2c, 0x3b, 0x88, 0x4c, 0xfa, 0x59, 0xca, 0x34, 0x2b, 0x2e]);
+    for _ in 0..size / 16 { // per block
+        let mut block = GenericArray::clone_from_slice(&[0u8; 16]);
+        cipher.encrypt_block(&mut block);
+        // writeln!(stdout, "{:?}", block).unwrap();
+        assert!(block == expect);
+    }
+    let time_end = clock();
+    writeln!(stdout, "({} kB/s)", (size as u64) * 1_000 / (time_end - time_start)).unwrap();
 
     loop {
         unsafe { asm::wfi(); }

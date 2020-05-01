@@ -95,7 +95,7 @@ fn setup(
 fn finish(
         aes: &mut pac::AES,
         cipher_mode: cipher_mode,
-        tag: &mut [u8],
+        tag: Option<&mut [u8]>,
     ) {
     unsafe {
         if cipher_mode == cipher_mode::GCM {
@@ -115,7 +115,7 @@ fn finish(
                 atomic::compiler_fence(Ordering::SeqCst)
             }
 
-            if tag.len() != 0 {
+            if let Some(tag) = tag {
                 for i in 0..4 {
                     let val = aes.gcm_out_tag[3 - i].read().bits();
                     tag[i*4..i*4+4].copy_from_slice(&val.to_be_bytes());
@@ -150,7 +150,7 @@ pub fn run(
         aad: &[u8],
         ind: &[u8],
         outd: &mut [u8],
-        tag: &mut [u8],
+        tag: Option<&mut [u8]>,
     )
 {
     setup(aes, cipher_mode, encrypt_sel, key, iv, aad, ind.len());
@@ -173,4 +173,73 @@ pub fn run(
     }
 
     finish(aes, cipher_mode, tag);
+}
+
+/** Iterator-based interface. */
+pub struct OutIterator<'a, I>
+    where I: Iterator<Item=u32> {
+    aes: &'a mut pac::AES,
+    cipher_mode: cipher_mode,
+    ind: I,
+    len: usize,
+    iptr: usize,
+    optr: usize,
+}
+
+impl <'a, I> Iterator for OutIterator<'a, I>
+    where I: Iterator<Item=u32> {
+    type Item = u32;
+
+    fn next(&mut self) -> Option<u32> {
+        if self.optr >= self.len {
+            None
+        } else {
+            unsafe {
+                while self.iptr < self.len && self.aes.data_in_flag.read().data_in_flag() == DATA_IN_FLAG_A::CAN_INPUT {
+                    let val = self.ind.next().unwrap();
+                    self.aes.text_data.write(|w| w.bits(val));
+                    self.iptr += 4;
+                }
+                while self.aes.data_out_flag.read().data_out_flag() != DATA_OUT_FLAG_A::CAN_OUTPUT {
+                    atomic::compiler_fence(Ordering::SeqCst)
+                }
+                self.optr += 4;
+                Some(self.aes.out_data.read().bits())
+            }
+        }
+    }
+}
+
+impl <'a, I> OutIterator<'a, I>
+    where I: Iterator<Item=u32> {
+    pub fn finish(&mut self, tag: Option<&mut [u8]>) {
+        assert!(self.iptr >= self.len && self.optr >= self.len);
+        finish(self.aes, self.cipher_mode, tag);
+    }
+}
+
+/** Run AES algorithm as an iterator over 32-bit little-endian items,
+ * returning 32-bit little-endian items.
+ */
+pub fn run_iter32<'a, X>(
+        aes: &'a mut pac::AES,
+        cipher_mode: cipher_mode,
+        encrypt_sel: encrypt_sel,
+        key: &[u8],
+        iv: &[u8],
+        aad: &[u8],
+        ind: X,
+        len: usize,
+    ) -> OutIterator<'a, X>
+      where X: Iterator<Item = u32> {
+    setup(aes, cipher_mode, encrypt_sel, key, iv, aad, len);
+
+    OutIterator {
+        aes,
+        cipher_mode,
+        ind: ind,
+        len,
+        iptr: 0,
+        optr: 0,
+    }
 }
