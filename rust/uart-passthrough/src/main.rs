@@ -4,7 +4,7 @@
 #![no_std]
 #![no_main]
 
-use k210_hal::Peripherals;
+use k210_hal::pac::Peripherals;
 use k210_hal::prelude::*;
 use k210_hal::serial::Serial;
 use k210_shared::board::def::io;
@@ -27,17 +27,19 @@ fn main() -> ! {
     let clocks = k210_hal::clock::Clocks::new();
 
     // Configure UARTHS (→host)
-    let mut serial = p.UARTHS.configure((p.pins.pin5, p.pins.pin4), DEFAULT_BAUD.bps(), &clocks);
+    let mut serial = p.UARTHS.configure( DEFAULT_BAUD.bps(), &clocks);
     let (mut tx, mut rx) = serial.split();
 
     // Configure UART1 (→WIFI)
     sysctl::clock_enable(sysctl::clock::UART1);
     sysctl::reset(sysctl::reset::UART1);
+    fpioa::set_function(io::WIFI_RX, fpioa::function::UART1_TX);
+    fpioa::set_function(io::WIFI_TX, fpioa::function::UART1_RX);
     fpioa::set_function(io::WIFI_EN, fpioa::function::GPIOHS8);
     fpioa::set_io_pull(io::WIFI_EN, fpioa::pull::DOWN);
     gpiohs::set_pin(8, true);
     gpiohs::set_direction(8, gpio::direction::OUTPUT);
-    let mut wifi_serial = p.UART1.configure((p.pins.pin7, p.pins.pin6), DEFAULT_BAUD.bps(), &clocks);
+    let mut wifi_serial = p.UART1.configure(DEFAULT_BAUD.bps(), &clocks);
     let (mut wtx, mut wrx) = wifi_serial.split();
 
     // Relay characters between UARTs
@@ -46,8 +48,8 @@ fn main() -> ! {
             // OOB restores safe baudrate for UARTHS, to be sure we're able to recover from
             // sync failures
             let mut rate = DEFAULT_BAUD;
-            let (userial, pins) = Serial::join(tx, rx).free();
-            serial = userial.configure(pins, rate.bps(), &clocks);
+            let userial = Serial::join(tx, rx).free();
+            serial = userial.configure(rate.bps(), &clocks);
             let s = serial.split();
             tx = s.0;
             rx = s.1;
@@ -59,8 +61,8 @@ fn main() -> ! {
                     rate = u32::from(d[0]) | (u32::from(d[1]) << 8) | (u32::from(d[2]) << 16) | (u32::from(d[3]) << 24);
 
                     // re-configure UARTHS at new rate
-                    let (userial, pins) = Serial::join(tx, rx).free();
-                    serial = userial.configure(pins, rate.bps(), &clocks);
+                    let userial = Serial::join(tx, rx).free();
+                    serial = userial.configure(rate.bps(), &clocks);
                     let s = serial.split();
                     tx = s.0;
                     rx = s.1;
@@ -73,8 +75,8 @@ fn main() -> ! {
                 _ => {}
             }
             // re-configure UART1
-            let (wifi_userial, wifi_pins) = Serial::join(wtx, wrx).free();
-            wifi_serial = wifi_userial.configure(wifi_pins, rate.bps(), &clocks);
+            let wifi_userial = Serial::join(wtx, wrx).free();
+            wifi_serial = wifi_userial.configure(rate.bps(), &clocks);
             let s = wifi_serial.split();
             wtx = s.0;
             wrx = s.1;

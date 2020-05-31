@@ -8,7 +8,7 @@ use core::str;
 use esp8266at::handler::{NetworkEvent, SerialNetworkHandler};
 use esp8266at::response::{parse, ConnectionType, ParseResult};
 use esp8266at::traits::{self, Write};
-use k210_hal::{Peripherals, pac};
+use k210_hal::pac;
 use k210_hal::prelude::*;
 use k210_hal::stdout::Stdout;
 use k210_shared::board::def::io;
@@ -106,7 +106,7 @@ fn show_uart_info(debug: &mut dyn core::fmt::Write, uart: *const pac::uart1::Reg
 
 #[entry]
 fn main() -> ! {
-    let p = Peripherals::take().unwrap();
+    let p = pac::Peripherals::take().unwrap();
     sysctl::pll_set_freq(sysctl::pll::PLL0, 800_000_000).unwrap();
     sysctl::pll_set_freq(sysctl::pll::PLL1, 300_000_000).unwrap();
     sysctl::pll_set_freq(sysctl::pll::PLL2, 45_158_400).unwrap();
@@ -116,7 +116,7 @@ fn main() -> ! {
     io_init();
 
     // Configure UARTHS (→host)
-    let serial = p.UARTHS.configure((p.pins.pin5, p.pins.pin4), DEFAULT_BAUD.bps(), &clocks);
+    let serial = p.UARTHS.configure(DEFAULT_BAUD.bps(), &clocks);
     let (mut tx, mut _rx) = serial.split();
     let mut debug = Stdout(&mut tx);
 

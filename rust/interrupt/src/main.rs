@@ -4,7 +4,6 @@
 #![no_std]
 #![no_main]
 
-use k210_hal::Peripherals;
 use k210_hal::pac;
 use k210_hal::prelude::*;
 use k210_hal::stdout::Stdout;
@@ -29,8 +28,9 @@ struct IntrInfo {
 
 static mut INTR_INFO: Option<IntrInfo> = None;
 
+#[allow(non_snake_case)]
 #[no_mangle]
-fn my_trap_handler() {
+fn MachineSoft() {
     let hartid = mhartid::read();
     let cause = mcause::read().cause();
 
@@ -44,7 +44,7 @@ fn my_trap_handler() {
 
 #[entry]
 fn main() -> ! {
-    let p = Peripherals::take().unwrap();
+    let p = pac::Peripherals::take().unwrap();
     sysctl::pll_set_freq(sysctl::pll::PLL0, 800_000_000).unwrap();
     sysctl::pll_set_freq(sysctl::pll::PLL1, 300_000_000).unwrap();
     sysctl::pll_set_freq(sysctl::pll::PLL2, 45_158_400).unwrap();
@@ -53,7 +53,7 @@ fn main() -> ! {
     usleep(200000);
 
     // Configure UART
-    let serial = p.UARTHS.configure((p.pins.pin5, p.pins.pin4), 115_200.bps(), &clocks);
+    let serial = p.UARTHS.configure(115_200.bps(), &clocks);
     let (mut tx, _) = serial.split();
 
     let mut stdout = Stdout(&mut tx);

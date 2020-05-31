@@ -9,7 +9,7 @@ mod lfsr;
 
 use k210_hal::prelude::*;
 use k210_hal::stdout::Stdout;
-use k210_hal::Peripherals;
+use k210_hal::pac::Peripherals;
 use k210_shared::board::def::io;
 use k210_shared::board::lcd::{self, LCD, LCDHL};
 use k210_shared::board::lcd_colors;
@@ -62,7 +62,7 @@ fn main() -> ! {
     // Configure UART
     let serial = p
         .UARTHS
-        .configure((p.pins.pin5, p.pins.pin4), 115_200.bps(), &clocks);
+        .configure(115_200.bps(), &clocks);
     let (mut tx, _) = serial.split();
 
     let mut stdout = Stdout(&mut tx);

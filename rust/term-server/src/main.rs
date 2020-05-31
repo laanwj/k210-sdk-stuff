@@ -8,7 +8,7 @@ use core::str;
 use esp8266at::handler::{NetworkEvent, SerialNetworkHandler};
 use esp8266at::response::{parse, ParseResult};
 use esp8266at::traits;
-use k210_hal::Peripherals;
+use k210_hal::pac::Peripherals;
 use k210_hal::prelude::*;
 use k210_hal::stdout::Stdout;
 use k210_shared::board::def::io;
@@ -77,7 +77,7 @@ fn main() -> ! {
     io_init();
 
     // Configure UARTHS (→host)
-    let serial = p.UARTHS.configure((p.pins.pin5, p.pins.pin4), DEFAULT_BAUD.bps(), &clocks);
+    let serial = p.UARTHS.configure(DEFAULT_BAUD.bps(), &clocks);
     let (mut tx, mut _rx) = serial.split();
     let mut debug = Stdout(&mut tx);
 

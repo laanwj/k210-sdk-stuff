@@ -6,7 +6,7 @@ edition = "2018"
 
 [dependencies]
 bare-metal = "0.2.0"
-riscv-rt = "0.6"
+riscv-rt = "0.7"
 k210-hal = "0.2.0"
 riscv = { version = "0.5", features = ["inline-asm"] }
 k210-shared = { path = "../k210-shared" }

@@ -59,7 +59,7 @@ impl<IF: I2CExt> I2C for I2CImpl<IF> {
         sysctl::clock_set_threshold(IF::DIV, 3);
         sysctl::reset(IF::RESET);
 
-        let v_i2c_freq = sysctl::clock_get_freq(sysctl::clock::I2C0);
+        let v_i2c_freq = sysctl::clock_get_freq(IF::CLK);
         let v_period_clk_cnt = v_i2c_freq / i2c_clk / 2;
         let v_period_clk_cnt: u16 = v_period_clk_cnt.try_into().unwrap();
         let v_period_clk_cnt = cmp::max(v_period_clk_cnt, 1);

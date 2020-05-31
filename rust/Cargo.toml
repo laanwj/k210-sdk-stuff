@@ -21,6 +21,12 @@ members = [
 
 [patch.crates-io]
 
+k210-hal = { git = "https://github.com/riscv-rust/k210-hal.git", rev = "fdf1ad61af8f756765a65133bb2d08cda686be6f" }
+riscv = { git = "https://github.com/rust-embedded/riscv.git", rev = "422a1625cfd666f927eae485629fa7f96be5ebd0" }
+
+# Remove this after https://github.com/ilya-epifanov/riscv-target/pull/1 or similar merged
+riscv-target = { git = "https://github.com/laanwj/riscv-target.git", rev = "189b5261ecdd40f18eb1b82614d6876aa88bd744" }
+
 # This patch was merged upstream, unfortunately, rust-secp256k1 puts a restriction on 
 # cc_rs <= 1.0.41 so we can't actually use the newer version yet.
 cc = { git = "https://github.com/laanwj/cc-rs.git", rev = "83e66a79a25b55d0aa84db42257a8edbb0095cf8" }

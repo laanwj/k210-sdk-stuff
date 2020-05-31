@@ -7,7 +7,7 @@
 use k210_console::console::{Console, ScreenImage};
 use k210_console::cp437;
 use k210_console::cp437_8x8::{FONT, GLYPH_BY_FILL};
-use k210_hal::Peripherals;
+use k210_hal::pac::Peripherals;
 use k210_hal::prelude::*;
 use k210_hal::stdout::Stdout;
 use k210_shared::board::def::{io,DISP_WIDTH,DISP_HEIGHT,DISP_PIXELS};
@@ -79,7 +79,7 @@ fn main() -> ! {
     usleep(200000);
 
     // Configure UART
-    let serial = p.UARTHS.configure((p.pins.pin5, p.pins.pin4), 115_200.bps(), &clocks);
+    let serial = p.UARTHS.configure(115_200.bps(), &clocks);
     let (mut tx, _) = serial.split();
 
     let mut stdout = Stdout(&mut tx);

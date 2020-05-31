@@ -11,7 +11,7 @@ use k210_hal::pac;
 use k210_shared::soc::sysctl;
 use pac::interrupt::Interrupt;
 use riscv::asm;
-use riscv::register::{mcause, mhartid, mie, mip, mstatus};
+use riscv::register::{mhartid, mie, mip, mstatus};
 
 const UART_BUFSIZE: usize = 8192;
 /** UART ring buffer */
@@ -80,42 +80,34 @@ fn interrupt_uart1() {
     }
 }
 
-/** Global trap handler */
+/** PLIC interrupts */
+#[allow(non_snake_case)]
 #[no_mangle]
-fn my_trap_handler() {
-    let hartid = mhartid::read();
-    let cause = mcause::read().cause();
-    match cause {
-        // PLIC interrupts
-        mcause::Trap::Interrupt(mcause::Interrupt::MachineExternal) => {
-            if mip::read().mext() {
-                unsafe {
-                    let plic = pac::PLIC::ptr();
-                    let target = &(*plic).targets[hartid * 2];
-                    let int_num = target.claim.read().bits();
-                    let int = Interrupt::try_from(int_num as u8).unwrap();
+fn MachineExternal() {
+    if mip::read().mext() {
+        unsafe {
+            let hartid = mhartid::read();
+            let plic = pac::PLIC::ptr();
+            let target = &(*plic).targets[hartid * 2];
+            let int_num = target.claim.read().bits();
+            let int = Interrupt::try_from(int_num as u8).unwrap();
 
-                    // Does this really need the 'disable other interrupts, change threshold' dance
-                    // as done in handle_irq_m_ext in plic.c?
-                    match int {
-                        Interrupt::UART1 => interrupt_uart1(),
-                        // We'll get a spurious UARTHS interrupt, ignore it
-                        Interrupt::UARTHS => {}
-                        _ => {
-                            panic!(
-                                "unknown machineexternal {:?} on {}, int {:?}",
-                                cause, hartid, int
-                            );
-                        }
-                    }
-
-                    // Perform IRQ complete
-                    target.claim.write(|w| w.bits(int_num));
+            // Does this really need the 'disable other interrupts, change threshold' dance
+            // as done in handle_irq_m_ext in plic.c?
+            match int {
+                Interrupt::UART1 => interrupt_uart1(),
+                // We'll get a spurious UARTHS interrupt, ignore it
+                Interrupt::UARTHS => {}
+                _ => {
+                    panic!(
+                        "unknown machineexternal hart {}, int {:?}",
+                        hartid, int
+                    );
                 }
             }
-        }
-        _ => {
-            panic!("unknown trap {:?}", cause);
+
+            // Perform IRQ complete
+            target.claim.write(|w| w.bits(int_num));
         }
     }
 }
