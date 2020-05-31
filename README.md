@@ -249,6 +249,11 @@ Test the cryptographic acceleration engines of the K210.
 
 [README](rust/cryptest/README.md)
 
+rust/interrupt
+--------------
+
+Test for interrupts and use of the MMU.
+
 ROM re'ing
 ===========
 
