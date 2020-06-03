@@ -212,8 +212,23 @@ struct IntrInfo {
 }
 
 static INTR: AtomicBool = AtomicBool::new(false);
+static CORE1ON: AtomicBool = AtomicBool::new(false);
 static mut INTR_INFO: Option<IntrInfo> = None;
 static TEST_PAGE: &'static [u8] = include_bytes_align_as!(PageTable, "testpage.dat");
+
+/** Send interprocessor interrupt. */
+fn send_ipi(hart: usize) {
+    unsafe {
+        (*pac::CLINT::ptr()).msip[hart].write(|w| w.bits(1));
+    }
+}
+
+/** Clear interprocessor interrupt. */
+fn clear_ipi(hart: usize) {
+    unsafe {
+        (*pac::CLINT::ptr()).msip[hart].write(|w| w.bits(0));
+    }
+}
 
 /** Handle external interrupts. */
 #[allow(non_snake_case)]
@@ -225,9 +240,7 @@ fn MachineSoft() {
     unsafe { INTR_INFO = Some(IntrInfo { hartid, cause }); }
 
     INTR.store(true, Ordering::SeqCst);
-    unsafe {
-        (*pac::CLINT::ptr()).msip[hartid].write(|w| w.bits(0));
-    }
+    clear_ipi(hartid);
 }
 
 /** Handle CPU exceptions. */
@@ -315,9 +328,28 @@ fn mmu_unmap(mut vaddr: usize, npages: usize) {
     }
 }
 
+#[export_name = "_mp_hook"]
+pub extern "Rust" fn mp_hook() -> bool {
+    return mhartid::read() == 0;
+}
 
 #[entry]
 fn main() -> ! {
+    if mhartid::read() == 1 {
+        unsafe {
+            // Clear pending IPI that activated core 1
+            clear_ipi(1);
+            // Enable interrupts in general
+            mstatus::set_mie();
+            // Set the Machine-Software bit in MIE
+            mie::set_msoft();
+        }
+        CORE1ON.store(true, Ordering::SeqCst);
+        loop {
+            unsafe { riscv::asm::wfi() }
+        }
+    }
+
     let p = pac::Peripherals::take().unwrap();
     sysctl::pll_set_freq(sysctl::pll::PLL0, 800_000_000).unwrap();
     sysctl::pll_set_freq(sysctl::pll::PLL1, 300_000_000).unwrap();
@@ -347,9 +379,7 @@ fn main() -> ! {
     }
 
     debugln!("Generate IPI for core 0 !");
-    unsafe {
-        (*pac::CLINT::ptr()).msip[0].write(|w| w.bits(1));
-    }
+    send_ipi(0);
 
     debugln!("Waiting for interrupt");
     while !INTR.load(Ordering::SeqCst) {
@@ -359,22 +389,27 @@ fn main() -> ! {
 
     setup_mmu();
 
-    /*
-    debugln!("Generate IPI for core 1 !");
-    unsafe {
-        (*pac::CLINT::ptr()).msip[1].write(|w| w.bits(1));
+    /* Print some stuff from a demand-mapped page. */
+    for x in 0..10 {
+        let val = unsafe { peek::<u8>(0x1_0123_0000 + x) };
+        debug!("{}", val as char);
     }
+
+    /* Second core testing. */
+    debugln!("Generate IPI for core 1 !");
+    send_ipi(1);
+    debugln!("Waiting for core 1 to come up");
+    while !CORE1ON.load(Ordering::SeqCst) {
+    }
+    debugln!("Core 1 reported active");
+
+    debugln!("Generate IPI for core 1 again");
+    send_ipi(1);
     debugln!("Waiting for interrupt");
     while !INTR.load(Ordering::SeqCst) {
     }
     INTR.store(false, Ordering::SeqCst);
     debugln!("Interrupt was triggered {:?}", unsafe { INTR_INFO });
-    */
-
-    for x in 0..10 {
-        let val = unsafe { peek::<u8>(0x1_0123_0000 + x) };
-        debug!("{}", val as char);
-    }
     
     debugln!("[end]");
     loop {
