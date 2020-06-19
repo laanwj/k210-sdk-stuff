@@ -336,6 +336,7 @@ pub extern "Rust" fn mp_hook() -> bool {
 #[entry]
 fn main() -> ! {
     if mhartid::read() == 1 {
+        // Running on second core
         unsafe {
             // Clear pending IPI that activated core 1
             clear_ipi(1);
