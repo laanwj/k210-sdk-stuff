@@ -1,0 +1,59 @@
+/--------------------------------------------------\
+|                  CANAAN PRESENT                  |
+|--------------------------------------------------|
+|                     KENDRYTE                     |
+|                   INTERNAL CODE                  |
+|                      M A I X                     |
+|--------------------------------------------------|
+|                    DEVELOPERS                    |
+|--------------------------------------------------|
+| minux         | minux.ma@gmail.com               |
+| h2feo4        | chenmin.ac@gmail.com             |
+| vowstar       | vowstar@gmail.com                |
+| manageryzy    | manageryzy@live.cn               |
+| Chenwei Song  | songchengwei@canaan-creative.com |
+| latyas        | latyas@gmail.com                 |
+| PL            | 0x00.pl@gmail.com                |
+| Li Fei        | lif8991373@126.com               |
+| Honggang Wang | wanghonggang@canaan-creative.com |
+| Yichun Xie    | xieyichun@canaan-creative.com    |
+| Tao Zhang     | zhang-_-tao@hotmail.com          |
+| Xingquan Sun  | sunxingquan@canaan-creative.com  |
+| Yuan Chen     | chenyuan@canaan-creative.com     |
+| Wei Wu        | wuwei@canaan-creative.com        |
+| Guofu Ma      | maguofu@canaan-creative.com      |
+| sunnycase     | sunnycase@live.cn                |
+| Alinshans     | alinshans@gmail.com              |
+| sbYm          | 524702837@qq.com                 |
+| Guiwei Wang   | wangguiwei@canaan-creative.com   |
+| Beihua Zhao   | zhaobeihua@canaan-creative.com   |
+| Minggui Tang  | tangminggui@canaan-creative.com  |
+| Tianliang Nan | nantianliang@canaan-creative.com |
+| Fengling Qin  | fengling.qin@gmail.com           |
+| Zhaofei Pu    | puzhaofei@canaan-creative.com    |
+| Wujian Li     | liwujian@canaan-creative.com     |
+| Bin Shi       | shibin@canaan-creative.com       |
+| Minli Liu     | liuminli@canaan-creative.com     |
+| Kai Peng      | pengkai@canaan-creative.com      |
+| Beiwen Hu     | hubeiwen@canaan-creative.com     |
+| Zhaohua Cui   | cuizhaohua@canaan-creative.com   |
+| Shenrong Liu  | liushengrong@canaan-creative.com |
+| Yangguang He  | heyangguang@canaan-creative.com  |
+| Jingjie Wu    | jingjie@canaan-creative.com      |
+| Zhanyong Lu   | luzhanyong@canaan-creative.com   |
+| rikka0w0      | 929513338@qq.com                 |
+| Xuguang Liu   | xiangfu.z@gmail.com              |
+| Jiakun Ma     | majiakun@canaan-creative.com     |
+| Zixiao Fan    | fanzixiao@canaan-creative.com    |
+| Yunian Yang   | reimu233@canaan-creative.com     |
+| Jiachen Yu    | yujiachen@canaan-creative.com    |
+| kelas         | me@kel.as                        |
+|--------------------------------------------------|
+| AI WORKS   : 2018-03-24 | TAPE-OUT : 2018-06-30  |
+| CEO: N.G. Zhang | CTO: h2feo4 | GOD: minux       |
+\--------------------------------------------------/
+------------------------------------
+| I AM CUTE, PLEASE GIVE ME MONEY. |
+|              by latyas@gmail.com |
+------------------------------------
+
