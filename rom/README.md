@@ -1,4 +1,8 @@
-# 88000000-8801ffff
+a mere year ago riscv community had one sloppy gcc8 toolchain.
+
+look at us today. what an amazing journey.
+
+### 88000000-8801ffff
 
 ```
 entry                           88000000    140
@@ -80,8 +84,3 @@ spi_flash_set_read_mode         88009b94    52
 spi_receive_data_1              88008dd8    312
 spi_receive_data_2              8800902c    308
 ```
-
-
-sorry guys, you should learn how document your stuff.
-
-apart from that, thanks for a lovely chip.
