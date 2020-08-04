@@ -1,10 +1,10 @@
-a mere year ago riscv community had one sloppy gcc8 toolchain.
+a mere year ago riscv community only had one sloppy gcc8 toolchain. look at us today.
 
-look at us today. what an amazing journey.
-
-### 88000000-8801ffff
+what an amazing journey.
 
 ```
+88000000-8801ffff:
+
 entry                           88000000    140
 entry_hart0                     88000124    24
 exit                            88001a04    64
