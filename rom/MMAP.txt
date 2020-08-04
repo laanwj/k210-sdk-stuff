@@ -1,0 +1,209 @@
+8801c000:
+
+core {
+  0 {
+    0 {
+      isa rv64imafds;
+      timecmp 0x2004000;
+      ipi 0x2000000;
+      plic {
+        m {
+         ie 0xc002000;
+         thresh 0xc200000;
+         claim 0xc200004;
+        };
+        s {
+         ie 0xc002080;
+         thresh 0xc201000;
+         claim 0xc201004;
+        };
+      };
+    };
+  };
+  1 {
+    0 {
+      isa rv64imafds;
+      timecmp 0x2004008;
+      ipi 0x2000004;
+      plic {
+        m {
+         ie 0xc002100;
+         thresh 0xc202000;
+         claim 0xc202004;
+        };
+        s {
+         ie 0xc002180;
+         thresh 0xc203000;
+         claim 0xc203004;
+        };
+      };
+    };
+  };
+};
+debug {
+  addr 0x0;
+  size 0x1000;
+};
+romcpu {
+  addr 0x1000;
+  size 0x1000;
+};
+plic {
+  addr 0xc000000;
+  size 0x4000000;
+  priority 0xc000000;
+  pending 0xc001000;
+  ndevs 65;
+};
+clint {
+  addr 0x2000000;
+  size 0x10000;
+};
+rtc0 {
+  addr 0x200bff8;
+  size 0x8;
+};
+ram {
+  addr 0x80000000;
+  size 0x600000;
+};
+io {
+  addr 0x40000000;
+  size 0x600000;
+};
+airam {
+  addr 0x80600000;
+  size 0x200000;
+};
+aiio {
+  addr 0x40600000;
+  size 0x200000;
+};
+ai {
+  addr 0x40800000;
+  size 0xc00000;
+};
+fft {
+  addr 0x42000000;
+  size 0x400000;
+};
+romaxi {
+  addr 0x88000000;
+  size 0x20000;
+};
+uart0 {
+  addr 0x38000000;
+  size 0x1000;
+};
+gpio0 {
+  addr 0x38001000;
+  size 0x1000;
+};
+dmac {
+  addr 0x50000000;
+  size 0xc00;
+};
+gpio1 {
+  addr 0x50200000;
+  size 0x10000;
+};
+uart1 {
+  addr 0x50210000;
+  size 0x10000;
+};
+uart2 {
+  addr 0x50220000;
+  size 0x10000;
+};
+uart3 {
+  addr 0x50230000;
+  size 0x10000;
+};
+spislave {
+  addr 0x50240000;
+  size 0x10000;
+};
+i2s0 {
+  addr 0x50250000;
+  size 0x10000;
+};
+i2s1 {
+  addr 0x50260000;
+  size 0x10000;
+};
+i2s2 {
+  addr 0x50270000;
+  size 0x10000;
+};
+i2c0 {
+  addr 0x50280000;
+  size 0x10000;
+};
+i2c1 {
+  addr 0x50290000;
+  size 0x10000;
+};
+i2c2 {
+  addr 0x502a0000;
+  size 0x10000;
+};
+fpioa {
+  addr 0x502b0000;
+  size 0x10000;
+};
+sha256 {
+  addr 0x502c0000;
+  size 0x10000;
+};
+timer0 {
+  addr 0x502d0000;
+  size 0x10000;
+};
+timer1 {
+  addr 0x502e0000;
+  size 0x10000;
+};
+timer2 {
+  addr 0x502f0000;
+  size 0x10000;
+};
+wdt0 {
+  addr 0x50400000;
+  size 0x10000;
+};
+wdt1 {
+  addr 0x50410000;
+  size 0x10000;
+};
+otp {
+  addr 0x50420000;
+  size 0x10000;
+};
+dvp {
+  addr 0x50430000;
+  size 0x10000;
+};
+sysctl {
+  addr 0x50440000;
+  size 0x10000;
+};
+aes {
+  addr 0x50450000;
+  size 0x10000;
+};
+rtc1 {
+  addr 0x50460000;
+  size 0x10000;
+};
+spi0 {
+  addr 0x52000000;
+  size 0x1000000;
+};
+spi1 {
+  addr 0x53000000;
+  size 0x1000000;
+};
+spi3 {
+  addr 0x54000000;
+  size 0x2000000;
+};
