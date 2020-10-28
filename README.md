@@ -64,28 +64,6 @@ This works for both the C and Rust-produced executables. It is also possible to 
 and run code on the device through JTAG and OpenOCD, but I have never got this to work myself
 (openocd cannot find the device).
 
-Currently, rust generates ELF executables based at address `0xffffffff80000000`
-instead of the expected `0x80000000`, to work around lack of medany memory
-model support in LLVM (this has ben fixed but hasn't reached stable yet at the
-time of writing). To make this work with kflash I had to patch the
-following:
-
-```patch
-diff --git a/kflash.py b/kflash.py
-index c092d08..b3bc457 100755
---- a/kflash.py
-+++ b/kflash.py
-@@ -976,7 +976,7 @@ class KFlash:
-                     if segment['p_type']!='PT_LOAD' or segment['p_filesz']==0 or segment['p_vaddr']==0:
-                         print("Skipped")
-                         continue
--                    self.flash_dataframe(segment.data(), segment['p_vaddr'])
-+                    self.flash_dataframe(segment.data(), segment['p_vaddr'] & 0xffffffff)
-
-             def flash_firmware(self, firmware_bin, aes_key = None, address_offset = 0, sha256Prefix = True):
-                 # type: (bytes, bytes, int, bool) -> None
-```
-
 Documentation
 ==============
 
