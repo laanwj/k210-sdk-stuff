@@ -76,6 +76,7 @@ Additional register documentation that is not in the datasheet can be found here
 External:
 
 - [k210.svd](https://github.com/riscv-rust/k210-pac/blob/master/k210.svd) - Peripheral description for rust K210 BSP (k210-pac project)
+- [k210.dtsi](https://github.com/u-boot/u-boot/blob/master/arch/riscv/dts/k210.dtsi) - Device tree from u-boot
 
 Projects
 =========
