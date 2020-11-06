@@ -19,7 +19,7 @@ for y in range(BLK_SIZE//2):
 
 outb = []
 for y in range(BLK_SIZE):
-    outb.append([((rgb565(*image[y][x*2+0])<<16) | rgb565(*image[y][x*2+1])) for x in range(BLK_SIZE//2)])
+    outb.append([((rgb565(*image[y][x*2+0]) << 0) | (rgb565(*image[y][x*2+1]) << 16)) for x in range(BLK_SIZE//2)])
 
 print('pub static BLOCK_SPRITE: [[u32; 4];8] = [')
 for y in outb:

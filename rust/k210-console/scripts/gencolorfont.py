@@ -35,8 +35,8 @@ def encode_block(block):
     for yi in range(0, BH):
         for xi in range(0, BW//2):
             out.append(
-                (rgb565(block[yi][xi*2 + 0]) << 16) |
-                 rgb565(block[yi][xi*2 + 1]))
+                (rgb565(block[yi][xi*2 + 0]) << 0) |
+                 rgb565(block[yi][xi*2 + 1]) << 16)
     return tuple(out)
 
 assert(len(sys.argv) >= 3)

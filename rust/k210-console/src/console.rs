@@ -145,18 +145,8 @@ impl Console {
                     for yi in 0..8 {
                         let val = glyph[yi];
                         for xih in 0..4 {
-                            image[image_ofs + xih] = (u32::from(if val & (1 << (xih * 2 + 0)) != 0 {
-                                fg
-                            } else {
-                                bg
-                            })
-                                << 16)
-                                | (u32::from(if val & (1 << (xih * 2 + 1)) != 0 {
-                                    fg
-                                } else {
-                                    bg
-                                })
-                                    << 0);
+                            image[image_ofs + xih] = (u32::from(if val & (1 << (xih * 2 + 0)) != 0 { fg } else { bg }) << 0) |
+                                                     (u32::from(if val & (1 << (xih * 2 + 1)) != 0 { fg } else { bg }) << 16);
                         }
                         image_ofs += usize::from(DISP_WIDTH) / 2;
                     }

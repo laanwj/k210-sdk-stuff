@@ -11,7 +11,7 @@ use k210_hal::pac::Peripherals;
 use k210_shared::board::def::{io, DISP_HEIGHT, DISP_PIXELS, DISP_WIDTH, MSA300_SLV_ADDR,MSA300_ADDR_BITS,MSA300_CLK};
 use k210_shared::board::lcd::{self, LCD, LCDHL};
 use k210_shared::board::lcd_colors;
-use k210_shared::board::lcd_render::ScreenImage;
+use k210_shared::board::lcd_render::{AsU16, ScreenImage};
 use k210_shared::board::msa300::Accelerometer;
 use k210_shared::soc::dmac::{dma_channel, DMACExt};
 use k210_shared::soc::fpioa;
@@ -131,7 +131,7 @@ struct Display {
  * a vertical line.
  */
 trait VoxelTarget {
-    /** Draw a vertical line at x coordinate `cx`, from y coordinate `cy1` to `cy2`. */
+    /** Draw a vertical line at x coordinate `cx`, from y coordinate `cy1` to `cy2`, exclusive. */
     fn dvline(&mut self, cx: i32, cy1: i32, cy2: i32, color: Color);
 }
 
@@ -141,25 +141,18 @@ impl Display {
             data: [0; DISP_PIXELS / 2],
         }
     }
-
-    /** Image data as mutable [u16] for internal drawing use. */
-    fn data(&mut self) -> &mut [u16] {
-        unsafe { core::slice::from_raw_parts_mut(self.data.as_ptr() as *mut u16, DISP_PIXELS) }
-    }
 }
 
 impl VoxelTarget for Display {
-    /** Draw a vertical line at x coordinate `cx`, from y coordinate `cy1` to `cy2`. */
-    fn dvline(&mut self, cx: i32, cy1: i32, cy2: i32, color: Color) {
-        let data = self.data();
+    fn dvline(&mut self, cx: i32, mut cy1: i32, mut cy2: i32, color: Color) {
+        let data = self.data.as_u16_slice_mut();
         if cx < 0 || cx >= (DISP_WIDTH as i32) {
             return;
         }
-        let xofs = (cx ^ 1) as usize;
+        cy1 = core::cmp::max(cy1, 0);
+        cy2 = core::cmp::min(cy2, DISP_HEIGHT as i32);
         for y in cy1..cy2 {
-            if y >= 0 && y < (DISP_HEIGHT as i32) {
-                data[(y as usize) * (DISP_WIDTH as usize) + xofs] = color;
-            }
+            data[(y as usize) * (DISP_WIDTH as usize) + (cx as usize)] = color;
         }
     }
 }

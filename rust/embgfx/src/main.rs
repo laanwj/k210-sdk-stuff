@@ -16,7 +16,7 @@ use k210_hal::stdout::Stdout;
 use k210_hal::pac::Peripherals;
 use k210_shared::board::def::{io, DISP_HEIGHT, DISP_PIXELS, DISP_WIDTH};
 use k210_shared::board::lcd::{self, LCD, LCDHL};
-use k210_shared::board::lcd_render::ScreenImage;
+use k210_shared::board::lcd_render::{AsU16, ScreenImage};
 use k210_shared::soc::dmac::{dma_channel, DMACExt};
 use k210_shared::soc::fpioa;
 use k210_shared::soc::sleep::usleep;
@@ -69,13 +69,12 @@ impl Drawing<Rgb565> for Display {
     where
         T: IntoIterator<Item = Pixel<Rgb565>>,
     {
-        let data =
-            unsafe { core::slice::from_raw_parts_mut(self.data.as_ptr() as *mut u16, DISP_PIXELS) };
+        let data = self.data.as_u16_slice_mut();
         for Pixel(coord, color) in item {
             let x = coord[0] as usize;
             let y = coord[1] as usize;
             if x < (DISP_WIDTH as usize) && y < (DISP_HEIGHT as usize) {
-                let index = (x ^ 1) + (y * (DISP_WIDTH as usize));
+                let index = x + (y * (DISP_WIDTH as usize));
                 data[index] = RawU16::from(color).into_inner();
             }
         }

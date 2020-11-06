@@ -14,6 +14,7 @@ use k210_hal::pac::Peripherals;
 use k210_shared::board::def::{io, DISP_HEIGHT, DISP_PIXELS, DISP_WIDTH};
 use k210_shared::board::lcd::{self, LCD, LCDHL};
 use k210_shared::board::lcd_colors;
+use k210_shared::board::lcd_render::{AsU8, ScreenImage};
 use k210_shared::board::sdcard;
 use k210_shared::soc::dmac::{dma_channel, DMACExt};
 use k210_shared::soc::fpioa;
@@ -27,8 +28,6 @@ const SD_CS_GPIONUM: u8 = 7;
 /** CS value passed to SPI controller, this is a dummy value as SPI0_CS3 is not mapped to anything
  * in the FPIOA */
 const SD_CS: u32 = 3;
-
-pub type ScreenImage = [u32; DISP_PIXELS / 2];
 
 /** Connect pins to internal functions */
 fn io_init() {
@@ -93,23 +92,15 @@ fn main() -> ! {
     assert!(num_sectors > 0);
     let mut sector: u64 = 0;
     let mut image: ScreenImage = [0; DISP_PIXELS / 2];
-    let mut buffer = [0u8; DISP_PIXELS * 2];
     while sector < num_sectors {
         /* Read raw image */
-        sd.read_sector(&mut buffer, sector.try_into().unwrap())
+        sd.read_sector(image.as_u8_slice_mut(), sector.try_into().unwrap())
             .unwrap();
+
         writeln!(stdout, "sector {} succesfully read", sector).unwrap();
-        let mut i = buffer.iter();
-        /* Combine into u32s, reordering 16-bit halves */
-        for x in image.iter_mut() {
-            *x = (u32::from(*i.next().unwrap()) << 16)
-                | (u32::from(*i.next().unwrap()) << 24)
-                | (u32::from(*i.next().unwrap()) << 0)
-                | (u32::from(*i.next().unwrap()) << 8);
-        }
         lcd.draw_picture(0, 0, DISP_WIDTH, DISP_HEIGHT, &image);
 
-        sector += (buffer.len() / 512) as u64;
+        sector += (image.len() * 4 / 512) as u64;
     }
     loop {}
 }

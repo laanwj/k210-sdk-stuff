@@ -141,9 +141,7 @@ pub trait LCDLL {
     fn write_command(&self, cmd: command);
     /** Write bytes. These are provided as 32-bit units (ignoring the upper 24 bits) for efficient DMA */
     fn write_byte(&self, data_buf: &[u32]);
-    /** Write halfs. These are provided as 32-bit units (ignoring the upper 16 bits) for efficient DMA */
-    fn write_half(&self, data_buf: &[u32]);
-    /** Write words. */
+    /** Write 32-bit words. */
     fn write_word(&self, data_buf: &[u32]);
     fn fill_data(&self, data: u32, length: usize);
 }
@@ -157,7 +155,7 @@ pub trait LCDHL {
     /** Clear the screen to a single RGB565 color. */
     fn clear(&self, color: u16);
     /** Draw a picture, filling the entire screen or part of it. `data` packs two RGB565 pixels
-     * per u32 as 0xAAAABBBB. */
+     * per u32 as 0xBBBBAAAA. */
     fn draw_picture(&self, x1: u16, y1: u16, width: u16, height: u16, data: &[u32]);
     /** Shut down and turn off the screen. */
     fn shutdown(&mut self);
@@ -273,29 +271,13 @@ impl<X: SPI> LCDLL for LCD<'_, X> {
         self.spi.send_data_dma(self.dmac, self.channel, self.spi_cs, data_buf);
     }
 
-    fn write_half(&self, data_buf: &[u32]) {
-        self.set_dcx_data();
-        self.spi.configure(
-            work_mode::MODE0,
-            frame_format::OCTAL,
-            16, /*data bits*/
-            0,  /*endian*/
-            0,  /*instruction length*/
-            16, /*address length*/
-            0,  /*wait cycles*/
-            aitm::AS_FRAME_FORMAT,
-            tmod::TRANS,
-        );
-        self.spi.send_data_dma(self.dmac, self.channel, self.spi_cs, data_buf);
-    }
-
     fn write_word(&self, data_buf: &[u32]) {
         self.set_dcx_data();
         self.spi.configure(
             work_mode::MODE0,
             frame_format::OCTAL,
             32, /*data bits*/
-            0,  /*endian*/
+            1,  /*endian*/
             0,  /*instruction length*/
             32, /*address length*/
             0,  /*wait cycles*/
@@ -333,6 +315,9 @@ impl<X: SPI> LCDHL for LCD<'_, X> {
         self.write_command(command::SLPOUT);
         usleep(100000);
         /*pixel format*/
+        self.write_command(command::RAMCTRL);
+        self.write_byte(&[0x00, 0xf0 | 0x08]); // little-endian
+
         self.write_command(command::COLMOD);
         self.write_byte(&[0x55]);
         self.set_direction(direction::XY_LRUD);

@@ -10,6 +10,7 @@ use k210_hal::stdout::Stdout;
 use k210_shared::board::def::{io,DISP_WIDTH,DISP_HEIGHT,DISP_PIXELS,NS2009_SLV_ADDR,NS2009_CAL,NS2009_ADDR_BITS,NS2009_CLK};
 use k210_shared::board::lcd::{LCD,LCDHL,self};
 use k210_shared::board::lcd_colors;
+use k210_shared::board::lcd_render::ScreenImage;
 use k210_shared::board::ns2009::TouchScreen;
 use k210_shared::soc::dmac::{DMACExt, dma_channel};
 use k210_shared::soc::fpioa;
@@ -22,12 +23,6 @@ use riscv_rt::entry;
 pub const BLK_SIZE: usize = 8;
 pub const GRID_WIDTH: usize = (DISP_WIDTH as usize) / BLK_SIZE;
 pub const GRID_HEIGHT: usize = (DISP_HEIGHT as usize) / BLK_SIZE;
-
-/** Array for representing an image of the entire screen.
- * This is an array of DISP_WIDTH / 2 × DISP_HEIGHT, each two horizontally consecutive
- * pixels are encoded in a u32 with `(a << 16)|b`.
- */
-pub type ScreenImage = [u32; DISP_PIXELS / 2];
 
 /** Universe abstraction */
 struct Universe {
@@ -129,12 +124,12 @@ fn io_set_power() {
 /** How to show a block */
 pub static BLOCK_SPRITE: [[u32; 4];8] = [
     [0x38c738c7, 0x38c738c7, 0x38c738c7, 0x38c738c7],
-    [0x38c7718e, 0x718e718e, 0x718e718e, 0x718e38c7],
-    [0x38c7718e, 0xaa55aa55, 0xaa55aa55, 0x718e38c7],
-    [0x38c7718e, 0xaa55e31c, 0xe31caa55, 0x718e38c7],
-    [0x38c7718e, 0xaa55e31c, 0xe31caa55, 0x718e38c7],
-    [0x38c7718e, 0xaa55aa55, 0xaa55aa55, 0x718e38c7],
-    [0x38c7718e, 0x718e718e, 0x718e718e, 0x718e38c7],
+    [0x718e38c7, 0x718e718e, 0x718e718e, 0x38c7718e],
+    [0x718e38c7, 0xaa55aa55, 0xaa55aa55, 0x38c7718e],
+    [0x718e38c7, 0xe31caa55, 0xaa55e31c, 0x38c7718e],
+    [0x718e38c7, 0xe31caa55, 0xaa55e31c, 0x38c7718e],
+    [0x718e38c7, 0xaa55aa55, 0xaa55aa55, 0x38c7718e],
+    [0x718e38c7, 0x718e718e, 0x718e718e, 0x38c7718e],
     [0x38c738c7, 0x38c738c7, 0x38c738c7, 0x38c738c7],
 ];
 
