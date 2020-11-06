@@ -35,7 +35,7 @@ Maix Go
 
 (source: schematic)
 
-- ST7789V - 240x320 262K Color Single-Chip TFT Controller/Driver with Frame Memory (SPI)
+- ST7789V - 240x320 262K Color Single-Chip TFT Controller/Driver with Frame Memory (SPI). Somewhat curiously the display is wired into 8-bit parallel mode (`IM3=IM2=IM1=IM0=0`, described in the datasheet as "8080-I Series MCU Parallel Interface"), and a special mode of the SPI peripheral called "OCTAL SPI" is used to interface with it. I don't think calling this SPI is entirely accurate.
 - NS2009 - 4-Wire Touch Screen Controller (I2C, address 0x48\*)
 - TF card slot (SPI)
 
