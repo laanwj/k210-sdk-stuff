@@ -18,7 +18,8 @@ This means that:
 - To switch on paging, set the `VM` bitfield (offset 24:28) of `mstatus` to `Sv39` (9).
 
 Also, [reportedly](https://www.reddit.com/r/RISCV/comments/fguddz/linux011_with_mmu_for_k210_riscv/fk9otke/) interrupts do not work as expected in S mode, making that
-mode more or less useless. Only M and U mode can be used in practice.
+mode more or less useless. Apparently, only M and U mode can be used in practice, altough there are some 
+[dissenting views](https://github.com/laanwj/k210-sdk-stuff/pull/9) about this conjecture.
 
 To access paged memory from M mode, the `MPRV` bit in `mstatus` can be set, with `MPP` set to
 `0` (U mode). From the spec (section 3.1.9):
