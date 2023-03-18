@@ -12,15 +12,16 @@ This is a rough memory map for the Kendryte K210 (as used on the Sipeed Maix boa
     0x0c000000 0x0fffffff     PLIC
     0x38000000 0x3fffffff   TileLink
     0x38000000                UARTHS
-    0x38001000                GPIOHS
+    0x38001000 0x38002000     GPIOHS
     0x40000000 0x4fffffff   AXI 64-bit (non-cached)
     0x40000000 0x403fffff     General-purpose SRAM MEM0 (non-cached)
     0x40400000 0x405fffff     General-purpose SRAM MEM1 (non-cached)
     0x40600000 0x407fffff     AI SRAM (non-cached)
-    0x40800000                KPU
+    0x40800000 0x41400000     KPU
     0x42000000 0x423fffff     FFT
     0x50000000 0x501fffff   AHB 32-bit
-    0x50000000                DMAC
+    0x50000000 0x50000c00     DMAC
+    0x54000000 0x56000000     SPI3
     0x50200000 0x503fffff   APB1 32 bit
     0x50200000                GPIO
     0x50210000                UART1
@@ -47,10 +48,9 @@ This is a rough memory map for the Kendryte K210 (as used on the Sipeed Maix boa
     0x50440000                SYSCTL
     0x50450000                AES
     0x50460000                RTC
-    0x52000000 0x5???????   APB3 32 bit
+    0x52000000 0x54000000   APB3 32 bit
     0x52000000                SPI0
     0x53000000                SPI1
-    0x54000000                SPI3
     0x80000000 0x8fffffff   AXI 64-bit (cached mirror of 0x40000000)
     0x80000000 0x803fffff     General-purpose SRAM MEM0 (cached)
     0x80400000 0x805fffff     General-purpose SRAM MEM1 (cached)
